@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 
-const HomePage = () => {
+export default function HomePage() {
   return (
-    <section className="stack">
+    <section className="space-y-4">
       <Card title="Nubo Hub" subtitle="Marketplace de oportunidades educacionais">
         <p>
           O Nubo Hub centraliza bolsas, ProUni e oportunidades educacionais em um só lugar e será
@@ -12,13 +12,11 @@ const HomePage = () => {
         </p>
         <p>Explore as oportunidades disponíveis e acompanhe novidades do MVP.</p>
         <div>
-          <Link to="/oportunidades">
+          <Link href="/oportunidades">
             <Button>Ver oportunidades</Button>
           </Link>
         </div>
       </Card>
     </section>
   );
-};
-
-export default HomePage;
+}

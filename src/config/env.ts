@@ -1,5 +1,5 @@
 export function getEnvVar(key: string) {
-  const value = import.meta.env[key as keyof ImportMetaEnv];
+  const value = process.env[key];
   if (value === undefined) {
     console.warn(`Variável de ambiente ${key} não definida`);
     return '';

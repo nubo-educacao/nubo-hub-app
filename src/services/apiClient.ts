@@ -1,6 +1,6 @@
 import { getEnvVar } from '../config/env';
 
-const API_BASE_URL = getEnvVar('VITE_API_BASE_URL');
+const API_BASE_URL = getEnvVar('NEXT_PUBLIC_API_BASE_URL');
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 

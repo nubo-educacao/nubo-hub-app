@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { useOpportunities } from '../hooks/useOpportunities';
+'use client';
 
-const OpportunitiesPage = () => {
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import { useOpportunities } from '@/hooks/useOpportunities';
+
+export default function OpportunitiesPage() {
   const { opportunities, isLoading, error } = useOpportunities();
 
   if (isLoading) {
@@ -15,14 +17,14 @@ const OpportunitiesPage = () => {
   }
 
   return (
-    <section className="grid">
+    <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {opportunities.map((opportunity) => (
         <Card
           key={opportunity.id}
           title={opportunity.title}
           subtitle={`${opportunity.institution} · ${opportunity.location}`}
           footer={
-            <Link to={`/oportunidades/${opportunity.id}`}>
+            <Link href={`/oportunidades/${opportunity.id}`}>
               <Button>Ver detalhes</Button>
             </Link>
           }
@@ -38,6 +40,4 @@ const OpportunitiesPage = () => {
       ))}
     </section>
   );
-};
-
-export default OpportunitiesPage;
+}
