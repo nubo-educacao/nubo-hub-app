@@ -1,5 +1,5 @@
 # .github/workflows/org-sync.yml
-name: Sync org labels & milestones (veda-gaia)
+name: Sync org labels & milestones (nubo-educacao)
 
 on:
   workflow_dispatch:
@@ -14,8 +14,8 @@ permissions:
 jobs:
   labels:
     name: Labels
-    uses: veda-gaia/.github/.github/workflows/reuse-sync-labels.yml@main
+    uses: nubo-educacao/.github/.github/workflows/reuse-sync-labels.yml@main
 
   milestones:
     name: Milestones
-    uses: veda-gaia/.github/.github/workflows/reuse-sync-milestones.yml@main
+    uses: nubo-educacao/.github/.github/workflows/reuse-sync-milestones.yml@main
