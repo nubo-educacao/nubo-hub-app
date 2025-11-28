@@ -4,22 +4,40 @@ export interface Institution {
   id: string;
   name: string;
   external_code: string;
-  created_at?: string;
+}
+
+export interface Campus {
+  id: string;
+  institution_id: string;
+  name: string;
+  external_code: string;
+  city: string;
+  state: string;
+  institutions?: Institution;
+}
+
+export interface Course {
+  id: string;
+  campus_id: string;
+  course_name: string;
+  course_code: string;
+  vacancies: {
+    scholarship_type: string;
+    broad_competition_offered: number;
+    quotas_offered: number;
+  }[];
+  campus?: Campus;
 }
 
 export interface OpportunityRow {
   id: string;
-  institution_id: string;
-  course_name: string;
-  shift: string; // Turno: Integral, Noturno, etc.
-  scholarship_type: string; // Tipo de Bolsa: Integral/Parcial
-  city: string;
-  state: string;
-  cutoff_score: number | null; // Nota de Corte
-  created_at?: string;
+  course_id: string;
+  semester: string;
+  shift: string;
+  scholarship_type: string;
+  cutoff_score: number | null;
 }
 
-// Tipo que representa o resultado de um JOIN entre opportunities e institutions
-export interface OpportunityWithInstitution extends OpportunityRow {
-  institutions: Institution | null;
+export interface OpportunityWithRelations extends OpportunityRow {
+  courses: Course;
 }

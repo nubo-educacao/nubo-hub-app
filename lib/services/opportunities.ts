@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { OpportunityWithInstitution } from '../../types/database.types';
+import { OpportunityWithRelations } from '../../types/database.types';
 import { Opportunity, mapToOpportunity } from '../../types/opportunity';
 
 export interface FetchOpportunitiesResult {
@@ -47,10 +47,23 @@ export async function fetchOpportunities(
       .from('opportunities')
       .select(`
         *,
-        institutions (
+        courses (
           id,
-          name,
-          external_code
+          course_name,
+          course_code,
+          vacancies,
+          campus (
+            id,
+            name,
+            external_code,
+            city,
+            state,
+            institutions (
+              id,
+              name,
+              external_code
+            )
+          )
         )
       `)
       .range(from, to)
@@ -69,7 +82,8 @@ export async function fetchOpportunities(
     }
 
     // Mapear dados do banco para formato da UI
-    const mappedData = (data as OpportunityWithInstitution[]).map(mapToOpportunity);
+    // Cast para unknown primeiro pois o tipo retornado pelo Supabase pode não inferir a profundidade corretamente sem os Generics completos
+    const mappedData = (data as unknown as OpportunityWithRelations[]).map(mapToOpportunity);
 
     const total = count || 0;
     const hasMore = to < total - 1;

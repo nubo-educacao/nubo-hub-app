@@ -9,7 +9,7 @@ const mockOpportunity: Opportunity = {
   institution: 'Universidade Tech',
   location: 'São Paulo, SP',
   type: 'Pública',
-  modality: 'Presencial',
+  modality: 'Integral',
   cutoff_score: 750,
   scholarship_type: 'Integral',
   shift: 'Integral',
@@ -25,8 +25,10 @@ describe('OpportunityCard', () => {
     expect(screen.getByText('Engenharia de Software')).toBeInTheDocument();
     expect(screen.getByText('Universidade Tech')).toBeInTheDocument();
     expect(screen.getByText('São Paulo, SP')).toBeInTheDocument();
-    // The component renders scholarship_type in a badge
-    expect(screen.getByText('Integral')).toBeInTheDocument(); 
+    // The component renders scholarship_type in a badge and modality
+    const integralElements = screen.getAllByText('Integral');
+    expect(integralElements.length).toBeGreaterThan(0);
+    expect(integralElements[0]).toBeInTheDocument(); 
     // The component renders cutoff score with "Nota: " prefix
     expect(screen.getByText('Nota: 750.00')).toBeInTheDocument();
   });

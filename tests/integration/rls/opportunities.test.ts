@@ -28,7 +28,9 @@ describe('RLS: Opportunities Table', () => {
       .from('opportunities')
       .insert({
         institution_id: '00000000-0000-0000-0000-000000000000', // Fake ID
-        course_name: 'Hacker Course',
+        course_id: '00000000-0000-0000-0000-000000000000', // Fake ID
+        campus_id: '00000000-0000-0000-0000-000000000000', // Fake ID
+        semester: '2024.1',
         shift: 'Integral',
         scholarship_type: 'Integral',
         city: 'Nowhere',

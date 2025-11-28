@@ -1,0 +1,34 @@
+{
+  "id": "1",
+  "institution_id": "inst-1",
+  "campus_id": "camp-1",
+  "course_id": "course-1",
+  "semester": "2024.1",
+  "shift": "Integral",
+  "scholarship_type": "Integral",
+  "city": "São Paulo",
+  "state": "SP",
+  "cutoff_score": 750.5,
+  "institutions": {
+    "id": "inst-1",
+    "name": "Universidade Tech",
+    "external_code": "TECH001"
+  },
+  "courses": {
+    "id": "course-1",
+    "course_name": "Engenharia de Software",
+    "course_code": "ENG001",
+    "vacancies": [
+      {
+        "scholarship_type": "Integral",
+        "broad_competition_offered": 10,
+        "quotas_offered": 5
+      }
+    ]
+  },
+  "campus": {
+    "id": "camp-1",
+    "name": "Campus Central",
+    "code": "CAMP001"
+  }
+}

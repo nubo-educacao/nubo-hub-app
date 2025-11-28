@@ -1,4 +1,4 @@
-import { OpportunityWithInstitution } from './database.types';
+import { OpportunityWithRelations } from './database.types';
 
 export interface Opportunity {
   id: string;
@@ -13,14 +13,17 @@ export interface Opportunity {
   scholarship_type: string;
   shift: string;
   course_name: string;
-  city: string;
-  state: string;
+  vacancies?: {
+    scholarship_type: string;
+    broad_competition_offered: number;
+    quotas_offered: number;
+  }[];
 }
 
 /**
- * Mapeia dados do Supabase (OpportunityWithInstitution) para o formato esperado pela UI (Opportunity)
+ * Mapeia dados do Supabase (OpportunityWithRelations) para o formato esperado pela UI (Opportunity)
  */
-export function mapToOpportunity(data: OpportunityWithInstitution): Opportunity {
+export function mapToOpportunity(data: OpportunityWithRelations): Opportunity {
   // Mapear scholarship_type para o campo 'type' da UI
   let type: 'Pública' | 'Privada' | 'Parceiro';
   if (data.scholarship_type?.toLowerCase().includes('integral')) {
@@ -31,18 +34,24 @@ export function mapToOpportunity(data: OpportunityWithInstitution): Opportunity 
     type = 'Parceiro';
   }
 
+  const course = data.courses;
+  const campus = course?.campus;
+  const institution = campus?.institutions;
+  
+  const city = campus?.city || 'Cidade não informada';
+  const state = campus?.state || 'UF';
+
   return {
     id: data.id,
-    title: data.course_name,
-    institution: data.institutions?.name || 'Instituição não informada',
-    location: `${data.city}, ${data.state}`,
+    title: course?.course_name || 'Curso não informado',
+    institution: institution?.name || 'Instituição não informada',
+    location: `${city}, ${state}`,
     type,
     modality: data.shift,
     cutoff_score: data.cutoff_score,
     scholarship_type: data.scholarship_type,
     shift: data.shift,
-    course_name: data.course_name,
-    city: data.city,
-    state: data.state,
+    course_name: course?.course_name || 'Curso não informado',
+    vacancies: course?.vacancies,
   };
 }
