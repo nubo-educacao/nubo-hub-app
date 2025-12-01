@@ -64,19 +64,46 @@ export default function ChatCloudinha() {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, newMessage]);
-
-    // Simulate Cloudinha typing
     setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+          history: messages, // Sending history for context if needed
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      
       const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'cloudinha',
-        text: 'Entendi! Vou procurar as melhores oportunidades para você. Dê uma olhada no painel ao lado! 👉',
+        text: data.response || 'Desculpe, não consegui processar sua mensagem.',
         timestamp: new Date(),
       };
+      
       setMessages((prev) => [...prev, responseMessage]);
-    }, 1500);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'cloudinha',
+        text: 'Desculpe, tive um problema ao conectar com minha nuvem. Tente novamente mais tarde. 🌧️',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
