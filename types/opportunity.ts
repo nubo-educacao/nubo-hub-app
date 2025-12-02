@@ -10,6 +10,7 @@ export interface Opportunity {
   imageUrl?: string;
   // Campos adicionais do banco
   cutoff_score: number | null;
+  opportunity_type: string | null;
   scholarship_type: string;
   shift: string;
   course_name: string;
@@ -53,5 +54,6 @@ export function mapToOpportunity(data: OpportunityWithRelations): Opportunity {
     shift: data.shift,
     course_name: course?.course_name || 'Curso não informado',
     vacancies: course?.vacancies,
+    opportunity_type: data.opportunity_type || null,
   };
 }

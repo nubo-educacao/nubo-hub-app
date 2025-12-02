@@ -48,6 +48,7 @@ ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS scholarship_type TEXT;
 -- ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS city TEXT; 
 -- ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS state TEXT;
 ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS cutoff_score NUMERIC;
+ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS opportunity_type TEXT;
 
 -- 5. Enable RLS
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
@@ -62,3 +63,26 @@ CREATE POLICY "Allow public read access" ON campus FOR SELECT USING (true);
 
 -- 7. Reload schema
 NOTIFY pgrst, 'reload schema';
+
+-- 8. Persistent Chat History
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  sender TEXT CHECK (sender IN ('user', 'cloudinha')),
+  content TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- RLS Policies for chat_messages
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own messages" ON chat_messages;
+CREATE POLICY "Users can view their own messages"
+  ON chat_messages FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own messages" ON chat_messages;
+CREATE POLICY "Users can insert their own messages"
+  ON chat_messages FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+

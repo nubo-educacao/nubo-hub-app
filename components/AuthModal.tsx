@@ -1,17 +1,136 @@
 'use client';
 
-import React from 'react';
-import { X, Mail } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Check, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AuthModal() {
-  const { isAuthModalOpen, closeAuthModal, login } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, signInWithWhatsapp, signInWithDemo, verifyOtp, pendingAction } = useAuth();
+  const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // DEMO MODE CONFIGURATION
+  const IS_DEMO_MODE = true;
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (isAuthModalOpen) {
+      setStep('PHONE');
+      setPhone('');
+      setOtp('');
+      setError(null);
+      setAcceptedTerms(false);
+    }
+  }, [isAuthModalOpen]);
 
   if (!isAuthModalOpen) return null;
 
+  const formatPhone = (value: string) => {
+    // Remove non-digits
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limit to 11 digits (DDD + 9 digits)
+    const limited = numbers.slice(0, 11);
+    
+    // Apply mask: (XX) XXXXX-XXXX
+    if (limited.length <= 2) return limited;
+    if (limited.length <= 7) return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
+    return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatPhone(e.target.value));
+    setError(null);
+  };
+
+  const handleSendCode = async () => {
+    if (!acceptedTerms) {
+      setError('Você precisa aceitar os termos para continuar.');
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      setError('Por favor, insira um número de telefone válido.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    // Format to E.164: +55 + DDD + Number
+    const formattedPhone = `+55${cleanPhone}`;
+
+    try {
+      if (IS_DEMO_MODE) {
+        // Demo Mode: Direct Login
+        const { error } = await signInWithDemo(formattedPhone);
+        if (error) throw error;
+        
+        // If we have a pending chat action, keep loading (spinner) until redirect happens
+        if (pendingAction?.type === 'chat') {
+           // Do nothing, keep spinner. The ChatBox component will handle redirect.
+           // The modal will be closed by the destination page (ChatPage)
+        } else {
+           closeAuthModal();
+        }
+      } else {
+        // Production Mode: WhatsApp OTP
+        const { error } = await signInWithWhatsapp(formattedPhone);
+        if (error) throw error;
+        setStep('OTP');
+        setIsLoading(false); // Stop loading for OTP step
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Erro ao enviar código. Tente novamente.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (otp.length !== 6) {
+      setError('O código deve ter 6 dígitos.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    const formattedPhone = `+55${cleanPhone}`;
+
+    try {
+      const { error } = await verifyOtp(formattedPhone, otp);
+      if (error) throw error;
+      
+      // If we have a pending chat action, keep loading (spinner) until redirect happens
+      if (pendingAction?.type === 'chat') {
+          // Do nothing, keep spinner.
+      } else {
+          // closeAuthModal(); // AuthContext usually handles this, but we can enforce logic here if needed
+          // Actually verifyOtp in AuthContext calls closeAuthModal. 
+          // We might need to modify AuthContext or just rely on the fact that if it closes, it closes.
+          // But wait, verifyOtp in AuthContext DOES call setIsAuthModalOpen(false).
+          // So we can't control it easily from here unless we change AuthContext.
+          // However, for Demo Mode (signInWithDemo), AuthContext does NOT close it.
+          // So the change above for Demo Mode is correct.
+          // For verifyOtp, we might need to check AuthContext.
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError('Código inválido ou expirado. Verifique e tente novamente.');
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with blur */}
+      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
         onClick={closeAuthModal}
@@ -29,54 +148,106 @@ export default function AuthModal() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Entre no Nubo</h2>
-          <p className="text-neutral-400">Crie sua conta gratuita para continuar</p>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {step === 'PHONE' ? 'Entre no Nubo' : 'Verifique seu número'}
+          </h2>
+          <p className="text-neutral-400">
+            {step === 'PHONE' 
+              ? 'Use seu WhatsApp para entrar ou criar conta' 
+              : `Enviamos um código para ${phone}`
+            }
+          </p>
         </div>
 
-        {/* Social Buttons */}
-        <div className="space-y-3 mb-6">
-          <button 
-            onClick={login}
-            className="w-full flex items-center justify-center gap-3 bg-neutral-900 hover:bg-neutral-800 text-white border border-neutral-800 rounded-xl py-3 px-4 transition-all duration-200 font-medium"
-          >
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
-            Continuar com Google
-          </button>
-          
-          <button 
-            onClick={login}
-            className="w-full flex items-center justify-center gap-3 bg-neutral-900 hover:bg-neutral-800 text-white border border-neutral-800 rounded-xl py-3 px-4 transition-all duration-200 font-medium"
-          >
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-            </svg>
-            Continuar com GitHub
-          </button>
+        {/* Content */}
+        <div className="space-y-6">
+          {step === 'PHONE' ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-neutral-300">WhatsApp</label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    placeholder="(11) 99999-9999"
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="flex items-center h-5">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-neutral-900"
+                  />
+                </div>
+                <label htmlFor="terms" className="text-xs text-neutral-400 leading-tight">
+                  Li e concordo com os <a href="#" className="text-blue-400 hover:underline">Termos de Serviço</a> e <a href="#" className="text-blue-400 hover:underline">Política de Privacidade</a>.
+                </label>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              <button 
+                onClick={handleSendCode}
+                disabled={isLoading || !phone || !acceptedTerms}
+                className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold rounded-xl py-3 px-4 transition-all duration-200"
+              >
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-5 h-5" />}
+                Receber código no WhatsApp
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-neutral-300">Código de Verificação</label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtp(val);
+                    setError(null);
+                  }}
+                  placeholder="000000"
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white placeholder-neutral-500 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  autoFocus
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              <button 
+                onClick={handleVerifyCode}
+                disabled={isLoading || otp.length !== 6}
+                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold rounded-xl py-3 px-4 transition-all duration-200"
+              >
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
+                Confirmar
+              </button>
+
+              <button 
+                onClick={() => setStep('PHONE')}
+                className="w-full text-neutral-500 hover:text-white text-sm transition-colors"
+              >
+                Voltar e corrigir número
+              </button>
+            </>
+          )}
         </div>
-
-        {/* Divider */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-neutral-800"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-[#1A1A1A] text-neutral-500">OU</span>
-          </div>
-        </div>
-
-        {/* Email Button */}
-        <button 
-          onClick={login}
-          className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-xl py-3 px-4 transition-all duration-200 font-bold"
-        >
-          <Mail size={20} />
-          Continuar com Email
-        </button>
-
-        {/* Footer */}
-        <p className="mt-6 text-center text-xs text-neutral-500">
-          Ao continuar, você concorda com nossos <a href="#" className="underline hover:text-neutral-300">Termos de Serviço</a> e <a href="#" className="underline hover:text-neutral-300">Política de Privacidade</a>.
-        </p>
       </div>
     </div>
   );

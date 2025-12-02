@@ -12,6 +12,7 @@ export const OpportunitySchema = z.object({
   city: z.string().min(2, { message: "Cidade inválida" }),
   state: z.string().length(2, { message: "Estado deve ter 2 letras (UF)" }),
   cutoff_score: z.number().min(0).max(1000).nullable().optional(),
+  opportunity_type: z.string().nullable().optional(),
 });
 
 export type OpportunityInput = z.infer<typeof OpportunitySchema>;
