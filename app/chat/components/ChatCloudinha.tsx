@@ -23,20 +23,23 @@ export interface Message {
   timestamp: Date;
 }
 
-export default function ChatCloudinha() {
-  const { user, isAuthenticated, pendingMessage, setPendingMessage } = useAuth();
+import { supabase } from '@/lib/supabaseClient';
+
+export default function ChatCloudinha({ 
+  initialMessage, 
+  onInitialMessageSent 
+}: { 
+  initialMessage?: string;
+  onInitialMessageSent?: () => void;
+}) {
+  const { user, isAuthenticated, session } = useAuth();
   
-  // Initialize messages based on whether there's a pending message
-  // If there is a pending message, we start empty and let the effect handle it
-  // If not, we show the initial greeting
-  const [messages, setMessages] = React.useState<Message[]>(() => {
-    if (typeof window !== 'undefined' && pendingMessage) return [];
-    return INITIAL_MESSAGES;
-  });
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
   
   const [isTyping, setIsTyping] = React.useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const processedPendingMessage = useRef(false);
+  const hasSentInitialMessage = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,19 +47,62 @@ export default function ChatCloudinha() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isTyping, isLoadingHistory]);
 
-  // Handle pending message after login
+  // Fetch History & Handle Initial Message
   useEffect(() => {
-    if (isAuthenticated && pendingMessage && !processedPendingMessage.current) {
-      processedPendingMessage.current = true;
-      handleSendMessage(pendingMessage);
-      setPendingMessage(null);
+    if (user) {
+      const fetchHistory = async () => {
+        setIsLoadingHistory(true);
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        let history: Message[] = [];
+
+        if (data && data.length > 0) {
+          history = data.map((msg: any) => ({
+            id: msg.id,
+            sender: msg.sender,
+            text: msg.content,
+            timestamp: new Date(msg.created_at),
+          }));
+          setMessages(history);
+        } else {
+          // Only show greeting if no history AND no initial message pending
+          if (!initialMessage) {
+            setMessages(INITIAL_MESSAGES);
+          } else {
+            setMessages([]); // Start empty if we are about to send a message
+          }
+        }
+        setIsLoadingHistory(false);
+
+        // Handle Initial Message (Auto-send)
+        if (initialMessage && !hasSentInitialMessage.current) {
+          hasSentInitialMessage.current = true;
+          // Small delay to ensure state is ready
+          setTimeout(() => {
+            handleSendMessage(initialMessage);
+            if (onInitialMessageSent) {
+              onInitialMessageSent();
+            }
+          }, 500);
+        }
+      };
+      fetchHistory();
+    } else {
+      // Not logged in
+      setMessages(INITIAL_MESSAGES);
+      setIsLoadingHistory(false);
     }
-  }, [isAuthenticated, pendingMessage, setPendingMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleSendMessage = async (text: string) => {
-    // Add user message
+    // Add user message locally (optimistic update)
     const newMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -67,11 +113,17 @@ export default function ChatCloudinha() {
     setIsTyping(true);
 
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           message: text,
           history: messages, // Sending history for context if needed
@@ -144,7 +196,7 @@ export default function ChatCloudinha() {
 
       {/* Input Area */}
       <div className="p-4 border-t border-white/10 bg-black/20">
-        <ChatInput onSendMessage={handleSendMessage} />
+        <ChatInput onSendMessage={handleSendMessage} isLoading={isTyping} />
       </div>
     </div>
   );

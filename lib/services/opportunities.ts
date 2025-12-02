@@ -67,6 +67,7 @@ export async function fetchOpportunities(
         )
       `)
       .range(from, to)
+      .order('opportunity_type', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (error) {

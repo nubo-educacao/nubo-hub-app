@@ -15,13 +15,36 @@ import AuthModal from '@/components/AuthModal'; // Assuming there is an existing
 // For now, I will scaffold the page.
 
 export default function ChatPage() {
-  const { isAuthModalOpen, closeAuthModal, login } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction } = useAuth();
+  const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Ensure modal is closed when arriving at chat page
+    closeAuthModal();
+
+    // Check for pending chat action
+    if (pendingAction?.type === 'chat') {
+      setInitialMessage(pendingAction.payload.message);
+      clearPendingAction();
+    }
+    setIsReady(true);
+  }, [closeAuthModal, pendingAction, clearPendingAction]);
+
+  const handleInitialMessageSent = () => {
+    setInitialMessage(undefined);
+  };
+
+  if (!isReady) return null; // Or a loading spinner
 
   return (
     <div className="flex h-screen w-full bg-gradient-to-br from-gray-900 via-purple-950 to-black text-white overflow-hidden">
       {/* Left Side - Chat */}
       <div className="w-full md:w-[400px] flex-shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-xl">
-        <ChatCloudinha />
+        <ChatCloudinha 
+          initialMessage={initialMessage} 
+          onInitialMessageSent={handleInitialMessageSent}
+        />
       </div>
 
       {/* Right Side - Content Panel */}

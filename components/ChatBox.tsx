@@ -3,27 +3,30 @@
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function ChatBox() {
-  const { isAuthenticated, openAuthModal, setPendingMessage, pendingMessage } = useAuth();
+  const { isAuthenticated, openAuthModal, setPendingAction, pendingAction } = useAuth();
   const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   // Redirect to chat if logged in and has pending message (from this component)
   useEffect(() => {
-    if (isAuthenticated && pendingMessage && inputValue && pendingMessage === inputValue) {
+    if (isAuthenticated && pendingAction?.type === 'chat' && inputValue && pendingAction.payload.message === inputValue) {
        router.push('/chat');
     }
-  }, [isAuthenticated, pendingMessage, router, inputValue]);
+  }, [isAuthenticated, pendingAction, router, inputValue]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
 
-    setPendingMessage(inputValue);
-
     if (isAuthenticated) {
+      setIsLoading(true);
+      setPendingAction({ type: 'chat', payload: { message: inputValue } });
       router.push('/chat');
     } else {
+      setPendingAction({ type: 'chat', payload: { message: inputValue } });
       openAuthModal();
     }
   };
@@ -75,21 +78,26 @@ export default function ChatBox() {
             onKeyDown={handleKeyDown}
             placeholder={isAuthenticated ? "Envie uma mensagem para falar com a Cloudinha" : "Faça login para conversar..."}
             className="flex-1 bg-transparent text-white placeholder-neutral-500 focus:outline-none py-3 px-2"
+            disabled={isLoading}
           />
 
           {/* Send Button */}
           <button 
             onClick={handleSend}
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isLoading}
             className={`p-2 rounded-lg transition-all duration-200 ${
               inputValue.trim()
                 ? 'bg-indigo-600 text-white hover:bg-indigo-500' 
                 : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-            </svg>
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+              </svg>
+            )}
           </button>
         </div>
       </div>

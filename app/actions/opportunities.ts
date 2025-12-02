@@ -25,6 +25,7 @@ export async function createOpportunity(prevState: ActionState, formData: FormDa
     city: formData.get('city'),
     state: formData.get('state'),
     cutoff_score: formData.get('cutoff_score') ? Number(formData.get('cutoff_score')) : null,
+    opportunity_type: formData.get('opportunity_type'),
   };
 
   // 2. Validate with Zod

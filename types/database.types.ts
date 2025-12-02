@@ -36,6 +36,7 @@ export interface OpportunityRow {
   shift: string;
   scholarship_type: string;
   cutoff_score: number | null;
+  opportunity_type: string | null;
 }
 
 export interface OpportunityWithRelations extends OpportunityRow {
