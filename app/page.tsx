@@ -4,7 +4,7 @@ import OpportunityCatalog from "@/components/OpportunityCatalog";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-screen" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #38B1E4 50%, #024F86 100%)' }}>
       <Header />
       <HeroCloudinha />
       <OpportunityCatalog />

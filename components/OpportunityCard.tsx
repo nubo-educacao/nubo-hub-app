@@ -47,51 +47,54 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   };
 
   return (
-    <div className="group bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-indigo-500/50 hover:bg-neutral-800/50 transition-all duration-300 flex flex-col h-full relative">
+    <div className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full relative overflow-hidden">
+      {/* Cloud Decoration (Simulated) */}
+      <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-blue-50/50 to-transparent -z-0"></div>
+
       <button 
         onClick={handleFavorite}
-        className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isFavorite ? 'text-red-500 bg-red-500/10' : 'text-neutral-500 hover:text-red-400 hover:bg-neutral-800'}`}
+        className={`absolute top-4 right-4 p-2 rounded-full transition-colors z-10 ${isFavorite ? 'text-red-500 bg-red-50' : 'text-neutral-300 hover:text-red-400 hover:bg-red-50'}`}
       >
-        <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+        <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
       </button>
 
-      <div className="flex justify-between items-start mb-3 pr-8">
+      <div className="flex justify-between items-start mb-4 pr-8 relative z-10">
         <div className="flex gap-2 flex-wrap">
-          <span className={`text-xs font-semibold px-2 py-1 rounded-md ${
-            opportunity.type === 'Pública' ? 'bg-green-900/30 text-green-400' :
-            opportunity.type === 'Privada' ? 'bg-blue-900/30 text-blue-400' :
-            'bg-purple-900/30 text-purple-400'
-          }`}>
+          <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-[#A855F7] text-white uppercase tracking-wide">
+            {opportunity.type === 'Pública' ? 'Sisu' : 'Prouni'}
+          </span>
+          <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-[#F97316] text-white uppercase tracking-wide">
             {opportunity.scholarship_type}
           </span>
-          {opportunity.cutoff_score && (
-            <span className="text-xs font-semibold px-2 py-1 rounded-md bg-amber-900/30 text-amber-400">
-              Nota: {opportunity.cutoff_score.toFixed(2)}
-            </span>
-          )}
         </div>
       </div>
       
-      <div className="mb-1">
-        <span className="text-xs text-neutral-500 flex items-center gap-1 mb-2">
-          <MapPin size={12} />
-          {opportunity.location}
-        </span>
-        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors line-clamp-2">
+      <div className="mb-2 relative z-10">
+        <h3 className="text-lg font-bold text-neutral-800 mb-1 group-hover:text-[#38B1E4] transition-colors line-clamp-2">
           {opportunity.title}
         </h3>
-        <p className="text-neutral-400 text-sm mb-4 line-clamp-1">
+        <p className="text-neutral-500 text-sm mb-2 line-clamp-1 font-medium">
           {opportunity.institution}
         </p>
+        <span className="text-xs text-neutral-400 flex items-center gap-1 mb-3">
+          <MapPin size={14} />
+          {opportunity.location}
+        </span>
+        
+        {opportunity.cutoff_score && (
+          <div className="flex items-center gap-1 text-xs font-semibold text-amber-500 bg-amber-50 px-2 py-1 rounded-md w-fit">
+            <span>⚡ Nota de corte: {opportunity.cutoff_score.toFixed(2)}</span>
+          </div>
+        )}
       </div>
 
-      <div className="mt-auto pt-4 border-t border-neutral-800 flex items-center justify-between">
-        <span className="text-xs text-neutral-500 bg-neutral-800 px-2 py-1 rounded">
+      <div className="mt-auto pt-4 flex items-center justify-between relative z-10">
+        <span className="text-xs font-bold text-white bg-neutral-500 px-3 py-1 rounded-full">
           {opportunity.modality}
         </span>
         <button 
           onClick={handleViewDetails}
-          className="text-sm font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+          className="text-sm font-bold text-[#38B1E4] hover:text-[#2a9ac9] flex items-center gap-1 transition-colors"
         >
           Ver detalhes
           <ArrowRight size={16} />
