@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,12 +11,16 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 flex items-center justify-center text-[#38B1E4] font-bold text-2xl">
-            ☁️
-          </div>
-          <span className="text-neutral-900 font-bold text-xl tracking-tight">Nubo educação</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <Image 
+            src="/assets/logo.svg" 
+            alt="Nubo Educação" 
+            width={150} 
+            height={40} 
+            className="h-10 w-auto"
+            priority
+          />
+        </Link>
 
         {/* Navigation - Desktop */}
         <nav className="hidden md:flex items-center gap-12">

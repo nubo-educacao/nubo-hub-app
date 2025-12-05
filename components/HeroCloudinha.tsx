@@ -4,11 +4,7 @@ export default function HeroCloudinha() {
   return (
     <section className="relative w-full min-h-[80vh] flex flex-col items-center justify-center px-4 pt-20 pb-10 overflow-hidden">
       {/* Background Gradient */}
-      <div className="absolute inset-0 -z-10 bg-neutral-950">
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/50 via-neutral-950/80 to-neutral-950"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px] opacity-50"></div>
-        <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-purple-600/10 rounded-full blur-[100px] opacity-30"></div>
-      </div>
+      {/* Background Gradient Removed for Light Theme */}
 
       <div className="container mx-auto flex flex-col items-center text-center z-10 space-y-8">
         {/* Text Content */}
