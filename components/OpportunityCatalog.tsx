@@ -58,7 +58,7 @@ export default function OpportunityCatalog() {
     <section className="relative pb-16 pt-8">
       {/* Floating Container */}
       <div className="container mx-auto px-4">
-        <div className="bg-[#A6D4EA]/40 backdrop-blur-sm rounded-t-[40px] p-8 pt-16 relative min-h-[800px]">
+        <div className="bg-[#FFFFFF]/40 backdrop-blur-sm rounded-t-[40px] p-8 pt-16 relative min-h-[800px]">
           
           {/* Title Pill */}
           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#024F86] text-white px-12 py-4 rounded-xl shadow-lg z-10">
