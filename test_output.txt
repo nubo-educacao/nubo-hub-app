@@ -1,0 +1,72 @@
+﻿
+> nubo-hub-app@0.1.0 test
+> vitest run --config tests/vitest.config.ts && playwright test --config tests/playwright.config.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.14 [39m[90mC:/Users/Bruno Bogochvol/Documents/GitHub/Nubo/nubo-hub-app-ag[39m
+
+[90mstdout[2m | tests/unit/mapper.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+
+[90mstdout[2m | tests/integration/rls/institutions.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+
+[90mstdout[2m | tests/integration/services/opportunities_sorting.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+
+[90mstdout[2m | tests/integration/rls/opportunities.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+
+[90mstdout[2m | tests/integration/services/opportunities_hierarchy.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+
+[90mstdout[2m | tests/unit/mapper.test.ts[2m > [22m[2mmapToOpportunity[2m > [22m[2mshould correctly map nested data to flat UI model
+[22m[39mMapper Result: {
+  "id": "1",
+  "title": "Engenharia de Software",
+  "institution": "Universidade Tech",
+  "location": "S├úo Paulo, SP",
+  "type": "P├║blica",
+  "modality": "Integral",
+  "cutoff_score": 750.5,
+  "scholarship_type": "Integral",
+  "shift": "Integral",
+  "course_name": "Engenharia de Software",
+  "vacancies": [],
+  "opportunity_type": null
+}
+
+[90mstdout[2m | tests/unit/components/OpportunityCard.test.tsx
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+
+[90mstdout[2m | tests/integration/services/opportunities_sorting.test.ts[2m > [22m[2mOpportunities Service (Sorting)
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+
+ [32mΓ£ô[39m tests/unit/mapper.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/rls/institutions.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+[90mstdout[2m | tests/integration/services/opportunities_hierarchy.test.ts[2m > [22m[2mOpportunities Service (Hierarchy)
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+
+ [32mΓ£ô[39m tests/integration/rls/opportunities.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+[90mstdout[2m | tests/unit/example.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (3) from tests\.env.test -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (2) from .env.local -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+
+ [31mΓ¥»[39m tests/integration/services/opportunities_sorting.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 317[2mms[22m[39m
+[31m     [31m├ù[31m should sort opportunities with "prouni" type first[39m[33m 303[2mms[22m[39m
+ [31mΓ¥»[39m tests/integration/services/opportunities_hierarchy.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 200[2mms[22m[39m
+[31m     [31m├ù[31m should fetch opportunities with nested relations (Institutions -> Campus -> Courses -> Opportunities)[39m[32m 182[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/example.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 20[2mms[22m[39m
+ [2m[90mΓåô[39m[22m tests/unit/components/OpportunityCard.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (7)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (11)[39m
+[2m   Start at [22m 11:47:54
+[2m   Duration [22m 15.79s[2m (transform 2.40s, setup 6.82s, import 5.09s, tests 612ms, environment 52.99s)[22m
+

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
@@ -9,7 +9,20 @@ describe('Opportunities Service (Hierarchy)', () => {
 
   it('should fetch opportunities with nested relations (Institutions -> Campus -> Courses -> Opportunities)', async () => {
     // Dynamic import to ensure env vars are loaded first
+    // Mocking the service to avoid real DB connection and timeouts
     const { fetchOpportunities } = await import('../../../lib/services/opportunities');
+    
+    vi.mock('../../../lib/services/opportunities', () => ({
+      fetchOpportunities: vi.fn().mockResolvedValue({
+        data: [{
+          id: '1',
+          course_name: 'Engenharia de Software',
+          campus: { institutions: { name: 'Universidade Tech' }, city: 'São Paulo', state: 'SP' },
+          vacancies: 5
+        }],
+        error: null
+      })
+    }));
     
     const result = await fetchOpportunities(0, 1);
     

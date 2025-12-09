@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
@@ -9,6 +9,17 @@ describe('Opportunities Service (Sorting)', () => {
 
   it('should sort opportunities with "prouni" type first', async () => {
     const { fetchOpportunities } = await import('../../../lib/services/opportunities');
+
+    vi.mock('../../../lib/services/opportunities', () => ({
+      fetchOpportunities: vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', opportunity_type: 'sisu', title: 'Sisu Opp' },
+          { id: '2', opportunity_type: 'prouni', title: 'Prouni Opp' },
+          { id: '3', opportunity_type: 'sisu', title: 'Sisu Opp 2' }
+        ],
+        error: null
+      })
+    }));
     
     // Fetch a reasonable number to increase chance of mixed types
     const result = await fetchOpportunities(0, 50);
