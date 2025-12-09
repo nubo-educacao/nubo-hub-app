@@ -2,6 +2,25 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
+// Mocking the service to avoid real DB connection and timeouts
+vi.mock('@/lib/services/opportunities', () => ({
+  fetchOpportunities: vi.fn().mockResolvedValue({
+    data: [{
+      id: '1',
+      title: 'Engenharia de Software',
+      institution: 'Universidade Tech',
+      location: 'São Paulo, SP', 
+      type: 'Pública',
+      modality: 'Integral',
+      scholarship_type: 'Integral',
+      shift: 'Integral',
+      course_name: 'Engenharia de Software',
+      vacancies: []
+    }],
+    error: null
+  })
+}));
+
 describe('Opportunities Service (Hierarchy)', () => {
   beforeAll(() => {
     dotenv.config({ path: path.resolve(__dirname, '../../../.env.local') });
@@ -9,20 +28,7 @@ describe('Opportunities Service (Hierarchy)', () => {
 
   it('should fetch opportunities with nested relations (Institutions -> Campus -> Courses -> Opportunities)', async () => {
     // Dynamic import to ensure env vars are loaded first
-    // Mocking the service to avoid real DB connection and timeouts
-    const { fetchOpportunities } = await import('../../../lib/services/opportunities');
-    
-    vi.mock('../../../lib/services/opportunities', () => ({
-      fetchOpportunities: vi.fn().mockResolvedValue({
-        data: [{
-          id: '1',
-          course_name: 'Engenharia de Software',
-          campus: { institutions: { name: 'Universidade Tech' }, city: 'São Paulo', state: 'SP' },
-          vacancies: 5
-        }],
-        error: null
-      })
-    }));
+    const { fetchOpportunities } = await import('@/lib/services/opportunities');
     
     const result = await fetchOpportunities(0, 1);
     

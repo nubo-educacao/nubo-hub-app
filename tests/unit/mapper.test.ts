@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { mapToOpportunity } from '../../types/opportunity';
-import { OpportunityWithRelations } from '../../types/database.types';
+import { mapToOpportunity } from '@/types/opportunity';
+import { OpportunityWithRelations } from '@/types/database.types';
 
 describe('mapToOpportunity', () => {
   it('should correctly map nested data to flat UI model', () => {

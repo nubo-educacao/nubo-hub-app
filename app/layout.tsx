@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
+import { Inter, Montserrat, Nunito } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({ 
   subsets: ["latin"],
   variable: "--font-montserrat",
+});
+const nunito = Nunito({ 
+  subsets: ["latin"],
+  variable: "--font-nunito",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.className} ${montserrat.variable} bg-neutral-950 text-white antialiased`}>
+      <body className={`${inter.className} ${montserrat.variable} ${nunito.variable} bg-neutral-950 text-white antialiased`}>
         <AuthProvider>
           {children}
           <AuthModal />

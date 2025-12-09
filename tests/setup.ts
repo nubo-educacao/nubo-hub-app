@@ -30,10 +30,54 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     from: () => ({
       select: () => ({
-        limit: () => Promise.resolve({ data: [], error: null }), // Success for select
+        limit: () => Promise.resolve({ data: [], error: null }),
+        range: () => ({
+            order: () => Promise.resolve({ data: [], error: null }),
+        }),
       }),
-      insert: () => Promise.resolve({ error: { code: '42501', message: 'RLS error' } }), // Failure for insert (mocking RLS denial)
+      insert: () => Promise.resolve({ error: { code: '42501', message: 'RLS error' } }),
     }),
+    auth: {
+        signInWithOtp: () => Promise.resolve({ error: null }),
+        verifyOtp: () => Promise.resolve({ data: { session: {} }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        getSession: () => Promise.resolve({ data: { session: null } }),
+        signOut: () => Promise.resolve(),
+        signInWithPassword: () => Promise.resolve({ data: {}, error: null }),
+        signUp: () => Promise.resolve({ data: { session: {} }, error: null }),
+    }
+  }),
+}));
+
+// Mock the actual client file to prevent top-level errors even if imports pass through
+// We use a relative path that matches how other files import it (or alias)
+// Since we used absolute paths in some generic imports, vitest might map them.
+// Best to mock the module path resolved by alias.
+vi.mock('@/lib/supabaseClient', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+         range: () => ({
+            order: () => Promise.resolve({ data: [], error: null }),
+         }),
+         limit: () => Promise.resolve({ data: [], error: null }),
+      }),
+    }),
+    auth: {
+        signInWithOtp: () => Promise.resolve({ error: null }),
+    }
+  },
+}));
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  useSearchParams: () => ({
+    get: () => null,
   }),
 }));
 

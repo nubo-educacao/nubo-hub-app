@@ -37,12 +37,6 @@ export default function OpportunityCatalog() {
       name: "Instituto Ismart",
       description: "Bolsas de estudo integrais e desenvolvimento para talentos de baixa renda acessarem educação de excelência.",
       isFavorite: false
-    },
-    {
-      id: "4",
-      name: "Proa",
-      description: "Oportunidades de desenvolvimento pessoal e profissional para jovens de escolas públicas.",
-      isFavorite: false
     }
   ];
 
@@ -95,16 +89,22 @@ export default function OpportunityCatalog() {
   const renderContent = () => {
     if (selectedFilter === 'Parceiros') {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockPartners.map((partner) => (
-            <PartnerCard 
-              key={partner.id} 
-              id={partner.id}
-              name={partner.name}
-              description={partner.description}
-              isFavorite={partner.isFavorite}
-            />
-          ))}
+        <div className="flex flex-col items-center gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            {mockPartners.map((partner) => (
+              <PartnerCard 
+                key={partner.id} 
+                id={partner.id}
+                name={partner.name}
+                description={partner.description}
+                isFavorite={partner.isFavorite}
+              />
+            ))}
+          </div>
+
+          <button className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md text-lg">
+            Seja parceiro Nubo
+          </button>
         </div>
       );
     }
@@ -123,12 +123,14 @@ export default function OpportunityCatalog() {
 
       if (error) {
         return (
-          <div className="bg-red-100 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600 font-semibold mb-2">Erro ao carregar oportunidades</p>
-            <p className="text-red-500 text-sm mb-4">{error}</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <h3 className="text-[#024F86] text-xl font-bold mb-2">Erro ao carregar oportunidades</h3>
+            <p className="text-[#636E7C] mb-6 max-w-md">
+              Ocorreu um problema ao buscar as oportunidades. Por favor, verifique sua conexão e tente novamente.
+            </p>
             <button
               onClick={loadInitialOpportunities}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md"
             >
               Tentar novamente
             </button>
@@ -187,7 +189,7 @@ export default function OpportunityCatalog() {
     <section className="relative pb-16 pt-8">
       {/* Floating Container */}
       <div className="container mx-auto px-4">
-        <div className="bg-[#FFFFFF]/40 backdrop-blur-sm rounded-t-[40px] p-8 pt-16 relative min-h-[800px]">
+        <div className="bg-[#FFFFFF]/40 backdrop-blur-sm rounded-[40px] p-8 pt-16 relative min-h-[800px]">
           
           {/* Title Pill */}
           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#024F86] text-white px-12 py-4 rounded-xl shadow-lg z-10">
