@@ -11,6 +11,12 @@ vi.mock('../../../context/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
 }));
 
+// Also mock alias path to be safe
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: vi.fn(),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+}));
+
 // Mock Image component since it is used in AuthModal
 vi.mock('next/image', () => ({
   default: (props: any) => <img {...props} />
