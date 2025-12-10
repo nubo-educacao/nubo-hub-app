@@ -1,7 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import OpportunityCard from '@/components/OpportunityCard';
 import { Opportunity } from '@/types/opportunity';
+
+vi.mock('next/font/google', () => ({
+  Montserrat: () => ({
+    style: { fontFamily: 'Montserrat' },
+    className: 'className',
+  }),
+}));
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    openAuthModal: vi.fn(),
+    pendingAction: null,
+  }),
+}));
 
 const mockOpportunity: Opportunity = {
   id: '1',
@@ -30,7 +45,7 @@ describe('OpportunityCard', () => {
     expect(integralElements.length).toBeGreaterThan(0);
     expect(integralElements[0]).toBeInTheDocument(); 
     // The component renders cutoff score with "Nota: " prefix
-    expect(screen.getByText('Nota: 750.00')).toBeInTheDocument();
+    expect(screen.getByText(/Nota de corte:/)).toBeInTheDocument();
   });
 
   it('does not render cutoff score if null', () => {

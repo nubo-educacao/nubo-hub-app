@@ -37,76 +37,62 @@ export default function ChatBox() {
     }
   };
 
+
+  
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      {/* Simulated Chat Messages (only visible if logged in, or static demo) */}
-      <div className="mb-6 space-y-4">
-        <div className="flex justify-start">
-          <div className="bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-2xl rounded-tl-none max-w-[80%]">
-            <p className="text-sm">Olá! Eu sou a Cloudinha. Como posso te ajudar a encontrar sua próxima oportunidade?</p>
-          </div>
-        </div>
-        {isAuthenticated && (
-          <div className="flex justify-end">
-            <div className="bg-indigo-600 text-white px-4 py-2 rounded-2xl rounded-tr-none max-w-[80%]">
-              <p className="text-sm">Estou procurando bolsas para Engenharia em São Paulo.</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Input Area */}
-      <div className="relative group">
-        <div className={`absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl opacity-30 group-hover:opacity-50 transition duration-500 ${!isAuthenticated ? 'opacity-10 group-hover:opacity-20' : ''}`}></div>
-        <div className="relative bg-neutral-900 rounded-xl p-2 flex items-center gap-2 border border-white/10 shadow-2xl">
+    <div className="w-full max-w-[785px] mx-auto px-4">
+      <div className="relative bg-white flex items-center w-full min-h-[80px] px-4 rounded-[16px] shadow-[4px_4px_8px_0px_rgba(0,0,0,0.25)] gap-4">
           
-          {/* Attachment Icon */}
-          <button 
+        {/* Left Action: Plus */}
+        <button 
             disabled={!isAuthenticated}
-            className="p-2 text-neutral-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50 transition-colors disabled:opacity-50 text-[#38B1E4]"
+            aria-label="Adicionar anexo"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 12h8"/>
+                <path d="M12 8v8"/>
             </svg>
-          </button>
+        </button>
 
-          {/* Text Input */}
-          <input
+        {/* Input Field */}
+        <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAuthenticated ? "Envie uma mensagem para falar com a Cloudinha" : "Faça login para conversar..."}
-            className="flex-1 bg-transparent text-white placeholder-neutral-500 focus:outline-none py-3 px-2"
+            placeholder={isAuthenticated ? "Peça a Cloudinha para criar uma lista..." : "Faça login para conversar..."}
+            className="flex-1 bg-transparent text-[#3A424E] placeholder-[#3A424E]/50 focus:outline-none text-base font-medium h-full py-4 text-[16px]"
             disabled={isLoading}
-          />
+        />
 
-          {/* Send Button */}
-          <button 
+        {/* Right Action: Send */}
+        <button 
             onClick={handleSend}
             disabled={!inputValue.trim() || isLoading}
-            className={`p-2 rounded-lg transition-all duration-200 ${
-              inputValue.trim()
-                ? 'bg-indigo-600 text-white hover:bg-indigo-500' 
-                : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'
+            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
+                inputValue.trim() 
+                ? 'bg-[#38B1E4] text-white hover:bg-[#2a9acb] shadow-sm' 
+                : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
             }`}
-          >
+            aria-label="Enviar mensagem"
+        >
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-              </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <path d="m5 12 7-7 7 7"/>
+                    <path d="M12 19V5"/>
+                </svg>
             )}
-          </button>
-        </div>
+        </button>
       </div>
-      
-      {/* Login Prompt (if not logged in) */}
+
       {!isAuthenticated && (
-        <div className="mt-3 text-center">
-          <p className="text-xs text-neutral-500">
-            Você pode explorar o catálogo sem login, mas precisa <span onClick={openAuthModal} className="text-indigo-400 cursor-pointer hover:underline">entrar</span> para usar o chat.
+        <div className="mt-4 text-center">
+          <p className="text-sm text-neutral-500">
+            Você pode explorar o catálogo sem login, mas precisa <span onClick={openAuthModal} className="text-indigo-600 font-medium cursor-pointer hover:underline">entrar</span> para usar o chat.
           </p>
         </div>
       )}

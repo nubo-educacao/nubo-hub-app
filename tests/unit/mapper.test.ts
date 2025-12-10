@@ -1,39 +1,40 @@
 import { describe, it, expect } from 'vitest';
 import { mapToOpportunity } from '@/types/opportunity';
-import { OpportunityWithInstitution } from '@/types/database.types';
+import { OpportunityWithRelations } from '@/types/database.types';
 
 describe('mapToOpportunity', () => {
   it('should correctly map nested data to flat UI model', () => {
-    const rawData: OpportunityWithInstitution = {
+    const rawData: OpportunityWithRelations = {
       id: '1',
-      institution_id: 'inst-1',
-      campus_id: 'camp-1',
       course_id: 'course-1',
       semester: '2024.1',
       shift: 'Integral',
       scholarship_type: 'Integral',
-      city: 'São Paulo',
-      state: 'SP',
       cutoff_score: 750.5,
-      institutions: {
-        id: 'inst-1',
-        name: 'Universidade Tech',
-        external_code: 'TECH001'
-      },
       courses: {
         id: 'course-1',
+        campus_id: 'camp-1',
         course_name: 'Engenharia de Software',
         course_code: 'ENG001',
-        vacancies: []
+        vacancies: [],
+        campus: {
+          id: 'camp-1',
+          institution_id: 'inst-1',
+          name: 'Campus Central',
+          city: 'São Paulo',
+          state: 'SP',
+          external_code: 'CAMP001',
+          institutions: {
+            id: 'inst-1',
+            name: 'Universidade Tech',
+            external_code: 'TECH001'
+          }
+        }
       },
-      campus: {
-        id: 'camp-1',
-        name: 'Campus Central',
-        code: 'CAMP001'
-      }
     };
 
     const result = mapToOpportunity(rawData);
+    console.log('Mapper Result:', JSON.stringify(result, null, 2));
 
     expect(result.title).toBe('Engenharia de Software');
     expect(result.institution).toBe('Universidade Tech');

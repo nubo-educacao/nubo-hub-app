@@ -9,15 +9,25 @@ test.describe('Feature: Login', () => {
     const loginButton = page.getByRole('button', { name: 'Login' });
     await loginButton.click();
 
-    // And eu clico em "Continuar com Email" (Simulando login)
-    const emailLoginButton = page.getByRole('button', { name: 'Continuar com Email' });
-    await expect(emailLoginButton).toBeVisible();
-    await emailLoginButton.click();
+    // And eu preencho o telefone (Simulando login via WhatsApp/Demo)
+    const phoneInput = page.getByPlaceholder('(11) 99999-9999');
+    await expect(phoneInput).toBeVisible();
+    await phoneInput.fill('11999999999');
+
+    // And aceito os termos
+    const termsCheckbox = page.getByRole('checkbox');
+    await termsCheckbox.check();
+
+    // And clico em "Receber código no WhatsApp"
+    const submitButton = page.getByRole('button', { name: 'Receber código no WhatsApp' });
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
 
     // Then eu devo ver "Bem-vindo!" no cabeçalho
-    await expect(page.getByText('Bem-vindo!')).toBeVisible();
+    // Nota: Em modo DEMO, o login é direto. Em prod, haveria passo de OTP.
+    await expect(page.getByText('Bem-vindo!')).toBeVisible({ timeout: 10000 });
 
     // And o modal de login deve fechar
-    await expect(emailLoginButton).not.toBeVisible();
+    await expect(submitButton).not.toBeVisible();
   });
 });
