@@ -1,9 +1,9 @@
 import { supabase } from '../supabaseClient';
-import { OpportunityWithRelations } from '../../types/database.types';
-import { Opportunity, mapToOpportunity } from '../../types/opportunity';
+import { CourseWithRelations } from '../../types/database.types';
+import { CourseDisplayData, mapToCourseDisplayData } from '../../types/opportunity';
 
-export interface FetchOpportunitiesResult {
-  data: Opportunity[];
+export interface FetchCoursesResult {
+  data: CourseDisplayData[];
   total: number;
   page: number;
   limit: number;
@@ -12,69 +12,34 @@ export interface FetchOpportunitiesResult {
 }
 
 /**
- * Busca oportunidades do Supabase com paginação
+ * Busca cursos do Supabase com suas oportunidades, com paginação
  * @param page Página atual (0-indexed)
  * @param limit Número de itens por página
- * @returns Objeto com dados, metadados de paginação e possível erro
+ * @returns Objeto com dados mapeados, metadados de paginação e possível erro
  */
-export async function fetchOpportunities(
+export async function fetchCoursesWithOpportunities(
   page: number = 0,
-  limit: number = 20
-): Promise<FetchOpportunitiesResult> {
+  limit: number = 15
+): Promise<FetchCoursesResult> {
   try {
     const from = page * limit;
     const to = from + limit - 1;
 
-    // Buscar contagem total
-    const { count, error: countError } = await supabase
-      .from('opportunities')
-      .select('*', { count: 'exact', head: true });
+    console.log(`[FetchCourses] Starting fetch (RPC) for page ${page} limit ${limit}`);
+    console.time('fetchCourses');
 
-    if (countError) {
-      console.error('Erro ao buscar contagem:', countError);
+    // Call the RPC function
+    const { data, error } = await supabase.rpc('get_courses_with_opportunities', {
+      page_number: page, 
+      page_size: limit
+    });
+
+    if (error) {
+      console.timeEnd('fetchCourses');
+      console.error('[FetchCourses] Supabase RPC Error:', error);
       return {
         data: [],
         total: 0,
-        page,
-        limit,
-        hasMore: false,
-        error: countError.message,
-      };
-    }
-
-    // Buscar dados com join
-    const { data, error } = await supabase
-      .from('opportunities')
-      .select(`
-        *,
-        courses (
-          id,
-          course_name,
-          course_code,
-          vacancies,
-          campus (
-            id,
-            name,
-            external_code,
-            city,
-            state,
-            institutions (
-              id,
-              name,
-              external_code
-            )
-          )
-        )
-      `)
-      .range(from, to)
-      .order('opportunity_type', { ascending: true })
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Erro ao buscar oportunidades:', error);
-      return {
-        data: [],
-        total: count || 0,
         page,
         limit,
         hasMore: false,
@@ -82,12 +47,55 @@ export async function fetchOpportunities(
       };
     }
 
-    // Mapear dados do banco para formato da UI
-    // Cast para unknown primeiro pois o tipo retornado pelo Supabase pode não inferir a profundidade corretamente sem os Generics completos
-    const mappedData = (data as unknown as OpportunityWithRelations[]).map(mapToOpportunity);
+    console.log(`[FetchCourses] Success. Got ${data?.length} rows.`);
+    console.timeEnd('fetchCourses');
 
-    const total = count || 0;
-    const hasMore = to < total - 1;
+    // Map RPC result to UI format
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mappedData: CourseDisplayData[] = (data as any[]).map(item => {
+        // Map opportunities from JSON
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const opportunities = (item.opportunities || []).map((opp: any) => {
+            let type: 'Pública' | 'Privada' | 'Parceiro';
+            if (opp.scholarship_type?.toLowerCase().includes('integral') || opp.opportunity_type === 'sisu') {
+                type = 'Pública';
+            } else if (opp.scholarship_type?.toLowerCase().includes('parcial')) {
+                type = 'Privada';
+            } else {
+                type = 'Parceiro';
+            }
+
+            return {
+                id: opp.id,
+                shift: opp.shift,
+                opportunity_type: opp.opportunity_type,
+                scholarship_type: opp.scholarship_type,
+                cutoff_score: opp.cutoff_score,
+                type
+            };
+        });
+
+        const scores = opportunities.map((o: any) => o.cutoff_score).filter((s: any): s is number => typeof s === 'number');
+        const min_cutoff_score = scores.length > 0 ? Math.min(...scores) : null;
+
+        return {
+            id: item.id,
+            title: item.course_name || 'Curso não informado',
+            institution: item.institution_name || 'Instituição não informada',
+            location: `${item.city || 'Cidade não informada'}, ${item.state || 'UF'}`,
+            city: item.city,
+            state: item.state,
+            opportunities,
+            min_cutoff_score
+        };
+    });
+
+    // Simple hasMore check
+    const hasMore = mappedData.length === limit;
+    
+    // Total is hard to get exactly without a consolidated query, using a placeholder or separate count if critical
+    // For infinite scroll, hasMore is usually enough
+    const total = hasMore ? (page + 1) * limit + 1 : (page * limit) + mappedData.length;
 
     return {
       data: mappedData,
@@ -98,7 +106,8 @@ export async function fetchOpportunities(
       error: null,
     };
   } catch (err) {
-    console.error('Erro inesperado ao buscar oportunidades:', err);
+    console.timeEnd('fetchCourses');
+    console.error('[FetchCourses] Unexpected Error:', err);
     return {
       data: [],
       total: 0,

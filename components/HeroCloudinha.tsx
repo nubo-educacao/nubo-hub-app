@@ -9,10 +9,10 @@ export default function HeroCloudinha() {
         {/* Text Content */}
         <div className="space-y-4 max-w-3xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-sky-900 tracking-tight">
-            Fale com a <span className="text-sky-600">Cloudinha</span>
+            Transforme seu potencial em <span className="text-sky-600">oportunidades reais</span>
           </h1>
           <p className="text-lg md:text-xl text-sky-700 font-medium">
-            Encontre a melhor oportunidade para você!
+            A Cloudinha conecta você às melhores instituições de ensino e vagas 
           </p>
         </div>
 

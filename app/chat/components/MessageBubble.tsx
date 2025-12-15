@@ -36,7 +36,7 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
       {/* Bubble */}
       <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-md ${
         isUser 
-          ? 'bg-purple-600 text-white rounded-br-none' 
+          ? 'bg-[#38B1E4]/50 text-white rounded-br-none' 
           : 'bg-white/10 text-gray-100 border border-white/5 rounded-bl-none'
       }`}>
         {message.text}
