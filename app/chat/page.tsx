@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ChatCloudinha from './components/ChatCloudinha';
 import OpportunityCarousel from './components/OpportunityCarousel';
+import ChatHeader from './components/ChatHeader';
 import AuthModal from '@/components/AuthModal'; // Assuming there is an existing AuthModal or I will create one there. 
 // Wait, the plan said app/chat/components/AuthModal.tsx but there might be a global one.
 // The user context says "c:\Users\Bruno Bogochvol\Documents\GitHub\Nubo\nubo-hub-app-ag\components\AuthModal.tsx" is open.
@@ -37,26 +38,29 @@ export default function ChatPage() {
 
   if (!isReady) return null; // Or a loading spinner
 
+  /* Grid Layout: 7 columns total */
   return (
-    <div className="flex h-screen w-full bg-gradient-to-br from-gray-900 via-purple-950 to-black text-white overflow-hidden">
-      {/* Left Side - Chat */}
-      <div className="w-full md:w-[400px] flex-shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-xl">
+    <div className="grid grid-cols-7 h-screen w-full bg-gradient-to-br from-gray-900 via-purple-950 to-black text-white overflow-hidden">
+      
+      {/* Left Side - Chat (2/7 cols) */}
+      <div className="col-span-2 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-col h-full overflow-hidden">
         <ChatCloudinha 
           initialMessage={initialMessage} 
           onInitialMessageSent={handleInitialMessageSent}
         />
       </div>
 
-      {/* Right Side - Content Panel */}
-      <div className="hidden md:flex flex-1 flex-col relative overflow-hidden">
-         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10 pointer-events-none"></div>
-         <div className="relative z-10 h-full flex flex-col justify-center p-8">
+      {/* Right Side - Content Panel (5/7 cols) */}
+      <div className="col-span-5 flex flex-col relative overflow-hidden bg-gradient-to-r from-[#024f86] to-[#3092bb]">
+         {/* Header */}
+         <ChatHeader />
+
+         {/* Main Content Area */}
+         <div className="flex-1 relative z-10 p-8 flex flex-col h-full overflow-hidden">
             <OpportunityCarousel />
          </div>
       </div>
 
-      {/* Mobile Toggle (To be implemented) */}
-      
       {/* Auth Modal */}
       <AuthModal />
     </div>

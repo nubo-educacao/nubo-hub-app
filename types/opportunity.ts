@@ -1,59 +1,67 @@
-import { OpportunityWithRelations } from './database.types';
+import { CourseWithRelations } from './database.types';
 
-export interface Opportunity {
+export interface OpportunityDisplay {
+  id: string;
+  shift: string;
+  opportunity_type: string | null; // e.g., 'sisu', 'prouni'
+  scholarship_type: string; // e.g., 'Integral', 'Parcial'
+  cutoff_score: number | null;
+  type: 'Pública' | 'Privada' | 'Parceiro'; // Derived from scholarship_type/opportunity_type
+}
+
+export interface CourseDisplayData {
   id: string;
   title: string;
   institution: string;
   location: string;
-  type: 'Pública' | 'Privada' | 'Parceiro';
-  modality: string;
-  imageUrl?: string;
-  // Campos adicionais do banco
-  cutoff_score: number | null;
-  opportunity_type: string | null;
-  scholarship_type: string;
-  shift: string;
-  course_name: string;
-  vacancies?: {
-    scholarship_type: string;
-    broad_competition_offered: number;
-    quotas_offered: number;
-  }[];
+  city: string,
+  state: string,
+  opportunities: OpportunityDisplay[];
+  // Aggregate fields for filtering/sorting if needed
+  min_cutoff_score?: number | null;
 }
 
 /**
- * Mapeia dados do Supabase (OpportunityWithRelations) para o formato esperado pela UI (Opportunity)
+ * Mapeia dados do Supabase (CourseWithRelations) para o formato esperado pela UI (CourseDisplayData)
  */
-export function mapToOpportunity(data: OpportunityWithRelations): Opportunity {
-  // Mapear scholarship_type para o campo 'type' da UI
-  let type: 'Pública' | 'Privada' | 'Parceiro';
-  if (data.scholarship_type?.toLowerCase().includes('integral')) {
-    type = 'Pública';
-  } else if (data.scholarship_type?.toLowerCase().includes('parcial')) {
-    type = 'Privada';
-  } else {
-    type = 'Parceiro';
-  }
-
-  const course = data.courses;
-  const campus = course?.campus;
+export function mapToCourseDisplayData(data: CourseWithRelations): CourseDisplayData {
+  const campus = data.campus;
   const institution = campus?.institutions;
   
   const city = campus?.city || 'Cidade não informada';
   const state = campus?.state || 'UF';
 
+  const opportunities = (data.opportunities || []).map(opp => {
+    let type: 'Pública' | 'Privada' | 'Parceiro';
+    if (opp.scholarship_type?.toLowerCase().includes('integral') || opp.opportunity_type === 'sisu') { // Simple heuristic, can be refined
+      type = 'Pública';
+    } else if (opp.scholarship_type?.toLowerCase().includes('parcial')) {
+      type = 'Privada';
+    } else {
+      type = 'Parceiro';
+    }
+
+    return {
+      id: opp.id,
+      shift: opp.shift,
+      opportunity_type: opp.opportunity_type,
+      scholarship_type: opp.scholarship_type,
+      cutoff_score: opp.cutoff_score,
+      type
+    };
+  });
+
+  const scores = opportunities.map(o => o.cutoff_score).filter((s): s is number => s !== null);
+  const min_cutoff_score = scores.length > 0 ? Math.min(...scores) : null;
+
   return {
     id: data.id,
-    title: course?.course_name || 'Curso não informado',
+    title: data.course_name || 'Curso não informado',
     institution: institution?.name || 'Instituição não informada',
     location: `${city}, ${state}`,
-    type,
-    modality: data.shift,
-    cutoff_score: data.cutoff_score,
-    scholarship_type: data.scholarship_type,
-    shift: data.shift,
-    course_name: course?.course_name || 'Curso não informado',
-    vacancies: course?.vacancies,
-    opportunity_type: data.opportunity_type || null,
+    city,
+    state,
+    opportunities,
+    min_cutoff_score
   };
 }

@@ -11,18 +11,35 @@ console.log('Connecting to:', supabaseUrl);
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+
 async function check() {
-  // 1. Check if we can select opportunity_type
-  const { data, error } = await supabase
+  console.log('1. Checking connection and basic select...');
+  const { data: opps, error: oppsError } = await supabase
     .from('opportunities')
     .select('id, opportunity_type')
-    .limit(5);
+    .limit(2);
 
-  if (error) {
-    console.error('Error fetching opportunities:', error);
+  if (oppsError) {
+    console.error('Error fetching opportunities:', oppsError);
   } else {
-    console.log('Successfully fetched opportunities. Sample data:');
-    console.log(JSON.stringify(data, null, 2));
+    console.log('Successfully fetched opportunities.');
+  }
+
+  console.log('\n2. Testing RPC function get_courses_with_opportunities...');
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_courses_with_opportunities', {
+    page_number: 0,
+    page_size: 2
+  });
+
+  if (rpcError) {
+    console.error('RPC Error:', rpcError);
+    console.log('\nIMPORTANT: You need to run the SQL in rpc_migration.sql in your Supabase SQL Editor to create this function.');
+  } else {
+    console.log('RPC Call Successful!');
+    console.log(`Returned ${rpcData.length} rows.`);
+    if (rpcData.length > 0) {
+      console.log('Sample data:', JSON.stringify(rpcData[0], null, 2));
+    }
   }
 }
 

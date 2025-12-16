@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import FilterPills from './FilterPills';
 import OpportunityCard from './OpportunityCard';
 import { PartnerCard } from './PartnerCard';
-import { Opportunity } from '../types/opportunity';
-import { fetchOpportunities } from '../lib/services/opportunities';
+import { CourseDisplayData } from '../types/opportunity';
+import { fetchCoursesWithOpportunities } from '../lib/services/opportunities';
 
 export default function OpportunityCatalog() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [courses, setCourses] = useState<CourseDisplayData[]>([]);
   const [loading, setLoading] = useState(false); // Start false because default view (Parceiros) is static
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -16,7 +16,7 @@ export default function OpportunityCatalog() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('Parceiros');
   
-  const ITEMS_PER_PAGE = 20;
+  const ITEMS_PER_PAGE = 15;
 
   // Mock Partners Data
   const mockPartners = [
@@ -45,19 +45,19 @@ export default function OpportunityCatalog() {
   // Carregar primeira página - Trigger only if viewing 'Públicas' or initially if we want pre-loading
   // For now, let's keep the original behavior of loading on mount, but we could optimize.
   useEffect(() => {
-    loadInitialOpportunities();
+    loadInitialCourses();
   }, []);
 
-  const loadInitialOpportunities = async () => {
+  const loadInitialCourses = async () => {
     setLoading(true);
     setError(null);
 
-    const result = await fetchOpportunities(0, ITEMS_PER_PAGE);
+    const result = await fetchCoursesWithOpportunities(0, ITEMS_PER_PAGE);
 
     if (result.error) {
       setError(result.error);
     } else {
-      setOpportunities(result.data);
+      setCourses(result.data);
       setHasMore(result.hasMore);
       setCurrentPage(0);
     }
@@ -65,16 +65,16 @@ export default function OpportunityCatalog() {
     setLoading(false);
   };
 
-  const loadMoreOpportunities = async () => {
+  const loadMoreCourses = async () => {
     setLoadingMore(true);
     const nextPage = currentPage + 1;
 
-    const result = await fetchOpportunities(nextPage, ITEMS_PER_PAGE);
+    const result = await fetchCoursesWithOpportunities(nextPage, ITEMS_PER_PAGE);
 
     if (result.error) {
       setError(result.error);
     } else {
-      setOpportunities((prev) => [...prev, ...result.data]);
+      setCourses((prev) => [...prev, ...result.data]);
       setHasMore(result.hasMore);
       setCurrentPage(nextPage);
     }
@@ -110,7 +110,7 @@ export default function OpportunityCatalog() {
     }
 
     if (selectedFilter === 'Públicas') {
-      if (loading && opportunities.length === 0) {
+      if (loading && courses.length === 0) {
         return (
           <div className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center gap-4">
@@ -129,7 +129,7 @@ export default function OpportunityCatalog() {
               Ocorreu um problema ao buscar as oportunidades. Por favor, verifique sua conexão e tente novamente.
             </p>
             <button
-              onClick={loadInitialOpportunities}
+              onClick={loadInitialCourses}
               className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md"
             >
               Tentar novamente
@@ -138,7 +138,7 @@ export default function OpportunityCatalog() {
         );
       }
 
-      if (!loading && !error && opportunities.length === 0) {
+      if (!loading && !error && courses.length === 0) {
         return (
           <div className="bg-white/50 border border-white/20 rounded-lg p-12 text-center">
             <p className="text-[#024F86] text-lg">Nenhuma oportunidade encontrada</p>
@@ -149,15 +149,15 @@ export default function OpportunityCatalog() {
       return (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {opportunities.map((opportunity) => (
-              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            {courses.map((course) => (
+              <OpportunityCard key={course.id} course={course} />
             ))}
           </div>
 
           {hasMore && (
             <div className="mt-12 text-center">
               <button
-                onClick={loadMoreOpportunities}
+                onClick={loadMoreCourses}
                 disabled={loadingMore}
                 className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -194,7 +194,7 @@ export default function OpportunityCatalog() {
           {/* Title Pill */}
           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#024F86] text-white px-12 py-4 rounded-xl shadow-lg z-10">
             <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider text-center">
-              Catálogo de Oportunidades
+              Explore oportunidades
             </h2>
           </div>
 

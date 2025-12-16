@@ -4,18 +4,15 @@ import path from 'path';
 
 // Mocking the service to avoid real DB connection and timeouts
 vi.mock('@/lib/services/opportunities', () => ({
-  fetchOpportunities: vi.fn().mockResolvedValue({
+  fetchCoursesWithOpportunities: vi.fn().mockResolvedValue({
     data: [{
       id: '1',
       title: 'Engenharia de Software',
       institution: 'Universidade Tech',
       location: 'São Paulo, SP', 
-      type: 'Pública',
-      modality: 'Integral',
-      scholarship_type: 'Integral',
-      shift: 'Integral',
-      course_name: 'Engenharia de Software',
-      vacancies: []
+      opportunities: [
+        { id: '1', shift: 'Integral', type: 'Pública' }
+      ]
     }],
     error: null
   })
@@ -28,9 +25,9 @@ describe('Opportunities Service (Hierarchy)', () => {
 
   it('should fetch opportunities with nested relations (Institutions -> Campus -> Courses -> Opportunities)', async () => {
     // Dynamic import to ensure env vars are loaded first
-    const { fetchOpportunities } = await import('@/lib/services/opportunities');
+    const { fetchCoursesWithOpportunities } = await import('@/lib/services/opportunities');
     
-    const result = await fetchOpportunities(0, 1);
+    const result = await fetchCoursesWithOpportunities(0, 1);
     
     if (result.error) {
       console.error('Fetch error:', result.error);
@@ -40,23 +37,24 @@ describe('Opportunities Service (Hierarchy)', () => {
     
     // If there is data, verify the structure is correctly mapped
     if (result.data.length > 0) {
-      const opportunity = result.data[0];
+      const course = result.data[0];
       
       // Verify core fields
-      expect(opportunity.id).toBeDefined();
-      expect(opportunity.title).toBeDefined(); // mapped from course_name
+      expect(course.id).toBeDefined();
+      expect(course.title).toBeDefined(); // mapped from course_name
       
       // Verify flattened fields from hierarchy
-      expect(opportunity.institution).toBeDefined(); // mapped from courses.campus.institutions.name
-      expect(opportunity.location).toBeDefined();
+      expect(course.institution).toBeDefined(); // mapped from courses.campus.institutions.name
+      expect(course.location).toBeDefined();
       
       // Verify types
-      expect(typeof opportunity.institution).toBe('string');
-      expect(typeof opportunity.title).toBe('string');
+      expect(typeof course.institution).toBe('string');
+      expect(typeof course.title).toBe('string');
 
-      // Verify vacancies
-      if (opportunity.vacancies) {
-        expect(Array.isArray(opportunity.vacancies)).toBe(true);
+      // Verify opportunities list
+      expect(Array.isArray(course.opportunities)).toBe(true);
+      if (course.opportunities.length > 0) {
+        expect(course.opportunities[0].shift).toBeDefined();
       }
     }
   });

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Opportunity } from '../types/opportunity';
-import { Heart, MapPin, Zap, ArrowRight } from 'lucide-react';
+import { CourseDisplayData, OpportunityDisplay } from '../types/opportunity';
+import { Heart, MapPin, Zap, ArrowRight, Clock, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Montserrat } from 'next/font/google';
@@ -10,30 +10,33 @@ import { Montserrat } from 'next/font/google';
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
 interface OpportunityCardProps {
-  opportunity: Opportunity;
+  course: CourseDisplayData;
 }
 
-export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+export default function OpportunityCard({ course }: OpportunityCardProps) {
   const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
 
+  // Logic to handle favorite for the COURSE (or potentially specific opportunity, but simplify to course for now if ID matches)
   useEffect(() => {
-    if (isAuthenticated && pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === opportunity.id) {
+    if (isAuthenticated && pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === course.id) {
+       // Note: payload ID might need adjustment if we track favorites by course ID vs opportunity ID
       setIsFavorite(true);
       clearPendingAction();
     }
     
-    if (isAuthenticated && pendingAction?.type === 'redirect' && pendingAction.payload.url === `/opportunities/${opportunity.id}`) {
+    // Check if we need to redirect to this course details
+    if (isAuthenticated && pendingAction?.type === 'redirect' && pendingAction.payload.url === `/courses/${course.id}`) {
       clearPendingAction();
-      router.push(`/opportunities/${opportunity.id}`);
+      router.push(`/courses/${course.id}`);
     }
-  }, [isAuthenticated, pendingAction, opportunity.id, clearPendingAction, router]);
+  }, [isAuthenticated, pendingAction, course.id, clearPendingAction, router]);
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-      setPendingAction({ type: 'favorite', payload: { opportunityId: opportunity.id } });
+      setPendingAction({ type: 'favorite', payload: { opportunityId: course.id } }); // Using course ID for now
       openAuthModal();
       return;
     }
@@ -41,46 +44,46 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   };
 
   const handleViewDetails = () => {
+    // Redirect to course details page (assuming it exists or will be created)
+    // If not, maybe select the first opportunity? For now, go to course page.
     if (!isAuthenticated) {
-      setPendingAction({ type: 'redirect', payload: { url: `/opportunities/${opportunity.id}` } });
+      setPendingAction({ type: 'redirect', payload: { url: `/courses/${course.id}` } });
       openAuthModal();
       return;
     }
-    router.push(`/opportunities/${opportunity.id}`);
+    router.push(`/courses/${course.id}`);
+  };
+
+  // Helper to render opportunity badge
+  const renderOpportunityBadge = (opp: OpportunityDisplay) => {
+    const isPublic = opp.type === 'Pública';
+    const bgColor = isPublic ? 'bg-[#FF9900]' : 'bg-[#9747FF]';
+    const label = isPublic ? 'Sisu' : 'Prouni'; // Default labels based on old logic, can be adjusted
+    
+    return (
+      <span key={opp.id} className={`text-[11px] font-medium px-2 py-0.5 rounded-full text-white whitespace-nowrap ${bgColor}`}>
+        {label}
+        {opp.scholarship_type && !isPublic ? ` - ${opp.scholarship_type}` : ''}
+      </span>
+    );
   };
 
   return (
     <div className={`group rounded-[16px] shadow-[0px_24px_44px_-11px_rgba(181,183,192,0.3)] hover:shadow-lg transition-all duration-300 flex flex-col h-full relative overflow-hidden bg-white box-border ${montserrat.className}`}>
-      {/* Header Section: Background & Badges/Favorite */}
-      <div className="relative h-[140px] w-full bg-[#C8EEFF]">
-        {/* Badges and Heart positioned absolute in the header */}
-        <div className="absolute top-4 left-4 z-20 flex gap-2 flex-wrap max-w-[80%]">
-          {/* Main Badge */}
-          <span className={`text-[13px] font-medium px-3 py-1 rounded-full text-white whitespace-nowrap ${
-            opportunity.type === 'Pública' ? 'bg-[#FF9900]' : 'bg-[#9747FF]'
-          }`}>
-            {opportunity.type === 'Pública' ? 'Sisu' : 'Prouni'}
-          </span>
-          
-          {/* Secondary Badge */}
-          {opportunity.scholarship_type && (
-            <span className="text-[13px] font-medium px-3 py-1 rounded-full bg-[#FF9900] text-white whitespace-nowrap">
-              {opportunity.scholarship_type}
-            </span>
-          )}
+      {/* Header Section: Background & Location/Favorite */}
+      <div className="relative h-[80px] w-full bg-[#C8EEFF]">
+        <div className="absolute top-3 right-3 z-20">
+            <button 
+            onClick={handleFavorite}
+            className={`p-1.5 rounded-full transition-colors ${isFavorite ? 'text-red-500 bg-white' : 'text-[#3A424E]/50 hover:text-red-400 hover:bg-white/50'}`}
+            >
+            <Heart size={18} fill={isFavorite ? "currentColor" : "none"} strokeWidth={2.5} />
+            </button>
         </div>
 
-        <button 
-          onClick={handleFavorite}
-          className={`absolute top-4 right-4 z-20 p-1.5 rounded-full transition-colors ${isFavorite ? 'text-red-500 bg-white' : 'text-[#3A424E]/50 hover:text-red-400 hover:bg-white/50'}`}
-        >
-          <Heart size={20} fill={isFavorite ? "currentColor" : "none"} strokeWidth={2.5} />
-        </button>
-
-        {/* Cloud Vector at the bottom of the header section */}
-        <div className="absolute bottom-[-1px] left-0 w-full h-[50px] z-10">
+         {/* Cloud Vector at the bottom of the header section */}
+         <div className="absolute bottom-[-1px] left-0 w-full h-[40px] z-10">
            <div className="relative w-full h-full">
-             {/* Using standard img tag if Image component not imported or to be safe, but expecting Image import below */}
              <img 
                src="/assets/card-background.svg" 
                alt="Cloud Border" 
@@ -90,44 +93,61 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         </div>
       </div>
       
-      {/* Body: Institution & Title & Footer */}
+      {/* Body: Institution & Title & Opportunities */}
       <div className="flex flex-col flex-grow p-4 pt-0 relative z-10 bg-white">
-        <div className="mb-2 flex-grow">
-          <p className="text-[#3A424E] text-[14px] font-medium mb-1 line-clamp-1">
-            {opportunity.institution}
+        
+        {/* Course Info */}
+        <div className="mb-3">
+          <p className="text-[#3A424E] text-[13px] font-medium mb-0.5 line-clamp-1 opacity-70">
+            {course.institution}
           </p>
-          <h3 className="text-[16px] font-semibold text-[#3A424E] leading-[1.25] group-hover:text-[#005CA9] transition-colors line-clamp-2">
-            {opportunity.title}
+          <h3 className="text-[16px] font-bold text-[#3A424E] leading-[1.25] group-hover:text-[#005CA9] transition-colors line-clamp-2 min-h-[40px]">
+            {course.title}
           </h3>
-
-          <div className="flex flex-col gap-1.5 mt-3">
-             {/* Location */}
-            <div className="flex items-center gap-1.5 text-[13px] text-[#3A424E]">
-              <MapPin size={14} className="text-[#3A424E]" />
-              <span>{opportunity.location}</span>
-            </div>
-
-            {/* Score */}
-            {opportunity.cutoff_score && (
-              <div className="flex items-center gap-1.5 text-[13px] text-[#3A424E] font-medium">
-                <Zap size={14} className="text-[#3A424E] fill-[#3A424E]" />
-                <span>Nota de corte: <span className="font-bold">{opportunity.cutoff_score.toFixed(2)}</span></span>
-              </div>
-            )}
+          <div className="flex items-center gap-1 text-[13px] text-[#3A424E] mt-1">
+              <MapPin size={13} className="text-[#3A424E]" />
+              <span className="truncate">{course.location}</span>
           </div>
         </div>
 
-        {/* Footer: Modality & Link */}
-        <div className="mt-auto pt-3 flex items-center justify-between w-full border-t border-gray-100/50">
-          <span className="text-[11px] font-semibold text-white bg-[#3A424E] px-3 py-1 rounded-full">
-            {opportunity.modality}
-          </span>
+        {/* Opportunities List */}
+        <div className="flex-grow flex flex-col gap-2 mb-3">
+            <p className="text-[12px] font-semibold text-[#3A424E] mb-1">Oportunidades encontradas:</p>
+            {course.opportunities.length > 0 ? (
+                course.opportunities.slice(0, 3).map(opp => (
+                    <div key={opp.id} className="flex justify-between items-center text-[12px] border-b border-gray-100 pb-1 last:border-0 last:pb-0">
+                        <div className="flex items-center gap-2">
+                             {renderOpportunityBadge(opp)}
+                             <span className="text-[#3A424E] opacity-80 flex items-center gap-1">
+                                <Clock size={10} /> {opp.shift}
+                             </span>
+                        </div>
+                        {opp.cutoff_score && (
+                            <div className="flex items-center gap-1 text-[#3A424E] font-medium">
+                                <Zap size={10} className="fill-[#3A424E]" />
+                                <span>{opp.cutoff_score.toFixed(0)}</span>
+                            </div>
+                        )}
+                    </div>
+                ))
+            ) : (
+                <p className="text-[12px] text-gray-400 italic">Nenhuma oportunidade disponível no momento.</p>
+            )}
+            {course.opportunities.length > 3 && (
+                <p className="text-[11px] text-[#005CA9] font-medium mt-1 text-center">
+                    + {course.opportunities.length - 3} outras opções
+                </p>
+            )}
+        </div>
+
+        {/* Footer: Action */}
+        <div className="mt-auto pt-3 border-t border-gray-100/50 flex justify-end">
           <button 
             onClick={handleViewDetails}
-            className="text-[14px] font-medium text-[#005CA9] hover:text-[#004A87] flex items-center gap-1 transition-colors"
+            className="text-[13px] font-bold text-[#005CA9] hover:text-[#004A87] flex items-center gap-1 transition-colors"
           >
-            Ver detalhes
-            <ArrowRight size={16} strokeWidth={2.5} />
+            Ver cursos
+            <ArrowRight size={14} strokeWidth={2.5} />
           </button>
         </div>
       </div>

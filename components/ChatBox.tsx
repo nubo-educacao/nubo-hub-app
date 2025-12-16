@@ -11,6 +11,68 @@ export default function ChatBox() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Typewriter effect state
+  const [placeholder, setPlaceholder] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const typingState = React.useRef({
+    phraseIndex: 0,
+    charIndex: 0,
+    isDeleting: false,
+  });
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const PHRASES = [
+    "Me ajude a encontrar a oportunidade ideal...",
+    "Como funciona o processo do SISU?",
+    "Tenho direito a bolsas do Prouni?",
+    "Quais os prazos de inscrição do ENEM?",
+    "Como consigo uma vaga de Jovem Aprendiz?",
+    "Me ajude a escolher um curso."
+  ];
+
+  useEffect(() => {
+    if (isInputFocused) {
+      setPlaceholder("");
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      return;
+    }
+
+    const animate = () => {
+      const { phraseIndex, charIndex, isDeleting } = typingState.current;
+      const currentPhrase = PHRASES[phraseIndex];
+      let delay = 50;
+
+      if (isDeleting) {
+        if (charIndex > 0) {
+          typingState.current.charIndex = charIndex - 1;
+          setPlaceholder(currentPhrase.substring(0, typingState.current.charIndex) + "|");
+          delay = 30;
+        } else {
+          typingState.current.isDeleting = false;
+          typingState.current.phraseIndex = (phraseIndex + 1) % PHRASES.length;
+          delay = 100; // Small pause before typing next
+        }
+      } else {
+        if (charIndex < currentPhrase.length) {
+          typingState.current.charIndex = charIndex + 1;
+          setPlaceholder(currentPhrase.substring(0, typingState.current.charIndex) + "|");
+          delay = 70; // Typing speed
+        } else {
+          typingState.current.isDeleting = true;
+          delay = 2000; // Wait 2 seconds before deleting
+        }
+      }
+
+      timeoutRef.current = setTimeout(animate, delay);
+    };
+
+    animate();
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [isInputFocused]);
+
   // Redirect to chat if logged in and has pending message (from this component)
   useEffect(() => {
     if (isAuthenticated && pendingAction?.type === 'chat' && inputValue && pendingAction.payload.message === inputValue) {
@@ -62,7 +124,9 @@ export default function ChatBox() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAuthenticated ? "Peça a Cloudinha para criar uma lista..." : "Faça login para conversar..."}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            placeholder={isInputFocused ? "" : placeholder}
             className="flex-1 bg-transparent text-[#3A424E] placeholder-[#3A424E]/50 focus:outline-none text-base font-medium h-full py-4 text-[16px]"
             disabled={isLoading}
         />

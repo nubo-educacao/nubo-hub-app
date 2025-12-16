@@ -61,7 +61,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    console.log('N8N Raw Response:', text);
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Failed to parse N8N response:', e);
+      throw new Error('Invalid JSON response from N8N');
+    }
     const aiResponse = data.response || 'Desculpe, não consegui processar sua mensagem.';
 
     if (user) {

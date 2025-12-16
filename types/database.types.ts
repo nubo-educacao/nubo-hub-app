@@ -42,3 +42,8 @@ export interface OpportunityRow {
 export interface OpportunityWithRelations extends OpportunityRow {
   courses: Course;
 }
+
+export interface CourseWithRelations extends Course {
+  campus: Campus;
+  opportunities: OpportunityRow[];
+}

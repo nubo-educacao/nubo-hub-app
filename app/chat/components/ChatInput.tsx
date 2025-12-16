@@ -47,23 +47,29 @@ export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) 
   };
 
   return (
-    <div className="relative">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={isAuthenticated ? "Digite sua mensagem..." : "Faça login para conversar..."}
-        disabled={isLoading}
-        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-      <button
-        onClick={handleSend}
-        disabled={!inputValue.trim() || isLoading}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-purple-400 hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-      </button>
+    <div className="relative z-20 w-full">
+      <div className="flex items-center gap-2 w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-2 py-1">
+        <div className="flex-1">
+            <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isAuthenticated ? "Digite sua mensagem..." : "Faça login para conversar..."}
+            disabled={isLoading}
+            className="w-full bg-transparent border-none text-white placeholder-gray-400 focus:outline-none focus:ring-0 text-sm px-3 py-3 h-[48px]"
+            />
+        </div>
+        
+        {/* Send Button */}
+        <button
+          onClick={handleSend}
+          disabled={!inputValue.trim() || isLoading}
+          className="p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
+        >
+          {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+        </button>
+      </div>
     </div>
   );
 }

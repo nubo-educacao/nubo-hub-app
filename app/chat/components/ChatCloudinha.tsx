@@ -159,23 +159,27 @@ export default function ChatCloudinha({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-900/50">
+    <div className="flex flex-col h-full bg-gradient-to-b from-[#024f86] to-[#3092bb] border-r border-white/10">
       {/* Header */}
-      <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-black/20">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-          <span className="text-xl">☁️</span>
-        </div>
-        <div>
-          <h2 className="font-bold text-white">Fale com a Cloudinha</h2>
-          <p className="text-xs text-purple-300 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            Online agora
-          </p>
+      <div className="h-[97px] flex items-center px-6 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full relative overflow-hidden">
+             {/* Using generic avatar or keeping existing logic if image source is dynamic */}
+             <div className="w-full h-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center">
+                <span className="text-2xl">☁️</span>
+             </div>
+          </div>
+          <div className="flex flex-col">
+            <h2 className="text-[16px] font-normal text-white leading-[24px]">Cloudinha</h2>
+            <p className="text-[14px] text-white/80 leading-[20px]">
+              Assistente Virtual
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} userAvatar={user?.avatar} />
         ))}
@@ -184,7 +188,7 @@ export default function ChatCloudinha({
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 text-gray-400 text-sm p-2"
+            className="flex items-center gap-2 text-gray-400 text-sm p-3 bg-white/5 rounded-2xl w-fit"
           >
             <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
             <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -195,7 +199,7 @@ export default function ChatCloudinha({
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-white/10 bg-black/20">
+      <div className="p-4 px-6 pb-6 pt-4">
         <ChatInput onSendMessage={handleSendMessage} isLoading={isTyping} />
       </div>
     </div>
