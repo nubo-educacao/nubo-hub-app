@@ -1,10 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import ChatBox from './ChatBox';
 
 export default function HeroCloudinha() {
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -14,7 +14,7 @@ export default function HeroCloudinha() {
     }
   };
 
-  const item = {
+  const item: Variants = {
     hidden: { y: 100, opacity: 0 },
     show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 50 } }
   };
