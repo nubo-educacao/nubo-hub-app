@@ -47,10 +47,18 @@ export async function POST(request: Request) {
       headers['Authorization'] = authHeader;
     }
 
+    const payload = {
+      chatInput: message,
+      userId: user?.id || null, // Pass userId or null if not authenticated
+      history
+    };
+
+    console.log('Sending to n8n:', JSON.stringify(payload, null, 2));
+
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -64,14 +72,26 @@ export async function POST(request: Request) {
     const text = await response.text();
     console.log('N8N Raw Response:', text);
     
+    if (!text) {
+      console.error('N8N returned empty response');
+      return NextResponse.json(
+        { error: 'Empty response from AI service' },
+        { status: 502 }
+      );
+    }
+
     let data;
     try {
       data = JSON.parse(text);
     } catch (e) {
       console.error('Failed to parse N8N response:', e);
-      throw new Error('Invalid JSON response from N8N');
+      return NextResponse.json(
+        { error: 'Invalid JSON response from AI service' },
+        { status: 502 }
+      );
     }
-    const aiResponse = data.response || 'Desculpe, não consegui processar sua mensagem.';
+    // Check for "response", "text", or "output" fields
+    const aiResponse = data.response || data.text || data.output || 'Desculpe, não consegui processar sua mensagem.';
 
     if (user) {
       // 3. Save AI Message
