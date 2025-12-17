@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ChatInput from './ChatInput';
 import MessageBubble from './MessageBubble';
+// import OpportunityCarousel from './OpportunityCarousel'; // Moved to Page level
 import { motion } from 'framer-motion';
 
 // Mock initial messages
@@ -21,16 +22,20 @@ export interface Message {
   sender: 'user' | 'cloudinha';
   text: string;
   timestamp: Date;
+  opportunity_ids?: string[];
+  course_ids?: string[];
 }
 
 import { supabase } from '@/lib/supabaseClient';
 
 export default function ChatCloudinha({ 
   initialMessage, 
-  onInitialMessageSent 
+  onInitialMessageSent,
+  onOpportunitiesFound 
 }: { 
   initialMessage?: string;
   onInitialMessageSent?: () => void;
+  onOpportunitiesFound?: (ids: string[]) => void;
 }) {
   const { user, isAuthenticated, session } = useAuth();
   
@@ -68,6 +73,8 @@ export default function ChatCloudinha({
             sender: msg.sender,
             text: msg.content,
             timestamp: new Date(msg.created_at),
+            // Note: If we save course_ids in DB later, map it here. 
+            // Currently assuming ids are transient or not saved in 'content' column directly unless JSON-ified.
           }));
           setMessages(history);
         } else {
@@ -141,7 +148,12 @@ export default function ChatCloudinha({
         sender: 'cloudinha',
         text: data.response || 'Desculpe, não consegui processar sua mensagem.',
         timestamp: new Date(),
+        course_ids: data.course_ids
       };
+
+      if (data.course_ids && data.course_ids.length > 0 && onOpportunitiesFound) {
+          onOpportunitiesFound(data.course_ids);
+      }
       
       setMessages((prev) => [...prev, responseMessage]);
     } catch (error) {
@@ -181,7 +193,22 @@ export default function ChatCloudinha({
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} userAvatar={user?.avatar} />
+          <React.Fragment key={msg.id}>
+             <MessageBubble message={msg} userAvatar={user?.avatar} />
+             {/* Carousel moved to Right Panel via onOpportunitiesFound */}
+             {msg.course_ids && msg.course_ids.length > 0 && (
+                 <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="w-full"
+                 >
+                    <div className="p-4 bg-white/5 rounded-lg border border-white/10 text-sm text-white/80 flex items-center gap-3">
+                        <span className="text-xl">👉</span>
+                        <span>Encontrei {msg.course_ids.length} oportunidades! Veja os detalhes no painel ao lado.</span>
+                    </div>
+                 </motion.div>
+             )}
+          </React.Fragment>
         ))}
         
         {isTyping && (

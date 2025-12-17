@@ -118,3 +118,72 @@ export async function fetchCoursesWithOpportunities(
     };
   }
 }
+
+/**
+ * Busca oportunidades agrupadas por cursos específicos via course_id
+ */
+export async function fetchOpportunitiesByCourseIds(courseIds: string[]): Promise<CourseDisplayData[]> {
+  if (!courseIds || courseIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('opportunities_view')
+    .select('*')
+    .in('course_id', courseIds);
+
+  if (error) {
+    console.error('[fetchOpportunitiesByCourseIds] Error:', error);
+    return [];
+  }
+
+  // Agrupar por chave única de curso (Instituição + Cidade + Curso + ID do curso)
+  const grouped = new Map<string, CourseDisplayData>();
+
+  data.forEach((row: any) => {
+    // Chave para agrupar - usando course_id que é o mais seguro agora
+    const key = row.course_id;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        id: row.course_id,
+        title: row.course,
+        institution: row.institution,
+        location: `${row.city}, ${row.state || 'UF'}`,
+        city: row.city,
+        state: row.state,
+        opportunities: [],
+        min_cutoff_score: null
+      });
+    }
+
+    const courseGroup = grouped.get(key)!;
+
+    // Mapear oportunidade
+    let type: 'Pública' | 'Privada' | 'Parceiro';
+    if (row.scholarship_type?.toLowerCase().includes('integral') || row.opportunity_type === 'sisu' || row.type === 'Sisu' || row.type === 'Prouni') {
+        type = 'Pública';
+    } else if (row.scholarship_type?.toLowerCase().includes('parcial')) {
+        type = 'Privada';
+    } else {
+        type = 'Parceiro';
+    }
+
+    courseGroup.opportunities.push({
+        id: row.opportunity_id || row.id, // Fallback if alias not present (but should be per view)
+        shift: row.shift,
+        opportunity_type: row.opportunity_type || row.type, // Fallback
+        scholarship_type: row.scholarship_type,
+        cutoff_score: row.cutoff_score,
+        type
+    });
+  });
+
+  // Calcular min_score e converter para array
+  return Array.from(grouped.values()).map(course => {
+      const scores = course.opportunities
+          .map(o => o.cutoff_score)
+          .filter((s): s is number => typeof s === 'number' && s > 0);
+      
+      course.min_cutoff_score = scores.length > 0 ? Math.min(...scores) : null;
+      return course;
+  });
+}
