@@ -18,6 +18,7 @@ import AuthModal from '@/components/AuthModal'; // Assuming there is an existing
 export default function ChatPage() {
   const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction } = useAuth();
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
+  const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,10 @@ export default function ChatPage() {
     setInitialMessage(undefined);
   };
 
+  const handleOpportunitiesFound = (ids: string[]) => {
+      setActiveCourseIds(ids);
+  };
+
   if (!isReady) return null; // Or a loading spinner
 
   /* Grid Layout: 7 columns total */
@@ -47,6 +52,7 @@ export default function ChatPage() {
         <ChatCloudinha 
           initialMessage={initialMessage} 
           onInitialMessageSent={handleInitialMessageSent}
+          onOpportunitiesFound={handleOpportunitiesFound}
         />
       </div>
 
@@ -57,7 +63,7 @@ export default function ChatPage() {
 
          {/* Main Content Area */}
          <div className="flex-1 relative z-10 p-8 flex flex-col h-full overflow-hidden">
-            <OpportunityCarousel />
+            <OpportunityCarousel courseIds={activeCourseIds} />
          </div>
       </div>
 
