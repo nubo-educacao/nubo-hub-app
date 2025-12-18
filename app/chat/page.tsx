@@ -43,12 +43,12 @@ export default function ChatPage() {
 
   if (!isReady) return null; // Or a loading spinner
 
-  /* Grid Layout: 7 columns total */
+  /* Grid Layout: 4 columns total */
   return (
-    <div className="grid grid-cols-7 h-screen w-full bg-gradient-to-br from-gray-900 via-purple-950 to-black text-white overflow-hidden">
+    <div className="grid grid-cols-4 h-screen w-full bg-gradient-to-br from-gray-900 via-purple-950 to-black text-white overflow-hidden">
       
-      {/* Left Side - Chat (2/7 cols) */}
-      <div className="col-span-2 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-col h-full overflow-hidden">
+      {/* Left Side - Chat (1/4 cols) */}
+      <div className="col-span-1 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-col h-full overflow-hidden">
         <ChatCloudinha 
           initialMessage={initialMessage} 
           onInitialMessageSent={handleInitialMessageSent}
@@ -56,8 +56,8 @@ export default function ChatPage() {
         />
       </div>
 
-      {/* Right Side - Content Panel (5/7 cols) */}
-      <div className="col-span-5 flex flex-col relative overflow-hidden bg-gradient-to-r from-[#024f86] to-[#3092bb]">
+      {/* Right Side - Content Panel (3/4 cols) */}
+      <div className="col-span-3 flex flex-col relative overflow-hidden bg-gradient-to-r from-[#024f86] to-[#3092bb]">
          {/* Header */}
          <ChatHeader />
 

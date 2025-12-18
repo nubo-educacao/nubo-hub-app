@@ -16,6 +16,7 @@ const config: Config = {
       fontFamily: {
         montserrat: ["var(--font-montserrat)"],
         nunito: ["var(--font-nunito)"],
+        lora: ["var(--font-lora)"],
       },
     },
   },
