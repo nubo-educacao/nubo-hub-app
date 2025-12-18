@@ -10,7 +10,10 @@ export default function Home() {
       <div className="relative z-10 w-full">
         <Header />
         <HeroCloudinha />
-        <OpportunityCatalog />
+        
+        <div className="pt-36"> {/* increased spacing between hero and catalog */}
+          <OpportunityCatalog />
+        </div>
       </div>
     </main>
   );

@@ -8,29 +8,19 @@ export default function Header({ transparent = false }: { transparent?: boolean 
   const { isAuthenticated, openAuthModal, logout } = useAuth();
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${transparent ? 'bg-transparent' : 'bg-white shadow-sm'}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${transparent ? 'bg-transparent border-b border-transparent' : 'bg-white/30 backdrop-blur-md border-b border-white/20 shadow-lg'}`}>
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image 
-            src="/assets/logo.svg" 
+            src="/assets/logo.png" 
             alt="Nubo Educação" 
-            width={150} 
-            height={40} 
+            width={225} 
+            height={60} 
             className="h-10 w-auto"
             priority
           />
         </Link>
-
-        {/* Navigation - Desktop */}
-        <nav className="hidden md:flex items-center gap-12">
-          <Link href="#" className="text-neutral-600 hover:text-[#38B1E4] transition-colors text-base font-medium">
-            Oportunidades
-          </Link>
-          <Link href="#" className="text-neutral-600 hover:text-[#38B1E4] transition-colors text-base font-medium">
-            Instituições
-          </Link>
-        </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-4">

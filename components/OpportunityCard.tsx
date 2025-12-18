@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CourseDisplayData, OpportunityDisplay } from '../types/opportunity';
-import { Heart, MapPin, Zap, ArrowRight, Clock, GraduationCap } from 'lucide-react';
+import { Heart, MapPin, TrendingUp, ArrowRight, Sun, Sunset, Moon, SunMoon, Laptop } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Montserrat } from 'next/font/google';
@@ -18,15 +18,13 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
 
-  // Logic to handle favorite for the COURSE (or potentially specific opportunity, but simplify to course for now if ID matches)
+  // Logic to handle favorite for the COURSE
   useEffect(() => {
     if (isAuthenticated && pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === course.id) {
-       // Note: payload ID might need adjustment if we track favorites by course ID vs opportunity ID
       setIsFavorite(true);
       clearPendingAction();
     }
     
-    // Check if we need to redirect to this course details
     if (isAuthenticated && pendingAction?.type === 'redirect' && pendingAction.payload.url === `/courses/${course.id}`) {
       clearPendingAction();
       router.push(`/courses/${course.id}`);
@@ -36,7 +34,7 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
   const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-      setPendingAction({ type: 'favorite', payload: { opportunityId: course.id } }); // Using course ID for now
+      setPendingAction({ type: 'favorite', payload: { opportunityId: course.id } });
       openAuthModal();
       return;
     }
@@ -44,8 +42,6 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
   };
 
   const handleViewDetails = () => {
-    // Redirect to course details page (assuming it exists or will be created)
-    // If not, maybe select the first opportunity? For now, go to course page.
     if (!isAuthenticated) {
       setPendingAction({ type: 'redirect', payload: { url: `/courses/${course.id}` } });
       openAuthModal();
@@ -54,35 +50,63 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
     router.push(`/courses/${course.id}`);
   };
 
-  // Helper to render opportunity badge
-  const renderOpportunityBadge = (opp: OpportunityDisplay) => {
-    const isPublic = opp.type === 'Pública';
-    const bgColor = isPublic ? 'bg-[#FF9900]' : 'bg-[#9747FF]';
-    const label = isPublic ? 'Sisu' : 'Prouni'; // Default labels based on old logic, can be adjusted
-    
-    return (
-      <span key={opp.id} className={`text-[11px] font-medium px-2 py-0.5 rounded-full text-white whitespace-nowrap ${bgColor}`}>
-        {label}
-        {opp.scholarship_type && !isPublic ? ` - ${opp.scholarship_type}` : ''}
-      </span>
-    );
-  };
+  // Logic: Cutoff Score Range
+  const cutoffScores = course.opportunities
+    .map(o => o.cutoff_score || 0)
+    .filter(s => s >= 0); // Include 0
+  
+  const minCutoff = cutoffScores.length > 0 ? Math.min(...cutoffScores) : 0;
+  const maxCutoff = cutoffScores.length > 0 ? Math.max(...cutoffScores) : 0;
+  const cutoffDisplay = minCutoff === maxCutoff ? `${minCutoff}` : `${minCutoff} - ${maxCutoff}`;
+
+  // Logic: Unique Opportunity Types for Badges
+  const uniqueTypes = Array.from(new Set(course.opportunities.map(o => o.type))).slice(0, 2); // Limit to 2 for space
+
+  // Logic: Active Shifts
+  const activeShifts = new Set(course.opportunities.map(o => o.shift));
+  const hasEaD = course.opportunities.some(o => o.shift === 'EaD' || o.shift === 'Curso a distância');
+  
+  const shiftsConfig = [
+    { id: 'matutino', icon: Sun, active: activeShifts.has('Matutino'), label: 'Matutino' },
+    { id: 'vespertino', icon: Sunset, active: activeShifts.has('Vespertino'), label: 'Vespertino' },
+    { id: 'noturno', icon: Moon, active: activeShifts.has('Noturno'), label: 'Noturno' },
+    { id: 'integral', icon: SunMoon, active: activeShifts.has('Integral'), label: 'Integral' },
+    { id: 'ead', icon: Laptop, active: hasEaD, label: 'EAD' },
+  ];
 
   return (
-    <div className={`group rounded-[16px] shadow-[0px_24px_44px_-11px_rgba(181,183,192,0.3)] hover:shadow-lg transition-all duration-300 flex flex-col h-full relative overflow-hidden bg-white box-border ${montserrat.className}`}>
+    <div 
+        onClick={handleViewDetails}
+        className={`group rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col h-full relative overflow-hidden bg-white box-border cursor-pointer border border-transparent hover:border-[#FF9900] ${montserrat.className}`}
+    >
       {/* Header Section: Background & Location/Favorite */}
-      <div className="relative h-[80px] w-full bg-[#C8EEFF]">
-        <div className="absolute top-3 right-3 z-20">
+      <div className="relative h-[100px] w-full bg-[#C8EEFF]">
+        {/* Badge: Top Left */}
+        <div className="absolute top-4 left-4 z-30">
+             {uniqueTypes.map(type => (
+                 <span key={type} className="text-[12px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#9747FF]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(151,71,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#B070FF]/50">
+                    {type === 'Pública' ? 'Sisu' : 'Prouni'}
+                 </span>
+             ))}
+        </div>
+
+        <div className="absolute top-4 right-4 z-20">
             <button 
             onClick={handleFavorite}
-            className={`p-1.5 rounded-full transition-colors ${isFavorite ? 'text-red-500 bg-white' : 'text-[#3A424E]/50 hover:text-red-400 hover:bg-white/50'}`}
+            className="p-2 rounded-full transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
             >
-            <Heart size={18} fill={isFavorite ? "currentColor" : "none"} strokeWidth={2.5} />
+            <Heart 
+                size={20} 
+                color={isFavorite ? "#ef4444" : "#cbd5e1"} 
+                fill={isFavorite ? "#ef4444" : "none"} 
+                strokeWidth={2.5}
+                className="transition-colors group-hover/btn:text-red-400"
+            />
             </button>
         </div>
 
-         {/* Cloud Vector at the bottom of the header section */}
-         <div className="absolute bottom-[-1px] left-0 w-full h-[40px] z-10">
+         {/* Cloud Vector */}
+         <div className="absolute bottom-[-1px] left-0 w-full h-[35px] z-10">
            <div className="relative w-full h-full">
              <img 
                src="/assets/card-background.svg" 
@@ -93,62 +117,64 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
         </div>
       </div>
       
-      {/* Body: Institution & Title & Opportunities */}
-      <div className="flex flex-col flex-grow p-4 pt-0 relative z-10 bg-white">
-        
-        {/* Course Info */}
-        <div className="mb-3">
-          <p className="text-[#3A424E] text-[13px] font-medium mb-0.5 line-clamp-1 opacity-70">
-            {course.institution}
-          </p>
-          <h3 className="text-[16px] font-bold text-[#3A424E] leading-[1.25] group-hover:text-[#005CA9] transition-colors line-clamp-2 min-h-[40px]">
+      {/* Body */}
+      <div className="flex flex-col flex-grow px-6 pb-6 pt-0 relative z-10 bg-white">
+
+        {/* Standardized Info Block */}
+        <div className="flex flex-col gap-2 mt-2">
+          <h3 className="text-[18px] font-bold text-[#000000] leading-[1.2] transition-colors line-clamp-2">
             {course.title}
           </h3>
-          <div className="flex items-center gap-1 text-[13px] text-[#3A424E] mt-1">
-              <MapPin size={13} className="text-[#3A424E]" />
+          <p className="text-[#3A424E] text-[14px] font-normal line-clamp-1 opacity-70">
+            {course.institution}
+          </p>
+          <div className="flex items-center gap-2 text-[13px] text-[#3A424E] opacity-70">
+              <MapPin size={16} className="text-[#38B1E4]" />
               <span className="truncate">{course.location}</span>
+          </div>
+          <div className="flex items-center gap-2 text-[#3A424E] text-[13px] opacity-70">
+                 <TrendingUp size={16} className="text-[#FF9900]" />
+                 <span className="font-normal">Nota de corte: <span className="font-bold">{cutoffDisplay}</span></span>
           </div>
         </div>
 
-        {/* Opportunities List */}
-        <div className="flex-grow flex flex-col gap-2 mb-3">
-            <p className="text-[12px] font-semibold text-[#3A424E] mb-1">Oportunidades encontradas:</p>
-            {course.opportunities.length > 0 ? (
-                course.opportunities.slice(0, 3).map(opp => (
-                    <div key={opp.id} className="flex justify-between items-center text-[12px] border-b border-gray-100 pb-1 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-2">
-                             {renderOpportunityBadge(opp)}
-                             <span className="text-[#3A424E] opacity-80 flex items-center gap-1">
-                                <Clock size={10} /> {opp.shift}
-                             </span>
-                        </div>
-                        {opp.cutoff_score && (
-                            <div className="flex items-center gap-1 text-[#3A424E] font-medium">
-                                <Zap size={10} className="fill-[#3A424E]" />
-                                <span>{opp.cutoff_score.toFixed(0)}</span>
-                            </div>
-                        )}
-                    </div>
-                ))
-            ) : (
-                <p className="text-[12px] text-gray-400 italic">Nenhuma oportunidade disponível no momento.</p>
-            )}
-            {course.opportunities.length > 3 && (
-                <p className="text-[11px] text-[#005CA9] font-medium mt-1 text-center">
-                    + {course.opportunities.length - 3} outras opções
-                </p>
-            )}
-        </div>
+        {/* Divider */}
+        <div className="border-b border-gray-100/50 mt-3 mb-3"></div>
 
-        {/* Footer: Action */}
-        <div className="mt-auto pt-3 border-t border-gray-100/50 flex justify-end">
-          <button 
-            onClick={handleViewDetails}
-            className="text-[13px] font-bold text-[#005CA9] hover:text-[#004A87] flex items-center gap-1 transition-colors"
-          >
-            Ver cursos
-            <ArrowRight size={14} strokeWidth={2.5} />
-          </button>
+        {/* Spacer */}
+        <div className="flex-grow"></div>
+
+        {/* Footer: Shifts + Action */}
+        <div className="flex justify-between items-center mt-auto h-[40px]">
+            {/* Shifts Pill */}
+            <div className="bg-[#FF9900]/90 backdrop-blur-sm shadow-[0_2px_6px_rgba(255,153,0,0.25),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#FFB84D]/50 rounded-[166px] px-[12px] py-[6px] flex items-center gap-3 h-fit transition-all hover:scale-105 hover:shadow-[0_4px_10px_rgba(255,153,0,0.35),inset_0_-2px_4px_rgba(0,0,0,0.1)]">
+                    {shiftsConfig.map((shift) => (
+                        <div key={shift.id} className="flex items-center justify-center relative group/icon">
+                            <shift.icon 
+                                size={18} 
+                                color={shift.active ? "#FFFFFF" : "#FFFFFF"} 
+                                fill={shift.active ? "currentColor" : "none"}
+                                className={`${!shift.active ? "opacity-[0.5]" : "opacity-100 drop-shadow-md"} transition-all duration-300`}
+                                strokeWidth={2.5}
+                            />
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-[10px] rounded opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
+                                {shift.label}
+                                {/* Arrow */}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/90"></div>
+                            </div>
+                        </div>
+                    ))}
+            </div>
+
+            {/* View Details Link */}
+            <button 
+                onClick={handleViewDetails}
+                className="text-[14px] font-medium text-[#38B1E4] hover:text-[#2da0d1] flex items-center gap-1 transition-colors whitespace-nowrap"
+            >
+                Ver detalhes
+                <ArrowRight size={18} strokeWidth={2.5} />
+            </button>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { motion, Variants } from 'framer-motion';
 import ChatBox from './ChatBox';
+import ConversationStarters from './ConversationStarters';
 
 export default function HeroCloudinha() {
   const container: Variants = {
@@ -38,7 +39,7 @@ export default function HeroCloudinha() {
             Transforme seu potencial em <span className="text-sky-600">oportunidades reais</span>
           </motion.h1>
           <motion.p 
-            className="text-lg md:text-xl text-sky-700 font-medium"
+            className="text-lg md:text-xl text-sky-700 font-medium font-lora"
             variants={item}
           >
             A Cloudinha conecta você às melhores instituições de ensino e vagas 
@@ -48,6 +49,11 @@ export default function HeroCloudinha() {
         {/* Chat Component */}
         <motion.div variants={item} className="w-full flex justify-center">
             <ChatBox />
+        </motion.div>
+
+        {/* Starters */}
+        <motion.div variants={item} className="w-full flex justify-center mt-8">
+            <ConversationStarters />
         </motion.div>
       </motion.div>
     </section>

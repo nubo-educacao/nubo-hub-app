@@ -62,12 +62,8 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
   const currentCourses = courses;
 
   return (
-    <div className="w-full max-w-7xl mx-auto flex flex-col h-full bg-white/5 rounded-xl p-4 mt-4 border border-white/10">
-      {/* Header */}
-      <div className="mb-4 text-center flex-shrink-0">
-        <h2 className="text-xl font-medium text-white/90 mb-1">Oportunidades Encontradas</h2>
-        <p className="text-sm text-white/60">{courses.length} cursos disponíveis</p>
-      </div>
+    <div className="w-full max-w-8xl mx-auto flex flex-col h-full bg-white/5 rounded-xl p-2 mt-2 border border-white/10">
+
 
       {/* Grid Viewport */}
       <div className="flex-1 overflow-y-auto min-h-0 flex flex-col justify-center">
@@ -77,7 +73,7 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
                 <span className="text-sm">Carregando oportunidades...</span>
              </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-2">
                 {currentCourses.map((course) => (
                     <motion.div
                         key={course.id}

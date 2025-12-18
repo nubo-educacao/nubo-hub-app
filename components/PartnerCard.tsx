@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Heart, ArrowRight, MapPin, GraduationCap, Calendar, Zap, AlertCircle } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
+import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -20,15 +22,30 @@ export function PartnerCard({
   description = 'Oferecemos bolsas de estudo no Brasil ou exterior, e apoio vitalício para o desenvolvimento de nossos Fellows Estudar.',
   isFavorite: initialFavorite = false
 }: PartnerCardProps) {
+  const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === id) { // Using id as opportunityId for partner mostly for consistent pattern
+      setIsFavorite(true);
+      clearPendingAction();
+    }
+  }, [isAuthenticated, pendingAction, id, clearPendingAction]);
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isAuthenticated) {
+        // Mocking 'partner' type or reusing opportunity logic if applicable, for now assuming similar behavior
+        setPendingAction({ type: 'favorite', payload: { opportunityId: id } }); 
+        openAuthModal();
+        return;
+    }
     setIsFavorite(!isFavorite);
   };
 
   return (
-    <div className={`relative w-full h-auto min-h-[500px] rounded-2xl overflow-hidden bg-white shadow-lg flex flex-col ${montserrat.className}`}>
+    <div className={`group relative w-full h-auto min-h-[500px] rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-[#FF9900] flex flex-col ${montserrat.className}`}>
       {/* Top Section with Background and Cover */}
       <div className="relative h-[200px] w-full">
          {/* Cover Image Background (Mocked for now as per reference image which seems to be a full colorful bg) */}
@@ -46,13 +63,14 @@ export function PartnerCard({
          {/* Heart Button Top Right */}
          <button 
            onClick={toggleFavorite}
-           className="absolute top-4 right-4 p-2 rounded-full z-20 transition-transform hover:scale-110 active:scale-95"
+           className="absolute top-4 right-4 p-2 rounded-full z-20 transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
          >
             <Heart 
-              size={24} 
-              color="white" 
-              fill={isFavorite ? "white" : "none"} 
-              strokeWidth={2}
+              size={20} 
+              color={isFavorite ? "#ef4444" : "#cbd5e1"} 
+              fill={isFavorite ? "#ef4444" : "none"} 
+              strokeWidth={2.5}
+              className="transition-colors group-hover/btn:text-red-400"
             />
          </button>
 
@@ -82,7 +100,7 @@ export function PartnerCard({
         {/* Info Icons / Metadata (Mocked based on visual reference) */}
         <div className="space-y-2 mb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
-            <MapPin size={16} className="text-[#2892C8]" />
+            <MapPin size={16} className="text-[#38B1E4]" />
             <span>Nacional e Internacional</span>
           </div>
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
@@ -102,7 +120,7 @@ export function PartnerCard({
         {/* Footer Link */}
         <div className="mt-auto flex justify-end items-center pt-4 border-t border-gray-100/50">
           <button 
-            className="text-[14px] font-semibold text-[#2892C8] hover:text-[#005CA9] flex items-center gap-1 transition-colors group"
+            className="text-[14px] font-medium text-[#38B1E4] hover:text-[#2da0d1] flex items-center gap-1 transition-colors group"
           >
             Ver detalhes
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
