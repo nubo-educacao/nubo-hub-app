@@ -29,10 +29,10 @@ export async function POST(request: Request) {
       });
     }
 
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    const webhookUrl = process.env.AGENT_URL || process.env.N8N_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      console.error('N8N_WEBHOOK_URL is not defined');
+      console.error('AGENT_URL is not defined');
       return NextResponse.json(
         { error: 'Configuration error' },
         { status: 500 }
