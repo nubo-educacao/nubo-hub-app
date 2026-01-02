@@ -1,0 +1,145 @@
+openapi: 3.0.0
+info:
+  title: Nubo Hub App Supabase API
+  version: 1.0.0
+  description: >
+    Documentation of the Supabase tables, views, and RPCs used by the Nubo Hub Web App (nubo-hub-app).
+    These resources are consumed by the frontend (Next.js) via supabase-js.
+servers:
+  - url: https://yfgciamhzjvarwgzosto.supabase.co/rest/v1
+    description: Supabase REST API Endpoint
+
+components:
+  securitySchemes:
+    apikey:
+      type: apiKey
+      name: apikey
+      in: header
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    CourseDisplayData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_name:
+          type: string
+        institution_name:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        opportunities:
+          type: array
+          items:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                shift:
+                    type: string
+                scholarship_type:
+                    type: string
+                opportunity_type:
+                    type: string
+                cutoff_score:
+                    type: number
+                    format: float
+    OpportunityView:
+      type: object
+      description: Read-only view. Matches database.types.ts OpportunityRow + join fields
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_id:
+          type: string
+          format: uuid
+        course:
+          type: string
+        institution:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        shift:
+          type: string
+        scholarship_type:
+          type: string
+        cutoff_score:
+            type: number
+            format: float
+        opportunity_type:
+          type: string
+    RPCCoursesResponse:
+        type: array
+        items:
+            $ref: '#/components/schemas/CourseDisplayData'
+
+security:
+  - apikey: []
+  - bearerAuth: []
+
+paths:
+  /rpc/get_courses_with_opportunities:
+    post:
+      summary: Get Courses with Opportunities (Paged)
+      description: >
+        Main RPC used to list courses on the Explore page. 
+        Returns courses joined with their opportunities (grouped as JSON).
+        Used by `fetchCoursesWithOpportunities`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [page_number, page_size]
+              properties:
+                page_number:
+                  type: integer
+                  description: 0-indexed page number
+                page_size:
+                  type: integer
+                  description: Number of items per page
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RPCCoursesResponse'
+
+  /opportunities_view:
+    get:
+      summary: Get Opportunities by Course IDs
+      description: >
+        Used by `fetchOpportunitiesByCourseIds`. 
+        Fetches detailed opportunity info for a specific list of courses.
+      parameters:
+        - name: course_id
+          in: query
+          description: Filter by list of Course IDs (in)
+          schema:
+            type: string
+            example: "in.(uuid1,uuid2)"
+        - name: select
+          in: query
+          description: Columns to select
+          schema:
+            type: string
+            default: "*"
+      responses:
+        '200':
+          description: List of opportunities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpportunityView'

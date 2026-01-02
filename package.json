@@ -10,7 +10,8 @@
     "test": "vitest run --config tests/vitest.config.ts && playwright test --config tests/playwright.config.ts",
     "test:unit": "vitest --config tests/vitest.config.ts",
     "test:e2e": "playwright test --config tests/playwright.config.ts",
-    "test:ui": "vitest --ui --config tests/vitest.config.ts"
+    "test:ui": "vitest --ui --config tests/vitest.config.ts",
+    "docs": "npx swagger-ui-watcher@latest docs/web_app_openapi.yaml -p 8001"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",
