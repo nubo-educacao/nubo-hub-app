@@ -12,7 +12,9 @@ export default function SisuProuniCard({ type }: SisuProuniCardProps) {
   const router = useRouter();
   const title = type.toLowerCase() === "prouni" ? "Programa ProUni" : "Programa SiSU";
   const description =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.";
+    type.toLowerCase() === "prouni"
+      ? "O Programa Universidade para Todos (ProUni) é um processo seletivo do MEC que concede bolsas de estudo integrais e parciais em instituições privadas, utilizando a nota do Enem e critérios de renda."
+      : "O Sisu (Sistema de Seleção Unificada) é o processo seletivo do MEC que utiliza a nota do Enem para classificar candidatos a vagas ofertadas por instituições de ensino superior participantes.";
 
   const handleLearnMore = () => {
     const message = `Quero saber mais sobre o ${

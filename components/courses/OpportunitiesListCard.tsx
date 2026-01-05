@@ -2,12 +2,13 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Sun, Sunset, Moon, SunMoon, Laptop } from "lucide-react";
 
 export interface Opportunity {
   id: string;
   shift: string;
   scholarship_type?: string;
+  concurrency_tags?: string[];
   cutoff_score: number | null;
   opportunity_type: string;
 }
@@ -16,22 +17,43 @@ interface OpportunitiesListCardProps {
   opportunities: Opportunity[];
 }
 
+const getTagStyle = (tag: string) => {
+  switch (tag) {
+    case 'AMPLA_CONCORRENCIA': return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Ampla Concorrência' };
+    case 'ESCOLA_PUBLICA': return { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Escola Pública' };
+    case 'BAIXA_RENDA': return { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Baixa Renda' };
+    case 'PPI': return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'PPI' };
+    case 'PCD': return { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'PcD' };
+    case 'QUILOMBOLAS': return { bg: 'bg-cyan-100', text: 'text-cyan-800', label: 'Quilombolas' };
+    case 'INDIGENAS': return { bg: 'bg-teal-100', text: 'text-teal-800', label: 'Indígenas' };
+    case 'RURAL': return { bg: 'bg-lime-100', text: 'text-lime-800', label: 'Rural' };
+    case 'PROFESSOR': return { bg: 'bg-pink-100', text: 'text-pink-800', label: 'Professor' };
+    case 'TRANS': return { bg: 'bg-rose-100', text: 'text-rose-800', label: 'Trans' };
+    case 'REFUGIADOS': return { bg: 'bg-slate-100', text: 'text-slate-700', label: 'Refugiados' };
+    default: return { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Outros' };
+  }
+};
+
 export default function OpportunitiesListCard({ opportunities }: OpportunitiesListCardProps) {
   const router = useRouter();
+  
+  console.log('Opportunities Data:', opportunities); // DEBUG: Check if concurrency_tags is present
 
   const handleFindSimilar = (opportunityId: string) => {
     const message = `Quero encontrar oportunidade similar a ${opportunityId}`;
     router.push(`/chat?message=${encodeURIComponent(message)}`);
   };
 
-  const getShiftLabel = (shift: string) => {
-    const map: Record<string, string> = {
-      'Integral': 'Integral',
-      'Matutino': 'Matutino',
-      'Vespertino': 'Vespertino',
-      'Noturno': 'Noturno',
+  const getShiftDetails = (shift: string) => {
+    switch (shift) {
+      case 'Matutino': return { icon: Sun, label: 'Matutino' };
+      case 'Vespertino': return { icon: Sunset, label: 'Vespertino' };
+      case 'Noturno': return { icon: Moon, label: 'Noturno' };
+      case 'Integral': return { icon: SunMoon, label: 'Integral' };
+      case 'EaD':
+      case 'Curso a distância': return { icon: Laptop, label: 'EAD' };
+      default: return { icon: Sun, label: shift };
     }
-    return map[shift] || shift;
   };
 
   return (
@@ -44,20 +66,45 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-slate-500 text-sm uppercase">
             <tr>
-              <th className="px-6 py-4 font-semibold">Turno</th>
+              <th className="px-6 py-4 font-semibold text-center w-[100px]">Turno</th>
               <th className="px-6 py-4 font-semibold">Tipo</th>
               <th className="px-6 py-4 font-semibold">Nota de Corte</th>
               <th className="px-6 py-4 font-semibold text-right">Ação</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {opportunities.map((opp) => (
+            {opportunities.map((opp) => {
+              const { icon: Icon, label } = getShiftDetails(opp.shift);
+              return (
               <tr key={opp.id} className="hover:bg-blue-50/30 transition-colors">
                 <td className="px-6 py-4 text-slate-700 font-medium">
-                  {getShiftLabel(opp.shift)}
+                  <div className="relative group w-fit mx-auto">
+                    <Icon size={24} className="text-[#024F86]" />
+                    
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
+                        {label}
+                        {/* Arrow */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/90"></div>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-slate-600">
-                    {opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')}
+                    <div className="flex flex-wrap gap-2">
+                        {opp.concurrency_tags && opp.concurrency_tags.length > 0 ? (
+                            opp.concurrency_tags.map(tag => {
+                                const style = getTagStyle(tag);
+                                return (
+                                    <span key={tag} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+                                        {style.label}
+                                    </span>
+                                );
+                            })
+                        ) : (
+                             // Fallback only if tags are missing but type exists, or for old data
+                             opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
+                        )}
+                    </div>
                 </td>
                 <td className="px-6 py-4 font-bold text-[#024F86]">
                    {opp.cutoff_score ? opp.cutoff_score.toFixed(2) : '-'}
@@ -72,7 +119,7 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                   </button>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'; 
-import { CourseDisplayData } from '@/types/opportunity';
+import { CourseDisplayData, mapToCourseDisplayData } from '@/types/opportunity';
+import { CourseWithRelations } from '@/types/database.types';
 
 export interface CourseDetail {
   course_code: string;
@@ -114,8 +115,24 @@ export async function getCourseDetails(courseId: string): Promise<CourseDetail |
   
   const campusData = data.campus as any;
   const institutionData = campusData?.institutions;
-  const emecData = institutionData?.institutionsinfoemec?.[0] || null;
-  const sisuData = institutionData?.institutionsinfosisu?.[0] || null;
+  
+  // Debugging logs
+  console.log('--- Debug getCourseDetails ---');
+  console.log('Course ID:', courseId);
+  console.log('Institution Data:', JSON.stringify(institutionData, null, 2));
+  
+  // Handle both array (legacy/incorrect assumption) and object (correct 1:1) responses just in case, though schema says object.
+  const emecData = Array.isArray(institutionData?.institutionsinfoemec) 
+    ? institutionData.institutionsinfoemec[0] 
+    : institutionData?.institutionsinfoemec || null;
+
+  const sisuData = Array.isArray(institutionData?.institutionsinfosisu) 
+    ? institutionData.institutionsinfosisu[0] 
+    : institutionData?.institutionsinfosisu || null;
+  
+  console.log('EMEC Data extracted:', emecData);
+  console.log('SISU Data extracted:', sisuData);
+  console.log('------------------------------');
 
   return {
     course_code: data.course_code,
@@ -167,9 +184,74 @@ export async function fetchCoursesWithOpportunities(page: number, limit: number)
   // Check if we have more pages (if we received full page size)
   const hasMore = (data?.length || 0) === limit;
 
+  // Map RPC result to CourseDisplayData
+  const mappedData: CourseDisplayData[] = (data || []).map((item: any) => {
+    const opportunities = (item.opportunities || []).map((opp: any) => {
+      let type: 'Pública' | 'Privada' | 'Parceiro' = 'Parceiro';
+      // Re-use logic from mapToCourseDisplayData
+      if (opp.scholarship_type?.toLowerCase().includes('integral') || opp.opportunity_type === 'sisu') {
+        type = 'Pública';
+      } else if (opp.scholarship_type?.toLowerCase().includes('parcial')) {
+        type = 'Privada';
+      } else {
+        type = 'Parceiro';
+      }
+
+      return {
+        id: opp.id,
+        shift: opp.shift,
+        opportunity_type: opp.opportunity_type,
+        scholarship_type: opp.scholarship_type,
+        cutoff_score: opp.cutoff_score,
+        type
+      };
+    });
+
+    const scores = opportunities.map((o: any) => o.cutoff_score).filter((s: any) => typeof s === 'number');
+    const min_cutoff_score = scores.length > 0 ? Math.min(...scores) : null;
+
+    return {
+      id: item.id,
+      title: item.course_name || 'Curso não informado',
+      institution: item.institution_name || 'Instituição não informada',
+      location: `${item.city || ''}, ${item.state || ''}`,
+      city: item.city || '',
+      state: item.state || '',
+      opportunities,
+      min_cutoff_score
+    };
+  });
+
   return { 
-    data: (data as CourseDisplayData[]) || [], 
+    data: mappedData, 
     error: null, 
     hasMore 
   };
+
 }
+
+export async function fetchOpportunitiesByCourseIds(courseIds: string[]): Promise<CourseDisplayData[]> {
+  if (!courseIds || courseIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('courses')
+    .select(`
+        *,
+        campus:campus_id (
+            *,
+            institutions:institution_id (*)
+        ),
+        opportunities (*)
+    `)
+    .in('id', courseIds);
+
+  if (error) {
+    console.error('Error fetching opportunities by IDs:', error);
+    return [];
+  }
+
+  if (!data) return [];
+
+  return (data as unknown as CourseWithRelations[]).map(mapToCourseDisplayData);
+}
+

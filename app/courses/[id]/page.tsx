@@ -50,7 +50,17 @@ export default async function OpportunityDetails({ params }: PageProps) {
   // Prepare institution data for card
   const institutionData = {
     name: course.campus.institution.name,
-    academic_organization: course.campus.institution.sisu?.academic_organization || course.campus.institution.emec?.academic_organization || undefined
+    acronym: course.campus.institution.sisu?.acronym || undefined,
+    igc: course.campus.institution.emec?.igc || undefined,
+    ci: course.campus.institution.emec?.ci || undefined,
+    ci_ead: course.campus.institution.emec?.ci_ead || undefined,
+    site: course.campus.institution.emec?.site || undefined,
+    phone: course.campus.institution.emec?.phone || undefined,
+    email: course.campus.institution.emec?.email || undefined
+  };
+
+  const courseData = {
+    name: course.course_name
   };
 
   const campusData = {
@@ -68,37 +78,40 @@ export default async function OpportunityDetails({ params }: PageProps) {
       <Header />
 
       {/* Main Content Container */}
-      <div className="relative z-10 w-full max-w-[1200px] px-4 py-8 md:py-12 flex flex-col gap-6">
+      <div className="relative z-10 w-full max-w-[1200px] px-4 py-8 md:py-12 flex flex-col gap-6 mt-16 md:mt-20">
         
-        {/* Navigation / Back Button */}
-        <div className="w-full flex justify-start">
-             <Link href="/" className="flex items-center gap-2 text-[#024F86] hover:text-[#38B1E4] transition-colors font-medium">
-                <ArrowLeft size={20} />
-                Voltar
-             </Link>
-        </div>
-
         {/* Glass Container */}
         <div className="w-full bg-white/30 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_rgba(31,38,135,0.07)] rounded-3xl p-6 md:p-10 flex flex-col gap-8">
             
             {/* Header Section */}
-            <div className="flex flex-col gap-2 border-b border-[#024F86]/10 pb-6">
-                <h1 className="text-3xl md:text-4xl font-bold text-[#024F86] leading-tight">
-                    {course.course_name}
-                </h1>
-                <div className="flex flex-wrap items-center gap-2 text-[#3A424E]/80 text-lg font-medium">
-                    <span>{course.campus.institution.name}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#38B1E4]"></span>
-                    <span>{course.campus.name}</span>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-[#024F86]/10 pb-6">
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-3xl md:text-4xl font-bold text-[#024F86] leading-tight">
+                        {course.course_name}
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-2 text-[#3A424E]/80 text-lg font-medium">
+                        <span>{course.campus.institution.name}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#38B1E4]"></span>
+                        <span>{course.campus.name}</span>
+                    </div>
                 </div>
+                
+                {/* Back Button */}
+                 <Link href="/" className="flex items-center gap-2 text-[#024F86] hover:text-[#38B1E4] transition-colors font-medium whitespace-nowrap self-start md:self-auto order-first md:order-last">
+                    <ArrowLeft size={20} />
+                    Voltar
+                 </Link>
             </div>
 
+            {/* Content Cards Grid */}
             {/* Content Cards Grid */}
             {/* Content Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <SisuProuniCard type={primaryType} />
                  <ImportantDatesCard dates={importantDates} />
-                 <InstitutionDetailsCard institution={institutionData} campus={campusData} />
+                 <div className="md:col-span-2">
+                    <InstitutionDetailsCard institution={institutionData} course={courseData} campus={campusData} />
+                 </div>
                  <div className="md:col-span-2">
                       <OpportunitiesListCard opportunities={course.opportunities} />
                  </div>
