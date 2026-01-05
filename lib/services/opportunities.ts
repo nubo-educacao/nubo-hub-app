@@ -1,189 +1,175 @@
-import { supabase } from '../supabaseClient';
-import { CourseWithRelations } from '../../types/database.types';
-import { CourseDisplayData, mapToCourseDisplayData } from '../../types/opportunity';
+import { supabase } from '@/lib/supabaseClient'; 
+import { CourseDisplayData } from '@/types/opportunity';
 
-export interface FetchCoursesResult {
-  data: CourseDisplayData[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
-  error: string | null;
+export interface CourseDetail {
+  course_code: string;
+  course_name: string;
+  vacancies: number;
+  opportunities: {
+    id: string;
+    semester: string;
+    shift: string;
+    scholarship_type: string; // 'Integral', etc.
+    cutoff_score: number | null;
+    opportunity_type: string;
+  }[];
+  campus: {
+    name: string;
+    city: string; // 'São Paulo'
+    state: string; // 'SP'
+    region: string;
+    institution: {
+      id: string;
+      name: string;
+      external_code: string;
+      emec: {
+        phone: string;
+        site: string;
+        email: string;
+        academic_organization: string;
+        credentialing: string; // mapped from credentialing_type
+        administrative_category: string;
+        creation_date: string;
+        ci: number;
+        ci_ead: number;
+        igc: number;
+      } | null;
+      sisu: {
+        acronym: string;
+        academic_organization?: string;
+        administrative_category?: string;
+      } | null;
+    };
+  };
 }
 
-/**
- * Busca cursos do Supabase com suas oportunidades, com paginação
- * @param page Página atual (0-indexed)
- * @param limit Número de itens por página
- * @returns Objeto com dados mapeados, metadados de paginação e possível erro
- */
-export async function fetchCoursesWithOpportunities(
-  page: number = 0,
-  limit: number = 15
-): Promise<FetchCoursesResult> {
-  try {
-    const from = page * limit;
-    const to = from + limit - 1;
-
-    console.log(`[FetchCourses] Starting fetch (RPC) for page ${page} limit ${limit}`);
-    console.time('fetchCourses');
-
-    // Call the RPC function
-    const { data, error } = await supabase.rpc('get_courses_with_opportunities', {
-      page_number: page, 
-      page_size: limit
-    });
-
-    if (error) {
-      console.timeEnd('fetchCourses');
-      console.error('[FetchCourses] Supabase RPC Error:', error);
-      return {
-        data: [],
-        total: 0,
-        page,
-        limit,
-        hasMore: false,
-        error: error.message,
-      };
-    }
-
-    console.log(`[FetchCourses] Success. Got ${data?.length} rows.`);
-    console.timeEnd('fetchCourses');
-
-    // Map RPC result to UI format
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mappedData: CourseDisplayData[] = (data as any[]).map(item => {
-        // Map opportunities from JSON
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const opportunities = (item.opportunities || []).map((opp: any) => {
-            let type: 'Pública' | 'Privada' | 'Parceiro';
-            if (opp.scholarship_type?.toLowerCase().includes('integral') || opp.opportunity_type === 'sisu') {
-                type = 'Pública';
-            } else if (opp.scholarship_type?.toLowerCase().includes('parcial')) {
-                type = 'Privada';
-            } else {
-                type = 'Parceiro';
-            }
-
-            return {
-                id: opp.id,
-                shift: opp.shift,
-                opportunity_type: opp.opportunity_type,
-                scholarship_type: opp.scholarship_type,
-                cutoff_score: opp.cutoff_score,
-                type
-            };
-        });
-
-        const scores = opportunities.map((o: any) => o.cutoff_score).filter((s: any): s is number => typeof s === 'number');
-        const min_cutoff_score = scores.length > 0 ? Math.min(...scores) : null;
-
-        return {
-            id: item.id,
-            title: item.course_name || 'Curso não informado',
-            institution: item.institution_name || 'Instituição não informada',
-            location: `${item.city || 'Cidade não informada'}, ${item.state || 'UF'}`,
-            city: item.city,
-            state: item.state,
-            opportunities,
-            min_cutoff_score
-        };
-    });
-
-    // Simple hasMore check
-    const hasMore = mappedData.length === limit;
-    
-    // Total is hard to get exactly without a consolidated query, using a placeholder or separate count if critical
-    // For infinite scroll, hasMore is usually enough
-    const total = hasMore ? (page + 1) * limit + 1 : (page * limit) + mappedData.length;
-
-    return {
-      data: mappedData,
-      total,
-      page,
-      limit,
-      hasMore,
-      error: null,
-    };
-  } catch (err) {
-    console.timeEnd('fetchCourses');
-    console.error('[FetchCourses] Unexpected Error:', err);
-    return {
-      data: [],
-      total: 0,
-      page,
-      limit,
-      hasMore: false,
-      error: err instanceof Error ? err.message : 'Erro desconhecido',
-    };
-  }
-}
-
-/**
- * Busca oportunidades agrupadas por cursos específicos via course_id
- */
-export async function fetchOpportunitiesByCourseIds(courseIds: string[]): Promise<CourseDisplayData[]> {
-  if (!courseIds || courseIds.length === 0) return [];
-
+export async function getImportantDates(type: string = 'general') {
   const { data, error } = await supabase
-    .from('opportunities_view')
+    .from('important_dates')
     .select('*')
-    .in('course_id', courseIds);
+    .or(`type.eq.${type},type.eq.general`)
+    .order('start_date', { ascending: true });
 
   if (error) {
-    console.error('[fetchOpportunitiesByCourseIds] Error:', error);
+    console.error('Error fetching important dates:', error);
     return [];
   }
 
-  // Agrupar por chave única de curso (Instituição + Cidade + Curso + ID do curso)
-  const grouped = new Map<string, CourseDisplayData>();
+  return data || [];
+}
 
-  data.forEach((row: any) => {
-    // Chave para agrupar - usando course_id que é o mais seguro agora
-    const key = row.course_id;
+export async function getCourseDetails(courseId: string): Promise<CourseDetail | null> {
+  const { data, error } = await supabase
+    .from('courses')
+    .select(`
+      course_code,
+      course_name,
+      vacancies,
+      opportunities (
+        id,
+        semester,
+        shift,
+        scholarship_type,
+        cutoff_score,
+        opportunity_type
+      ),
+      campus:campus_id (
+        name,
+        city,
+        state,
+        region,
+        institutions:institution_id (
+          id,
+          name,
+          external_code,
+          institutionsinfoemec (
+            phone,
+            site,
+            email,
+            academic_organization,
+            credentialing_type,
+            administrative_category,
+            creation_date,
+            ci,
+            ci_ead,
+            igc
+          ),
+          institutionsinfosisu (
+            acronym,
+            academic_organization,
+            administrative_category
+          )
+        )
+      )
+    `)
+    .eq('id', courseId)
+    .single();
 
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        id: row.course_id,
-        title: row.course,
-        institution: row.institution,
-        location: `${row.city}, ${row.state || 'UF'}`,
-        city: row.city,
-        state: row.state,
-        opportunities: [],
-        min_cutoff_score: null
-      });
+  if (error) {
+    console.error('Error fetching course details:', error);
+    return null;
+  }
+
+  if (!data) return null;
+  
+  const campusData = data.campus as any;
+  const institutionData = campusData?.institutions;
+  const emecData = institutionData?.institutionsinfoemec?.[0] || null;
+  const sisuData = institutionData?.institutionsinfosisu?.[0] || null;
+
+  return {
+    course_code: data.course_code,
+    course_name: data.course_name,
+    vacancies: data.vacancies,
+    opportunities: data.opportunities as any[],
+    campus: {
+      name: campusData.name,
+      city: campusData.city,
+      state: campusData.state,
+      region: campusData.region,
+      institution: {
+        id: institutionData.id,
+        name: institutionData.name,
+        external_code: institutionData.external_code,
+        emec: emecData ? {
+            phone: emecData.phone,
+            site: emecData.site,
+            email: emecData.email,
+            academic_organization: emecData.academic_organization,
+            credentialing: emecData.credentialing_type,
+            administrative_category: emecData.administrative_category,
+            creation_date: emecData.creation_date,
+            ci: emecData.ci,
+            ci_ead: emecData.ci_ead,
+            igc: emecData.igc,
+        } : null,
+        sisu: sisuData ? {
+            acronym: sisuData.acronym,
+            academic_organization: sisuData.academic_organization,
+            administrative_category: sisuData.administrative_category,
+        } : null
+      }
     }
+  };
+}
 
-    const courseGroup = grouped.get(key)!;
-
-    // Mapear oportunidade
-    let type: 'Pública' | 'Privada' | 'Parceiro';
-    if (row.scholarship_type?.toLowerCase().includes('integral') || row.opportunity_type === 'sisu' || row.type === 'Sisu' || row.type === 'Prouni') {
-        type = 'Pública';
-    } else if (row.scholarship_type?.toLowerCase().includes('parcial')) {
-        type = 'Privada';
-    } else {
-        type = 'Parceiro';
-    }
-
-    courseGroup.opportunities.push({
-        id: row.opportunity_id || row.id, // Fallback if alias not present (but should be per view)
-        shift: row.shift,
-        opportunity_type: row.opportunity_type || row.type, // Fallback
-        scholarship_type: row.scholarship_type,
-        cutoff_score: row.cutoff_score,
-        type
-    });
+export async function fetchCoursesWithOpportunities(page: number, limit: number) {
+  const { data, error } = await supabase.rpc('get_courses_with_opportunities', {
+    page_number: page,
+    page_size: limit,
   });
 
-  // Calcular min_score e converter para array
-  return Array.from(grouped.values()).map(course => {
-      const scores = course.opportunities
-          .map(o => o.cutoff_score)
-          .filter((s): s is number => typeof s === 'number' && s > 0);
-      
-      course.min_cutoff_score = scores.length > 0 ? Math.min(...scores) : null;
-      return course;
-  });
+  if (error) {
+    console.error('Error fetching courses:', error);
+    return { data: [], error: error.message, hasMore: false };
+  }
+
+  // Check if we have more pages (if we received full page size)
+  const hasMore = (data?.length || 0) === limit;
+
+  return { 
+    data: (data as CourseDisplayData[]) || [], 
+    error: null, 
+    hasMore 
+  };
 }
