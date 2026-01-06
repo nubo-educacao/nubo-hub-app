@@ -2,13 +2,13 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Search, Sun, Sunset, Moon, SunMoon, Laptop } from "lucide-react";
+import { Search, Sun, Sunset, Moon, SunMoon, Laptop, Info } from "lucide-react";
 
 export interface Opportunity {
   id: string;
   shift: string;
   scholarship_type?: string;
-  concurrency_tags?: string[];
+  concurrency_tags?: string[][] | any; // Supports JSONB array of arrays
   cutoff_score: number | null;
   opportunity_type: string;
 }
@@ -30,6 +30,9 @@ const getTagStyle = (tag: string) => {
     case 'PROFESSOR': return { bg: 'bg-pink-100', text: 'text-pink-800', label: 'Professor' };
     case 'TRANS': return { bg: 'bg-rose-100', text: 'text-rose-800', label: 'Trans' };
     case 'REFUGIADOS': return { bg: 'bg-slate-100', text: 'text-slate-700', label: 'Refugiados' };
+    case 'BOLSA_INTEGRAL': return { bg: 'bg-sky-100', text: 'text-sky-700', label: 'Bolsa Integral' };
+    case 'BOLSA_PARCIAL': return { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Bolsa Parcial' };
+    case 'MILITAR': return { bg: 'bg-zinc-100', text: 'text-zinc-800', label: 'Militar/Policial' };
     default: return { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Outros' };
   }
 };
@@ -37,7 +40,7 @@ const getTagStyle = (tag: string) => {
 export default function OpportunitiesListCard({ opportunities }: OpportunitiesListCardProps) {
   const router = useRouter();
   
-  console.log('Opportunities Data:', opportunities); // DEBUG: Check if concurrency_tags is present
+  console.log('Opportunities Data in Component:', opportunities);
 
   const handleFindSimilar = (opportunityId: string) => {
     const message = `Quero encontrar oportunidade similar a ${opportunityId}`;
@@ -56,6 +59,42 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
     }
   };
 
+  const renderTags = (tags: any) => {
+    // Handle legacy format (string[]) or potential nulls
+    if (!tags || tags.length === 0) return null;
+    
+    // Normalize to array of arrays: if first element is string, wrap it.
+    // If first element is array, use as is.
+    let groups: string[][] = [];
+    if (Array.isArray(tags[0])) {
+        groups = tags;
+    } else {
+        groups = [tags];
+    }
+
+    return (
+        <div className="flex flex-wrap items-center gap-y-1">
+            {groups.map((group, groupIndex) => (
+                <React.Fragment key={groupIndex}>
+                    {groupIndex > 0 && (
+                        <span className="text-[10px] font-bold text-slate-400 mx-1.5 uppercase tracking-wide">OU</span>
+                    )}
+                    <div className="flex flex-wrap gap-1">
+                        {group.map((tag: string) => {
+                             const style = getTagStyle(tag);
+                             return (
+                                 <span key={tag} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text} whitespace-nowrap`}>
+                                     {style.label}
+                                 </span>
+                             );
+                        })}
+                    </div>
+                </React.Fragment>
+            ))}
+        </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100 col-span-1 md:col-span-2">
       <div className="p-6 border-b border-slate-100">
@@ -66,10 +105,10 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-slate-500 text-sm uppercase">
             <tr>
-              <th className="px-6 py-4 font-semibold text-center w-[100px]">Turno</th>
-              <th className="px-6 py-4 font-semibold">Tipo</th>
-              <th className="px-6 py-4 font-semibold">Nota de Corte</th>
-              <th className="px-6 py-4 font-semibold text-right">Ação</th>
+              <th className="px-6 py-4 font-semibold text-center w-[10%]">Turno</th>
+              <th className="px-6 py-4 font-semibold w-[45%]">Tipo</th>
+              <th className="px-6 py-4 font-semibold text-center w-[20%] whitespace-nowrap">Nota de Corte</th>
+              <th className="px-6 py-4 font-semibold text-center w-[25%]">Ação</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -90,26 +129,31 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                   </div>
                 </td>
                 <td className="px-6 py-4 text-slate-600">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {opp.concurrency_tags && opp.concurrency_tags.length > 0 ? (
-                            opp.concurrency_tags.map(tag => {
-                                const style = getTagStyle(tag);
-                                return (
-                                    <span key={tag} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-                                        {style.label}
-                                    </span>
-                                );
-                            })
+                            renderTags(opp.concurrency_tags)
                         ) : (
                              // Fallback only if tags are missing but type exists, or for old data
                              opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
                         )}
+                        
+                        {/* Info Tooltip for full description */}
+                        {opp.scholarship_type && (
+                            <div className="relative group/info inline-flex items-center ml-1">
+                                <Info size={16} className="text-slate-400 cursor-help hover:text-[#024F86] transition-colors" />
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800/95 text-white text-xs rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
+                                    {opp.scholarship_type}
+                                    {/* Arrow */}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/95"></div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </td>
-                <td className="px-6 py-4 font-bold text-[#024F86]">
+                <td className="px-6 py-4 font-bold text-[#024F86] text-center">
                    {opp.cutoff_score ? opp.cutoff_score.toFixed(2) : '-'}
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => handleFindSimilar(opp.id)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#38B1E4] text-[#38B1E4] rounded-full hover:bg-[#38B1E4] hover:text-white transition-all text-sm font-semibold"

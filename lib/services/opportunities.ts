@@ -13,6 +13,7 @@ export interface CourseDetail {
     scholarship_type: string; // 'Integral', etc.
     cutoff_score: number | null;
     opportunity_type: string;
+    concurrency_tags?: string[]; // Add this
   }[];
   campus: {
     name: string;
@@ -72,7 +73,8 @@ export async function getCourseDetails(courseId: string): Promise<CourseDetail |
         shift,
         scholarship_type,
         cutoff_score,
-        opportunity_type
+        opportunity_type,
+        concurrency_tags
       ),
       campus:campus_id (
         name,
@@ -170,10 +172,27 @@ export async function getCourseDetails(courseId: string): Promise<CourseDetail |
   };
 }
 
-export async function fetchCoursesWithOpportunities(page: number, limit: number) {
+export async function fetchCoursesWithOpportunities(
+  page: number, 
+  limit: number,
+  category?: string,
+  search_query?: string,
+  sort_by?: string, // 'proximas', 'melhores', 'maior_nota', 'menor_nota'
+  user_city?: string,
+  user_state?: string,
+  user_lat?: number,
+  user_long?: number
+) {
   const { data, error } = await supabase.rpc('get_courses_with_opportunities', {
     page_number: page,
     page_size: limit,
+    category,
+    search_query,
+    sort_by,
+    user_city,
+    user_state,
+    user_lat,
+    user_long
   });
 
   if (error) {
@@ -202,6 +221,7 @@ export async function fetchCoursesWithOpportunities(page: number, limit: number)
         shift: opp.shift,
         opportunity_type: opp.opportunity_type,
         scholarship_type: opp.scholarship_type,
+        concurrency_tags: opp.concurrency_tags, // Add this
         cutoff_score: opp.cutoff_score,
         type
       };

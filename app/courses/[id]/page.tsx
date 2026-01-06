@@ -9,6 +9,7 @@ import SisuProuniCard from '@/components/courses/SisuProuniCard';
 import ImportantDatesCard from '@/components/courses/ImportantDatesCard';
 import InstitutionDetailsCard from '@/components/courses/InstitutionDetailsCard';
 import OpportunitiesListCard from '@/components/courses/OpportunitiesListCard';
+import BackButton from '@/components/BackButton';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -40,8 +41,8 @@ export default async function OpportunityDetails({ params }: PageProps) {
 
   // Determine primary opportunity type (sisu or prouni)
   // Default to sisu if not specified or mixed, can be refined.
-  const primaryType = course.opportunities.length > 0 && course.opportunities[0].scholarship_type 
-    ? 'prouni' 
+  const primaryType = course.opportunities.length > 0 && course.opportunities[0].opportunity_type 
+    ? course.opportunities[0].opportunity_type 
     : 'sisu';
 
   // Fetch important dates based on type
@@ -97,17 +98,14 @@ export default async function OpportunityDetails({ params }: PageProps) {
                 </div>
                 
                 {/* Back Button */}
-                 <Link href="/" className="flex items-center gap-2 text-[#024F86] hover:text-[#38B1E4] transition-colors font-medium whitespace-nowrap self-start md:self-auto order-first md:order-last">
-                    <ArrowLeft size={20} />
-                    Voltar
-                 </Link>
+<BackButton />
             </div>
 
             {/* Content Cards Grid */}
             {/* Content Cards Grid */}
             {/* Content Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <SisuProuniCard type={primaryType} />
+                 <SisuProuniCard opportunity_type={primaryType} />
                  <ImportantDatesCard dates={importantDates} />
                  <div className="md:col-span-2">
                     <InstitutionDetailsCard institution={institutionData} course={courseData} campus={campusData} />

@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
 interface SisuProuniCardProps {
-  type: string; // 'sisu' | 'prouni'
+  opportunity_type: string; // 'sisu' | 'prouni'
 }
 
-export default function SisuProuniCard({ type }: SisuProuniCardProps) {
+export default function SisuProuniCard({ opportunity_type }: SisuProuniCardProps) {
   const router = useRouter();
-  const title = type.toLowerCase() === "prouni" ? "Programa ProUni" : "Programa SiSU";
+  const title = opportunity_type.toLowerCase() === "prouni" ? "Programa ProUni" : "Programa SiSU";
   const description =
-    type.toLowerCase() === "prouni"
+    opportunity_type.toLowerCase() === "prouni"
       ? "O Programa Universidade para Todos (ProUni) é um processo seletivo do MEC que concede bolsas de estudo integrais e parciais em instituições privadas, utilizando a nota do Enem e critérios de renda."
       : "O Sisu (Sistema de Seleção Unificada) é o processo seletivo do MEC que utiliza a nota do Enem para classificar candidatos a vagas ofertadas por instituições de ensino superior participantes.";
 
   const handleLearnMore = () => {
     const message = `Quero saber mais sobre o ${
-      type.toLowerCase() === "prouni" ? "ProUni" : "Sisu"
+      opportunity_type.toLowerCase() === "prouni" ? "ProUni" : "Sisu"
     }`;
     router.push(`/chat?message=${encodeURIComponent(message)}`);
   };

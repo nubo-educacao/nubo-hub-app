@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import ChatCloudinha from './components/ChatCloudinha';
 import OpportunityCarousel from './components/OpportunityCarousel';
@@ -16,12 +17,19 @@ import AuthModal from '@/components/AuthModal'; // Assuming there is an existing
 // For now, I will scaffold the page.
 
 export default function ChatPage() {
-  const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction, isAuthenticated, isLoading } = useAuth();
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
   const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
+  const [selectedFunctionality, setSelectedFunctionality] = useState<'MATCH' | 'PROUNI' | 'SISU'>('MATCH');
   const [isReady, setIsReady] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/');
+      return;
+    }
+
     // Ensure modal is closed when arriving at chat page
     closeAuthModal();
 
@@ -59,11 +67,28 @@ export default function ChatPage() {
       {/* Right Side - Content Panel (3/4 cols) */}
       <div className="col-span-3 flex flex-col relative overflow-hidden bg-gradient-to-r from-[#024f86] to-[#3092bb]">
          {/* Header */}
-         <ChatHeader />
+         <ChatHeader 
+            selectedFunctionality={selectedFunctionality} 
+            onSelectFunctionality={setSelectedFunctionality}
+         />
 
          {/* Main Content Area */}
          <div className="flex-1 relative z-10 p-8 flex flex-col h-full overflow-hidden">
-            <OpportunityCarousel courseIds={activeCourseIds} />
+            {selectedFunctionality === 'MATCH' && (
+                <OpportunityCarousel courseIds={activeCourseIds} />
+            )}
+            
+            {selectedFunctionality === 'PROUNI' && (
+                <div className="w-full h-full flex items-center justify-center text-white/50">
+                    <span className="text-xl">this works - Prouni placeholder</span>
+                </div>
+            )}
+
+            {selectedFunctionality === 'SISU' && (
+                <div className="w-full h-full flex items-center justify-center text-white/50">
+                    <span className="text-xl">this works - Sisu placeholder</span>
+                </div>
+            )}
          </div>
       </div>
 

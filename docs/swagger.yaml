@@ -107,6 +107,23 @@ paths:
                 page_size:
                   type: integer
                   description: Number of items per page
+                search_query:
+                  type: string
+                  nullable: true
+                category:
+                  type: string
+                  nullable: true
+                  enum: [SISU, Prouni, EAD, 'Ações afirmativas']
+                sort_by:
+                  type: string
+                  nullable: true
+                  enum: [proximas, melhores, maior_nota, menor_nota]
+                user_city:
+                  type: string
+                  nullable: true
+                user_state:
+                  type: string
+                  nullable: true
       responses:
         '200':
           description: List of courses

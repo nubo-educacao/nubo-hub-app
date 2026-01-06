@@ -60,7 +60,7 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
   const cutoffDisplay = minCutoff === maxCutoff ? `${minCutoff}` : `${minCutoff} - ${maxCutoff}`;
 
   // Logic: Unique Opportunity Types for Badges
-  const uniqueTypes = Array.from(new Set(course.opportunities.map(o => o.type).filter(Boolean))).slice(0, 2); // Limit to 2 for space
+  const uniqueTypes = Array.from(new Set(course.opportunities.map(o => o.opportunity_type).filter(Boolean))).slice(0, 2); // Limit to 2 for space
 
   // Logic: Active Shifts
   const activeShifts = new Set(course.opportunities.map(o => o.shift));
@@ -84,8 +84,8 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
         {/* Badge: Top Left */}
         <div className="absolute top-4 left-4 z-30">
              {uniqueTypes.filter(Boolean).map((type, index) => (
-                 <span key={`${type}-${index}`} className="text-[12px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#9747FF]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(151,71,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#B070FF]/50">
-                    {type === 'Pública' ? 'Sisu' : 'Prouni'}
+                 <span key={`${type}-${index}`} className="text-[12px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#9747FF]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(151,71,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#B070FF]/50 uppercase">
+                    {type}
                  </span>
              ))}
         </div>
