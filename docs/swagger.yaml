@@ -107,6 +107,23 @@ paths:
                 page_size:
                   type: integer
                   description: Number of items per page
+                search_query:
+                  type: string
+                  nullable: true
+                category:
+                  type: string
+                  nullable: true
+                  enum: [SISU, Prouni, EAD, 'Ações afirmativas']
+                sort_by:
+                  type: string
+                  nullable: true
+                  enum: [proximas, melhores, maior_nota, menor_nota]
+                user_city:
+                  type: string
+                  nullable: true
+                user_state:
+                  type: string
+                  nullable: true
       responses:
         '200':
           description: List of courses
@@ -143,3 +160,115 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OpportunityView'
+
+  /courses:
+    get:
+      summary: Get Course Details
+      description: >
+        Fetches detailed information for a specific course, including nested relations:
+        opportunities, campus (with institution), and institution details (EMEC, SISU).
+        Used by `getCourseDetails`.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Course ID (eq.UUID)
+          schema:
+            type: string
+            format: uuid
+        - name: select
+          in: query
+          description: PostgREST select query with nested embeddings
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Course details object
+          content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                   $ref: '#/components/schemas/CourseDetail'
+
+    CourseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_name:
+          type: string
+        course_code:
+          type: string
+        vacancies:
+          type: integer
+        opportunities:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              semester:
+                type: string
+              shift:
+                type: string
+              scholarship_type:
+                type: string
+              cutoff_score:
+                type: number
+        campus:
+          type: object
+          properties:
+            name:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            region:
+              type: string
+            institutions:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                external_code:
+                  type: string
+                institutionsinfoemec:
+                  type: array # Usually 1:1 but supabase returns array for has_many if not single()
+                  items:
+                    type: object
+                    properties:
+                      phone:
+                        type: string
+                      site:
+                        type: string
+                      email:
+                        type: string
+                      academic_organization:
+                        type: string
+                      credentialing_type:
+                        type: string
+                      administrative_category:
+                        type: string
+                      creation_date:
+                        type: string
+                      ci:
+                         type: integer
+                      ci_ead:
+                         type: integer
+                      igc:
+                         type: integer
+                institutionsinfosisu:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      acronym:
+                        type: string

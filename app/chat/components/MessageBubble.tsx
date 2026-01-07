@@ -3,6 +3,8 @@
 import React from 'react';
 import { Message } from './ChatCloudinha';
 import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MessageBubbleProps {
   message: Message;
@@ -39,7 +41,30 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
           ? 'bg-[#38B1E4]/50 text-white rounded-br-none' 
           : 'bg-white/10 text-gray-100 border border-white/5 rounded-bl-none'
       }`}>
-        {message.text}
+<div className="markdown-content">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: (props: any) => <p className="mb-2 last:mb-0">{props.children}</p>,
+              strong: (props: any) => <strong className="font-bold">{props.children}</strong>,
+              ul: (props: any) => <ul className="list-disc ml-4 mb-2 space-y-1">{props.children}</ul>,
+              ol: (props: any) => <ol className="list-decimal ml-4 mb-2 space-y-1">{props.children}</ol>,
+              li: (props: any) => <li>{props.children}</li>,
+              a: (props: any) => (
+                <a 
+                  href={props.href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className={`underline ${isUser ? 'text-white' : 'text-purple-300 hover:text-purple-200'}`}
+                >
+                  {props.children}
+                </a>
+              ),
+            }}
+          >
+            {message.text}
+          </ReactMarkdown>
+        </div>
         <div className={`text-[10px] mt-1 opacity-50 ${isUser ? 'text-right' : 'text-left'}`}>
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>

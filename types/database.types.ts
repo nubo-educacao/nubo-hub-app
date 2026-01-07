@@ -37,6 +37,7 @@ export interface OpportunityRow {
   scholarship_type: string;
   cutoff_score: number | null;
   opportunity_type: string | null;
+  concurrency_tags?: string[]; // New column
 }
 
 export interface OpportunityWithRelations extends OpportunityRow {
