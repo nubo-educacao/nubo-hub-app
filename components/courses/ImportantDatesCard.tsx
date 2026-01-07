@@ -66,10 +66,7 @@ export default function ImportantDatesCard({ dates }: ImportantDatesCardProps) {
       };
     } else if (index === 1) {
       return {
-        title: "text-[#024F86] font-bold text-base", // Figma screenshot shows all items blue/dark text actually? 
         // Request: "o segundo e o terceiro devem ser menores e seu texto acompanhar o da bolinha, FF9900 e 9747FF, respectivamente"
-        // Wait, "seu texto" probably means the title text color too? 
-        // "texto acompanhar o da bolinha" -> Text color matches dot color.
         title: "text-[#FF9900] font-medium text-base",
         date: "text-slate-500 font-medium text-sm", 
         dot: "text-[#FF9900]",
