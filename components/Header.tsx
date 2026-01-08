@@ -4,6 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
+import { User } from 'lucide-react';
+
 export default function Header({ transparent = false }: { transparent?: boolean }) {
   const { isAuthenticated, openAuthModal, logout } = useAuth();
 
@@ -26,7 +28,9 @@ export default function Header({ transparent = false }: { transparent?: boolean 
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
-              <span className="text-neutral-600 text-sm hidden md:inline">Bem-vindo!</span>
+              <Link href="/profile" className="p-2 rounded-full hover:bg-black/5 transition-colors text-[#3A424E] hover:text-[#38B1E4]" title="Meu Perfil">
+                <User size={24} />
+              </Link>
               <button 
                 onClick={logout}
                 className="text-neutral-600 hover:text-[#38B1E4] text-sm font-medium transition-colors"

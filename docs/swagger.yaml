@@ -272,3 +272,104 @@ paths:
                     properties:
                       acronym:
                         type: string
+    Partner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        income:
+          type: string
+        dates:
+          type: object # jsonb
+        link:
+          type: string
+        coverimage:
+          type: string
+  /rpc/get_partners:
+     post:
+       summary: Get All Partners
+       description: Returns all partners ordered by name.
+       responses:
+         '200':
+           description: List of partners
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                   $ref: '#/components/schemas/Partner'
+
+  /rpc/get_user_favorites_details:
+     post:
+       summary: Get User Favorites Details
+       description: Returns details of courses and partners favorited by the current user.
+       responses:
+         '200':
+           description: Object containing lists of courses and partners
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   courses:
+                     type: array
+                     items:
+                       $ref: '#/components/schemas/CourseDisplayData'
+                   partners:
+                     type: array
+                     items:
+                       $ref: '#/components/schemas/Partner'
+
+  /rpc/update_own_profile:
+     post:
+       summary: Update User Profile
+       description: Updates the user's profile and returns the updated record. Sets onboarding_completed to true if all fields are filled.
+       requestBody:
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 p_full_name:
+                   type: string
+                   nullable: true
+                 p_age:
+                   type: integer
+                   nullable: true
+                 p_city:
+                   type: string
+                   nullable: true
+                 p_education:
+                   type: string
+                   nullable: true
+       responses:
+         '200':
+           description: Updated profile object
+           content:
+             application/json:
+               schema:
+                 type: object
+                 additionalProperties: true
+
+  /rpc/get_own_profile:
+     post:
+       summary: Get Own Profile (Secure)
+       description: Returns the user's profile using a SECURITY DEFINER RPC.
+       responses:
+         '200':
+           description: Profile object or null
+           content:
+             application/json:
+               schema:
+                 type: object
+                 additionalProperties: true
+                 nullable: true

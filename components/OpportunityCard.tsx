@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CourseDisplayData, OpportunityDisplay } from '../types/opportunity';
+import { toggleFavoriteService, getUserFavoritesService } from '../services/supabase/favorites';
 import { Heart, MapPin, TrendingUp, ArrowRight, Sun, Sunset, Moon, SunMoon, Laptop } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -18,10 +19,26 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
 
+  // Check favorite status on load/auth
+  useEffect(() => {
+    async function checkFavorite() {
+      if (isAuthenticated) {
+        const { data } = await getUserFavoritesService();
+        if (data && data.courseIds.includes(course.id)) {
+          setIsFavorite(true);
+        }
+      }
+    }
+    checkFavorite();
+  }, [isAuthenticated, course.id]);
+
   // Logic to handle favorite for the COURSE
   useEffect(() => {
     if (isAuthenticated && pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === course.id) {
-      setIsFavorite(true);
+      // Execute the pending favorite action
+      toggleFavoriteService('course', course.id).then(({ error }) => {
+          if (!error) setIsFavorite(true);
+      });
       clearPendingAction();
     }
     
@@ -31,14 +48,23 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
     }
   }, [isAuthenticated, pendingAction, course.id, clearPendingAction, router]);
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  const handleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) {
       setPendingAction({ type: 'favorite', payload: { opportunityId: course.id } });
       openAuthModal();
       return;
     }
+    
+    // Optimistic Update
+    const previousState = isFavorite;
     setIsFavorite(!isFavorite);
+
+    const { error } = await toggleFavoriteService('course', course.id);
+    if (error) {
+        console.error('Error toggling favorite:', error);
+        setIsFavorite(previousState);
+    }
   };
 
   const handleViewDetails = () => {
