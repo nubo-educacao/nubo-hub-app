@@ -7,16 +7,6 @@ import MessageBubble from './MessageBubble';
 // import OpportunityCarousel from './OpportunityCarousel'; // Moved to Page level
 import { motion } from 'framer-motion';
 
-// Mock initial messages
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: '1',
-    sender: 'cloudinha',
-    text: 'Olá! Sou a Cloudinha 💜 Como posso ajudar você a encontrar a oportunidade perfeita hoje?',
-    timestamp: new Date(),
-  },
-];
-
 export interface Message {
   id: string;
   sender: 'user' | 'cloudinha';
@@ -80,7 +70,7 @@ export default function ChatCloudinha({
         } else {
           // Only show greeting if no history AND no initial message pending
           if (!initialMessage) {
-            setMessages(INITIAL_MESSAGES);
+            setMessages([]);
           } else {
             setMessages([]); // Start empty if we are about to send a message
           }
@@ -102,11 +92,11 @@ export default function ChatCloudinha({
       fetchHistory();
     } else {
       // Not logged in
-      setMessages(INITIAL_MESSAGES);
+      setMessages([]);
       setIsLoadingHistory(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, initialMessage]);
 
   const handleSendMessage = async (text: string) => {
     // Add user message locally (optimistic update)

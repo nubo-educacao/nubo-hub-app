@@ -5,6 +5,7 @@ export async function POST(request: Request) {
   try {
     const { message, history } = await request.json();
     const authHeader = request.headers.get('Authorization');
+    console.log('[API Chat] Auth Header present:', !!authHeader);
 
     // Initialize Supabase Client
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -20,6 +21,12 @@ export async function POST(request: Request) {
     // 1. Get User ID (optional, but good for verification)
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
+    if (userError) {
+        console.error('[API Chat] getUser Error:', userError);
+    }
+    console.log('[API Chat] User:', user?.id);
+    
+    /*
     if (user) {
       // 2. Save User Message
       await supabase.from('chat_messages').insert({
@@ -28,6 +35,7 @@ export async function POST(request: Request) {
         content: message,
       });
     }
+    */
 
     const webhookUrl = process.env.AGENT_URL || process.env.N8N_WEBHOOK_URL;
 
@@ -93,6 +101,7 @@ export async function POST(request: Request) {
     // Check for "response", "text", or "output" fields
     const aiResponse = data.response || data.text || data.output || 'Desculpe, não consegui processar sua mensagem.';
 
+    /*
     if (user) {
       // 3. Save AI Message
       await supabase.from('chat_messages').insert({
@@ -101,6 +110,7 @@ export async function POST(request: Request) {
         content: aiResponse,
       });
     }
+    */
 
     return NextResponse.json(data);
 

@@ -81,6 +81,109 @@ components:
         type: array
         items:
             $ref: '#/components/schemas/CourseDisplayData'
+    CourseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_name:
+          type: string
+        course_code:
+          type: string
+        vacancies:
+          type: integer
+        opportunities:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              semester:
+                type: string
+              shift:
+                type: string
+              scholarship_type:
+                type: string
+              cutoff_score:
+                type: number
+        campus:
+          type: object
+          properties:
+            name:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            region:
+              type: string
+            institutions:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                external_code:
+                  type: string
+                institutionsinfoemec:
+                  type: array # Usually 1:1 but supabase returns array for has_many if not single()
+                  items:
+                    type: object
+                    properties:
+                      phone:
+                        type: string
+                      site:
+                        type: string
+                      email:
+                        type: string
+                      academic_organization:
+                        type: string
+                      credentialing_type:
+                        type: string
+                      administrative_category:
+                        type: string
+                      creation_date:
+                        type: string
+                      ci:
+                         type: integer
+                      ci_ead:
+                         type: integer
+                      igc:
+                         type: integer
+                institutionsinfosisu:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      acronym:
+                        type: string
+    Partner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        income:
+          type: string
+        dates:
+          type: object # jsonb
+        link:
+          type: string
+        coverimage:
+          type: string
 
 security:
   - apikey: []
@@ -191,109 +294,7 @@ paths:
                  items:
                    $ref: '#/components/schemas/CourseDetail'
 
-    CourseDetail:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        course_name:
-          type: string
-        course_code:
-          type: string
-        vacancies:
-          type: integer
-        opportunities:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uuid
-              semester:
-                type: string
-              shift:
-                type: string
-              scholarship_type:
-                type: string
-              cutoff_score:
-                type: number
-        campus:
-          type: object
-          properties:
-            name:
-              type: string
-            city:
-              type: string
-            state:
-              type: string
-            region:
-              type: string
-            institutions:
-              type: object
-              properties:
-                id:
-                  type: string
-                  format: uuid
-                name:
-                  type: string
-                external_code:
-                  type: string
-                institutionsinfoemec:
-                  type: array # Usually 1:1 but supabase returns array for has_many if not single()
-                  items:
-                    type: object
-                    properties:
-                      phone:
-                        type: string
-                      site:
-                        type: string
-                      email:
-                        type: string
-                      academic_organization:
-                        type: string
-                      credentialing_type:
-                        type: string
-                      administrative_category:
-                        type: string
-                      creation_date:
-                        type: string
-                      ci:
-                         type: integer
-                      ci_ead:
-                         type: integer
-                      igc:
-                         type: integer
-                institutionsinfosisu:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      acronym:
-                        type: string
-    Partner:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-        location:
-          type: string
-        type:
-          type: string
-        income:
-          type: string
-        dates:
-          type: object # jsonb
-        link:
-          type: string
-        coverimage:
-          type: string
+
   /rpc/get_partners:
      post:
        summary: Get All Partners
@@ -373,3 +374,71 @@ paths:
                  type: object
                  additionalProperties: true
                  nullable: true
+
+  /auth/v1/otp:
+    post:
+      summary: Sign In with WhatsApp (OTP)
+      description: >
+        Initiates the login flow by sending an OTP via WhatsApp.
+        Native Supabase Auth endpoint documented here for reference.
+      servers:
+        - url: https://yfgciamhzjvarwgzosto.supabase.co
+          description: Supabase Auth Server
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                  example: "+5511999999999"
+                channel:
+                  type: string
+                  default: "whatsapp"
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+             application/json:
+               schema: 
+                 type: object
+
+  /auth/v1/verify:
+    post:
+      summary: Verify OTP
+      description: >
+        Verifies the OTP sent to the user.
+        Native Supabase Auth endpoint documented here for reference.
+      servers:
+        - url: https://yfgciamhzjvarwgzosto.supabase.co
+          description: Supabase Auth Server
+      requestBody:
+        content:
+           application/json:
+             schema:
+               type: object
+               required: [phone, token, type]
+               properties:
+                 phone:
+                   type: string
+                   example: "+5511999999999"
+                 token:
+                   type: string
+                   example: "123456"
+                 type:
+                   type: string
+                   default: "sms"
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                     type: object
+                  user:
+                     type: object
