@@ -7,6 +7,7 @@ import { PartnerCard } from './PartnerCard';
 import { CourseDisplayData } from '../types/opportunity';
 import { fetchCoursesWithOpportunities } from '../lib/services/opportunities';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { Partner, getPartners } from '../services/supabase/partners';
 
 function OpportunityCatalogContent() {
   const router = useRouter();
@@ -21,7 +22,9 @@ function OpportunityCatalogContent() {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'proximas');
 
   const [courses, setCourses] = useState<CourseDisplayData[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(false);
+  const [partnersLoading, setPartnersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -73,42 +76,17 @@ function OpportunityCatalogContent() {
     { label: 'Menor nota de corte', value: 'menor_nota' }
   ].filter(option => !isLocationDenied || option.value !== 'proximas');
 
-  // Mock Partners Data
-  const mockPartners = [
-    {
-      id: "1",
-      name: "Fundação Estudar",
-      description: "Oferecemos bolsas de estudo no Brasil ou exterior, e apoio vitalício para o desenvolvimento de nossos Fellows Estudar.",
-      isFavorite: false
-    },
-    {
-      id: "2",
-      name: "Gerando Falcões",
-      description: "Ecossistema de desenvolvimento social que atua em rede para acelerar o poder de impacto de líderes em favelas.",
-      isFavorite: true
-    },
-     {
-      id: "3",
-      name: "Instituto Ismart",
-      description: "Bolsas de estudo integrais e desenvolvimento para talentos de baixa renda acessarem educação de excelência.",
-      isFavorite: false
-    }
-  ];
-
-  // Fetch Logic - Only triggered when needed or pre-fetched
-  // For now, we keep it simple: fetch if switching to Publicas and list is empty, or just rely on manual calls.
-  // Carregar primeira página - Trigger only if viewing 'Públicas' or initially if we want pre-loading
-  // For now, let's keep the original behavior of loading on mount, but we could optimize.
+  // Fetch Logic
   useEffect(() => {
     // Determine if we should fetch based on filter
     if (selectedFilter !== 'Parceiros' && selectedFilter !== 'Fáceis de entrar') {
       loadInitialCourses();
+    } else if (selectedFilter === 'Parceiros') {
+      loadPartners();
     }
     
     // Update URL whenever these change (via the updateUrl wrapper or effect)
-    // Actually, let's do it in the handlers to avoid effect loops, or careful effect usage.
-    // Here we just fetch.
-  }, [selectedFilter, sortBy, userLocation]); // removed searchQuery from dependency to avoid aggressive fetching, will handle debouncing separately or manually
+  }, [selectedFilter, sortBy, userLocation]); 
 
   // Debounce search
   useEffect(() => {
@@ -147,15 +125,7 @@ function OpportunityCatalogContent() {
             const data = await res.json();
             
             if (data.address) {
-                 // Nominatim can return city in various fields depending on the location type
                  const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county;
-                 
-                 // State parsing - try to get a 2-letter code if possible, or just use the name
-                 // Nominatim returns full state name usually. We'll stick to a simple mapping if needed, 
-                 // but for now let's use the ISO-3166-2 code if available in 'ISO3166-2-lvl4' which is sometimes in address or extratags.
-                 // The standard address object has 'state'.
-                 // We will try to map common Brazilian states or just display what we get if it's short.
-                 // Actually, let's just use the state name for display, or try to extract initials.
                  let state = data.address.state;
                  
                  // Simple brazilian state mapper (fallback)
@@ -180,7 +150,6 @@ function OpportunityCatalogContent() {
         }
      }, (err) => {
         console.error("Geolocation error", err);
-        // If denied or unavailable, update state. The Effect will handle the fallback if needed.
         setIsLocationDenied(true);
      });
   };
@@ -199,6 +168,16 @@ function OpportunityCatalogContent() {
       if (value === 'proximas' && !userLocation) {
           getUserLocation();
       }
+  };
+
+  const loadPartners = async () => {
+    // Avoid re-fetching if already loaded, unless we want to refresh
+    if (partners.length > 0) return;
+    
+    setPartnersLoading(true);
+    const data = await getPartners();
+    setPartners(data);
+    setPartnersLoading(false);
   };
 
   const loadInitialCourses = async () => {
@@ -264,18 +243,32 @@ function OpportunityCatalogContent() {
 
   const renderContent = () => {
     if (selectedFilter === 'Parceiros') {
+      if (partnersLoading) {
+          return (
+          <div className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-[#024F86] border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-[#024F86] font-medium">Carregando parceiros...</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="flex flex-col items-center gap-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-            {mockPartners.map((partner) => (
-              <PartnerCard 
-                key={partner.id} 
-                id={partner.id}
-                name={partner.name}
-                description={partner.description}
-                isFavorite={partner.isFavorite}
-              />
-            ))}
+            {partners.length > 0 ? (
+                partners.map((partner) => (
+                  <PartnerCard 
+                    key={partner.id} 
+                    partner={partner}
+                  />
+                ))
+            ) : (
+                <div className="col-span-full text-center py-12 text-[#636E7C]">
+                    Nenhum parceiro encontrado no momento.
+                </div>
+            )}
           </div>
 
           <button className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md text-lg">
