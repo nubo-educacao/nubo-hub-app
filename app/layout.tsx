@@ -3,6 +3,7 @@ import { Inter, Montserrat, Nunito, Lora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({ 
@@ -34,6 +35,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <AuthModal />
+          <Toaster richColors position="top-center" />
         </AuthProvider>
       </body>
     </html>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Check, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 
@@ -15,7 +16,7 @@ export default function AuthModal() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // DEMO MODE CONFIGURATION
-  const IS_DEMO_MODE = true;
+  const IS_DEMO_MODE = false;
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -88,7 +89,9 @@ export default function AuthModal() {
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Erro ao enviar código. Tente novamente.');
+      const errorMessage = err.message || 'Erro ao enviar código. Tente novamente.';
+      setError(errorMessage);
+      toast.error(errorMessage);
       setIsLoading(false);
     }
   };
