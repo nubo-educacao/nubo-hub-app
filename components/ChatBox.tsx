@@ -25,7 +25,7 @@ export default function ChatBox() {
     "Me ajude a encontrar a oportunidade ideal...",
     "Como funciona o processo do SISU?",
     "Tenho direito a bolsas do Prouni?",
-    "Quais os prazos de inscrição do ENEM?",
+    "Quais os documentos necessários para me matricular na faculdade?",
     "Como consigo uma vaga de Jovem Aprendiz?",
     "Me ajude a escolher um curso."
   ];
