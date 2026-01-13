@@ -10,6 +10,7 @@ const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600'
 interface UserDataSectionProps {
   profile: UserProfile | null;
   onProfileUpdate: (updatedProfile: UserProfile) => void;
+  onOnboardingComplete?: () => void;
 }
 
 interface InputFieldProps {
@@ -47,7 +48,7 @@ const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, p
   </div>
 );
 
-export default function UserDataSection({ profile, onProfileUpdate }: UserDataSectionProps) {
+export default function UserDataSection({ profile, onProfileUpdate, onOnboardingComplete }: UserDataSectionProps) {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -80,6 +81,13 @@ export default function UserDataSection({ profile, onProfileUpdate }: UserDataSe
     if (data) {
       onProfileUpdate(data);
       setIsEditing(false);
+      
+      // Check if all required fields are present to trigger completion
+      if (data.full_name && data.age && data.city && data.education) {
+          if (onOnboardingComplete) {
+              onOnboardingComplete();
+          }
+      }
     } else {
       console.error(error);
     }

@@ -5,8 +5,8 @@ import { Home, User, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export interface ChatHeaderProps {
-  selectedFunctionality: 'MATCH' | 'PROUNI' | 'SISU';
-  onSelectFunctionality: (func: 'MATCH' | 'PROUNI' | 'SISU') => void;
+  selectedFunctionality: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING';
+  onSelectFunctionality: (func: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING') => void;
 }
 
 export default function ChatHeader({ selectedFunctionality, onSelectFunctionality }: ChatHeaderProps) {
@@ -27,17 +27,18 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
     };
   }, []);
 
-  const getFunctionalityInfo = (type: 'MATCH' | 'PROUNI' | 'SISU') => {
+  const getFunctionalityInfo = (type: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING') => {
       switch(type) {
           case 'MATCH': return { title: 'Match de Oportunidades', subtitle: 'Encontre sua oportunidade ideal' };
           case 'PROUNI': return { title: 'Entendendo o Prouni', subtitle: 'Tire suas dúvidas sobre o programa' };
           case 'SISU': return { title: 'Entendendo o Sisu', subtitle: 'Tudo o que você precisa saber' };
+          case 'ONBOARDING': return { title: 'Configurando Perfil', subtitle: 'Vamos nos conhecer melhor' };
       }
   };
 
   const currentInfo = getFunctionalityInfo(selectedFunctionality);
 
-  const handleSelect = (type: 'MATCH' | 'PROUNI' | 'SISU') => {
+  const handleSelect = (type: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING') => {
       onSelectFunctionality(type);
       setIsDropdownOpen(false);
   };
@@ -67,7 +68,7 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
                  <span className="hidden md:block text-[#636E7C] text-sm group-hover:text-[#4B5563] transition-colors">{currentInfo.subtitle}</span>
               </div>
 
-               {/* Dropdown Menu */}
+       {/* Dropdown Menu */}
                {isDropdownOpen && (
                    <div className="absolute top-full left-0 mt-3 w-72 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                        <div className="py-2">
@@ -91,6 +92,13 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
                            >
                                <span className={`text-sm font-bold ${selectedFunctionality === 'SISU' ? 'text-[#024F86]' : 'text-gray-700'}`}>Entendendo o Sisu</span>
                                <span className="text-gray-500 text-xs">Tudo o que você precisa saber</span>
+                           </button>
+                           <button 
+                               onClick={() => handleSelect('ONBOARDING')}
+                               className={`w-full text-left px-5 py-3 hover:bg-[#F0F4FA] transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0 ${selectedFunctionality === 'ONBOARDING' ? 'bg-[#F0F4FA]' : ''}`}
+                           >
+                               <span className={`text-sm font-bold ${selectedFunctionality === 'ONBOARDING' ? 'text-[#024F86]' : 'text-gray-700'}`}>Configurando Perfil</span>
+                               <span className="text-gray-500 text-xs">Vamos nos conhecer melhor</span>
                            </button>
                        </div>
                    </div>

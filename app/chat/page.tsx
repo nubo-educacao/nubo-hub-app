@@ -7,14 +7,17 @@ import ChatCloudinha from './components/ChatCloudinha';
 import OpportunityCarousel from './components/OpportunityCarousel';
 import ChatHeader from './components/ChatHeader';
 import AuthModal from '@/components/AuthModal'; 
-import { MessageSquare, Layout } from 'lucide-react';
+import { MessageSquare, Layout, User } from 'lucide-react';
 import CloudBackground from '@/components/CloudBackground';
+import UserDataSection from '@/components/profile/UserDataSection';
+import { getUserProfileService, UserProfile } from '@/services/supabase/profile';
 
 export default function ChatPage() {
-  const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction, isAuthenticated, isLoading } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction, isAuthenticated, isLoading, user } = useAuth();
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
   const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
-  const [selectedFunctionality, setSelectedFunctionality] = useState<'MATCH' | 'PROUNI' | 'SISU'>('MATCH');
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [selectedFunctionality, setSelectedFunctionality] = useState<'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING'>('MATCH');
   const [activeTab, setActiveTab] = useState<'CHAT' | 'CONTENT'>('CHAT');
   const [isReady, setIsReady] = useState(false);
   const router = useRouter();
@@ -35,6 +38,24 @@ export default function ChatPage() {
     }
     setIsReady(true);
   }, [closeAuthModal, pendingAction, clearPendingAction]);
+
+  useEffect(() => {
+    if (user) {
+        getUserProfileService().then(({ data }) => {
+            if (data) setProfile(data);
+        });
+    }
+  }, [user]);
+
+  const handleUIOnboardingComplete = () => {
+       // On successful save from UI, we want to Trigger the Agent to proceed.
+       // We'll read the trigger message from local storage (or default) and send it.
+       const triggerMsg = localStorage.getItem('nubo_onboarding_trigger') || "Me ajude a encontrar a oportunidade ideal";
+       setInitialMessage(triggerMsg);
+       
+       // Clean up
+       localStorage.removeItem('nubo_onboarding_trigger');
+  };
 
   const handleInitialMessageSent = () => {
     setInitialMessage(undefined);
@@ -99,6 +120,7 @@ export default function ChatPage() {
                   handleOpportunitiesFound(ids);
                   if (window.innerWidth < 768) setActiveTab('CONTENT'); 
               }}
+              onFunctionalitySwitch={setSelectedFunctionality}
             />
           </div>
 
@@ -140,6 +162,18 @@ export default function ChatPage() {
                                     <Layout size={32} />
                                 </div>
                                 <span className="text-xl font-medium">Painel Sisu (Em breve)</span>
+                            </div>
+                        )}
+
+                        {selectedFunctionality === 'ONBOARDING' && (
+                            <div className="w-full h-full overflow-y-auto flex items-center justify-center p-4">
+                                <div className="w-full max-w-3xl">
+                                    <UserDataSection 
+                                        profile={profile} 
+                                        onProfileUpdate={setProfile}
+                                        onOnboardingComplete={handleUIOnboardingComplete}
+                                    />
+                                </div>
                             </div>
                         )}
                      </div>
