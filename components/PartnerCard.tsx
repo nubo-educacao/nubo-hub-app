@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Heart, ArrowRight, MapPin, GraduationCap, Calendar, Zap } from 'lucide-react';
+import { Heart, ArrowRight, MapPin, GraduationCap, Calendar, DollarSign } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -188,7 +188,7 @@ export function PartnerCard({
              <span className="truncate">{type}</span>
           </div>
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
-             <Zap size={16} className="text-[#9747FF] flex-shrink-0" />
+             <DollarSign size={16} className="text-[#9747FF] flex-shrink-0" />
              <span className="truncate">{income}</span>
           </div>
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">

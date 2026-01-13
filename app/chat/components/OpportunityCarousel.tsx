@@ -62,18 +62,18 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
   const currentCourses = courses;
 
   return (
-    <div className="w-full max-w-8xl mx-auto flex flex-col h-full bg-white/5 rounded-xl p-2 mt-2 border border-white/10">
+    <div className="w-full max-w-8xl mx-auto flex flex-col h-full bg-transparent p-0 mt-0">
 
 
       {/* Grid Viewport */}
-      <div className="flex-1 overflow-y-auto min-h-0 flex flex-col justify-center">
+      <div className="flex-1 overflow-y-auto min-h-0 flex flex-col justify-start">
           {isLoading ? (
-             <div className="w-full h-full flex flex-col items-center justify-center text-white/50 gap-2">
+             <div className="w-full h-full flex flex-col items-center justify-center text-[#024F86]/50 gap-2">
                 <Loader2 className="animate-spin" size={32} />
                 <span className="text-sm">Carregando oportunidades...</span>
              </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
                 {currentCourses.map((course) => (
                     <motion.div
                         key={course.id}
@@ -91,25 +91,25 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
 
       {/* Paginator - Only show if multiple pages */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 py-6 mt-auto flex-shrink-0">
+        <div className="flex justify-center items-center gap-4 py-4 mt-auto flex-shrink-0">
             {/* Prev Button */}
             <button 
             onClick={prevPage}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/40 border border-[#024F86]/20 text-[#024F86] hover:bg-[#024F86]/10 transition-all shadow-sm"
             >
             <ChevronLeft size={16} />
             </button>
 
             {/* Indicators */}
-            <div className="flex items-center gap-2 h-2 bg-black/20 rounded-full px-2 py-3 backdrop-blur-sm">
+            <div className="flex items-center gap-2 h-2 bg-[#024F86]/5 rounded-full px-2 py-3 backdrop-blur-sm">
                 {Array.from({ length: totalPages }).map((_, idx) => (
                     <button
                         key={idx}
                         onClick={() => setCurrentPage(idx)}
                         className={`h-2 rounded-full transition-all duration-300 ${
                             idx === currentPage 
-                                ? 'w-8 bg-white' 
-                                : 'w-2 bg-white/30 hover:bg-white/50'
+                                ? 'w-8 bg-[#024F86]' 
+                                : 'w-2 bg-[#024F86]/20 hover:bg-[#024F86]/40'
                         }`}
                     />
                 ))}
@@ -118,7 +118,7 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
             {/* Next Button */}
             <button 
             onClick={nextPage}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/40 border border-[#024F86]/20 text-[#024F86] hover:bg-[#024F86]/10 transition-all shadow-sm"
             >
             <ChevronRight size={16} />
             </button>

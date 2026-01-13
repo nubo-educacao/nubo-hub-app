@@ -21,8 +21,8 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
       className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
     >
       {/* Avatar */}
-      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden ${
-        isUser ? 'bg-purple-600' : 'bg-gradient-to-tr from-purple-500 to-pink-500'
+      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden shadow-sm ${
+        isUser ? 'bg-[#024F86]' : 'bg-white border border-gray-200'
       }`}>
         {isUser ? (
           userAvatar ? (
@@ -36,12 +36,12 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
       </div>
 
       {/* Bubble */}
-      <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-md ${
+      <div className={`max-w-[80%] p-3 px-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
         isUser 
-          ? 'bg-[#38B1E4]/50 text-white rounded-br-none' 
-          : 'bg-white/10 text-gray-100 border border-white/5 rounded-bl-none'
+          ? 'bg-[#024F86] text-white rounded-br-none' 
+          : 'bg-white text-[#374151] border border-gray-100 rounded-bl-none'
       }`}>
-<div className="markdown-content">
+        <div className="markdown-content">
             {message.text ? (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -56,7 +56,7 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
                       href={props.href} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className={`underline ${isUser ? 'text-white' : 'text-purple-300 hover:text-purple-200'}`}
+                      className={`underline font-medium ${isUser ? 'text-white' : 'text-[#024F86] hover:text-[#023F6B]'}`}
                     >
                       {props.children}
                     </a>
@@ -68,14 +68,14 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
             ) : (
              !isUser && (
                 <div className="flex items-center gap-1.5 py-2 px-1 h-[24px]">
-                  <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                  <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                  <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-[#024F86]/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-[#024F86]/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-[#024F86]/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                 </div>
              )
             )}
         </div>
-        <div className={`text-[10px] mt-1 opacity-50 ${isUser ? 'text-right' : 'text-left'}`}>
+        <div className={`text-[10px] mt-1 opacity-60 ${isUser ? 'text-white/80 text-right' : 'text-[#636E7C] text-left'}`}>
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>

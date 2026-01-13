@@ -435,18 +435,18 @@ export default function ChatCloudinha({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-[#024f86] to-[#3092bb] border-r border-white/10">
+    <div className="flex flex-col h-full bg-transparent">
       {/* Header */}
-      <div className="h-[97px] flex items-center px-6 border-b border-white/10 flex-shrink-0">
+      <div className="h-[97px] flex items-center px-6 border-b border-white/20 flex-shrink-0 bg-white/10 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full relative overflow-hidden">
-             <div className="w-full h-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center">
-                <span className="text-2xl">☁️</span>
+          <div className="w-12 h-12 rounded-full relative overflow-hidden shadow-sm border border-white/20">
+             <div className="w-full h-full bg-gradient-to-tr from-[#024F86] to-[#38B1E4] flex items-center justify-center">
+                <span className="text-2xl drop-shadow-md">☁️</span>
              </div>
           </div>
           <div className="flex flex-col">
-            <h2 className="text-[16px] font-normal text-white leading-[24px]">Cloudinha</h2>
-            <p className="text-[14px] text-white/80 leading-[20px]">
+            <h2 className="text-[16px] font-bold text-[#024F86] leading-[24px]">Cloudinha</h2>
+            <p className="text-[14px] text-[#636E7C] leading-[20px]">
               Assistente Virtual
             </p>
           </div>
@@ -454,24 +454,24 @@ export default function ChatCloudinha({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#024F86]/20 scrollbar-track-transparent">
         {messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-6">
              {/* Render Thinking Groups (Hierarchical) - ALWAYS FIRST */}
              {msg.thinking_groups && msg.thinking_groups.length > 0 && (
                  <div className="ml-[60px] flex flex-col gap-2">
                      {msg.thinking_groups.map((group, grpIdx) => (
-                         <div key={grpIdx} className="bg-black/20 rounded-xl overflow-hidden border border-white/5">
+                         <div key={grpIdx} className="bg-white/40 rounded-xl overflow-hidden border border-[#024F86]/10 shadow-sm backdrop-blur-sm">
                              {/* Group Header */}
-                             <div className="flex items-center gap-3 p-3 bg-white/5">
+                             <div className="flex items-center gap-3 p-3 bg-white/40 border-b border-[#024F86]/5">
                                  <div className="flex-shrink-0">
                                      {group.status === 'loading' ? (
-                                         <Loader2 className="w-4 h-4 text-purple-300 animate-spin" />
+                                         <Loader2 className="w-4 h-4 text-[#024F86] animate-spin" />
                                      ) : (
-                                         <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                         <CheckCircle2 className="w-4 h-4 text-green-500" />
                                      )}
                                  </div>
-                                 <span className="text-sm text-white/90 font-medium">
+                                 <span className="text-sm text-[#024F86] font-semibold">
                                      {group.label}
                                  </span>
                              </div>
@@ -484,18 +484,18 @@ export default function ChatCloudinha({
                                              key={itmIdx}
                                              initial={{ opacity: 0, x: -10 }}
                                              animate={{ opacity: 1, x: 0 }}
-                                             className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                                             className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#024F86]/5 transition-colors"
                                          >
                                              <div className="flex-shrink-0 w-4 flex justify-center">
                                                 {/* Sub-item status icon */}
                                                  {item.status === 'loading' ? (
-                                                     <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-pulse" />
+                                                     <div className="w-1.5 h-1.5 bg-[#024F86]/40 rounded-full animate-pulse" />
                                                  ) : (
-                                                     <div className="w-1.5 h-1.5 bg-green-400/80 rounded-full" />
+                                                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                                                  )}
                                              </div>
                                              
-                                             <div className="flex items-center gap-2 text-xs text-white/70">
+                                             <div className="flex items-center gap-2 text-xs text-[#636E7C] font-medium">
                                                  {getToolIcon(item.label)}
                                                  <span>{item.label}</span>
                                              </div>
@@ -517,9 +517,9 @@ export default function ChatCloudinha({
                     animate={{ opacity: 1, height: 'auto' }}
                     className="w-full"
                  >
-                    <div className="p-4 bg-white/5 rounded-lg border border-white/10 text-sm text-white/80 flex items-center gap-3">
+                    <div className="p-4 bg-white/40 rounded-xl border border-[#024F86]/10 text-sm text-[#024F86] flex items-center gap-3 shadow-sm backdrop-blur-sm">
                         <span className="text-xl">👉</span>
-                        <span>Encontrei {msg.course_ids.length} oportunidades! Veja os detalhes no painel ao lado.</span>
+                        <span className="font-medium">Encontrei {msg.course_ids.length} oportunidades! Veja os detalhes no painel ao lado.</span>
                     </div>
                  </motion.div>
              )}
@@ -531,11 +531,11 @@ export default function ChatCloudinha({
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 text-gray-400 text-sm p-3 bg-white/5 rounded-2xl w-fit"
+            className="flex items-center gap-2 text-[#024F86]/60 text-sm p-3 bg-white/50 border border-[#024F86]/10 rounded-2xl w-fit shadow-sm"
           >
-            <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-            <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-            <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            <span className="w-2 h-2 bg-[#024F86] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+            <span className="w-2 h-2 bg-[#024F86] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+            <span className="w-2 h-2 bg-[#024F86] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
           </motion.div>
         )}
         <div ref={messagesEndRef} />

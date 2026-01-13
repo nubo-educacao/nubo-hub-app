@@ -43,54 +43,54 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
   };
 
   return (
-    <div className="w-full h-24 px-8 flex items-center justify-between border-b border-white/10 bg-black/20 backdrop-blur-sm z-20">
+    <div className="w-full h-20 md:h-24 px-4 md:px-8 flex items-center justify-between border-b border-white/20 bg-white/20 backdrop-blur-sm z-20">
       {/* Left - Functionality Select (Icon + Text + Arrow) */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4">
           {/* Home Icon - Navigate to Home */}
           <div 
              onClick={() => router.push('/')}
-             className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/10 cursor-pointer hover:bg-white/20 transition-all text-white hover:scale-105"
+             className="min-w-[40px] w-10 h-10 flex items-center justify-center rounded-xl bg-white/40 border border-white/40 cursor-pointer hover:bg-white/60 transition-all text-[#024F86] hover:scale-105 shadow-sm"
           >
-             <Home size={18} />
+             <Home size={20} />
           </div>
 
           {/* Text & Dropdown */}
           <div className="relative" ref={dropdownRef}>
               <div 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex flex-col cursor-pointer group select-none"
+                className="flex flex-col cursor-pointer group select-none mr-2"
               >
-                 <div className="flex items-center gap-2">
-                    <span className="text-white font-medium text-base group-hover:text-white/90 transition-colors">{currentInfo.title}</span>
-                    <ChevronDown size={20} className={`text-white transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                 <div className="flex items-center gap-1 md:gap-2">
+                    <span className="text-[#024F86] font-bold text-base md:text-lg group-hover:text-[#023F6B] transition-colors leading-tight line-clamp-1">{currentInfo.title}</span>
+                    <ChevronDown size={20} className={`text-[#024F86] shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                  </div>
-                 <span className="text-white/60 text-sm group-hover:text-white/70 transition-colors">{currentInfo.subtitle}</span>
+                 <span className="hidden md:block text-[#636E7C] text-sm group-hover:text-[#4B5563] transition-colors">{currentInfo.subtitle}</span>
               </div>
 
                {/* Dropdown Menu */}
                {isDropdownOpen && (
-                   <div className="absolute top-full left-0 mt-2 w-64 bg-[#0F172A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
-                       <div className="py-1">
+                   <div className="absolute top-full left-0 mt-3 w-72 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                       <div className="py-2">
                            <button 
                                onClick={() => handleSelect('MATCH')}
-                               className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex flex-col ${selectedFunctionality === 'MATCH' ? 'bg-white/5' : ''}`}
+                               className={`w-full text-left px-5 py-3 hover:bg-[#F0F4FA] transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0 ${selectedFunctionality === 'MATCH' ? 'bg-[#F0F4FA]' : ''}`}
                            >
-                               <span className="text-white text-sm font-medium">Match de Oportunidades</span>
-                               <span className="text-white/50 text-xs">Encontre sua oportunidade ideal</span>
+                               <span className={`text-sm font-bold ${selectedFunctionality === 'MATCH' ? 'text-[#024F86]' : 'text-gray-700'}`}>Match de Oportunidades</span>
+                               <span className="text-gray-500 text-xs">Encontre sua oportunidade ideal</span>
                            </button>
                            <button 
                                onClick={() => handleSelect('PROUNI')}
-                               className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex flex-col ${selectedFunctionality === 'PROUNI' ? 'bg-white/5' : ''}`}
+                               className={`w-full text-left px-5 py-3 hover:bg-[#F0F4FA] transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0 ${selectedFunctionality === 'PROUNI' ? 'bg-[#F0F4FA]' : ''}`}
                            >
-                               <span className="text-white text-sm font-medium">Entendendo o Prouni</span>
-                               <span className="text-white/50 text-xs">Tire suas dúvidas sobre o programa</span>
+                               <span className={`text-sm font-bold ${selectedFunctionality === 'PROUNI' ? 'text-[#024F86]' : 'text-gray-700'}`}>Entendendo o Prouni</span>
+                               <span className="text-gray-500 text-xs">Tire suas dúvidas sobre o programa</span>
                            </button>
                            <button 
                                onClick={() => handleSelect('SISU')}
-                               className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex flex-col ${selectedFunctionality === 'SISU' ? 'bg-white/5' : ''}`}
+                               className={`w-full text-left px-5 py-3 hover:bg-[#F0F4FA] transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0 ${selectedFunctionality === 'SISU' ? 'bg-[#F0F4FA]' : ''}`}
                            >
-                               <span className="text-white text-sm font-medium">Entendendo o Sisu</span>
-                               <span className="text-white/50 text-xs">Tudo o que você precisa saber</span>
+                               <span className={`text-sm font-bold ${selectedFunctionality === 'SISU' ? 'text-[#024F86]' : 'text-gray-700'}`}>Entendendo o Sisu</span>
+                               <span className="text-gray-500 text-xs">Tudo o que você precisa saber</span>
                            </button>
                        </div>
                    </div>
@@ -100,13 +100,11 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
 
       {/* Right - User Profile */}
       <button 
-        onClick={() => router.push('/profile')} // Assuming profile route exists
-        className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 hover:border-white/30 transition-all"
+        onClick={() => router.push('/profile')}
+        className="p-2 rounded-full hover:bg-[#024F86]/5 transition-colors text-[#024F86]"
+        title="Meu Perfil"
       >
-        {/* Placeholder for user avatar - using gradient or image if available */}
-        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold">
-           U
-        </div>
+        <User size={28} strokeWidth={2} />
       </button>
     </div>
   );
