@@ -22,13 +22,15 @@ export default function FilterPills({
   ];
 
   return (
-    <div className="w-full flex items-center gap-2">
+    <div className="w-full flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-2">
       {/* Left Content (Sort/Search) */}
       {children && (
-        <div className="flex items-center gap-3 shrink-0">
-          {children}
-          {/* Divider */}
-          <div className="w-px h-6 bg-[#024F86]/20 mx-1"></div>
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+             {children}
+          </div>
+          {/* Divider - hidden on mobile */}
+          <div className="hidden md:block w-px h-6 bg-[#024F86]/20 mx-1"></div>
         </div>
       )}
 

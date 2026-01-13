@@ -102,8 +102,8 @@ export default function ChatBox() {
 
   
   return (
-    <div className="w-full max-w-[785px] mx-auto px-4">
-      <div className="relative bg-white flex items-center w-full min-h-[80px] px-4 rounded-[16px] shadow-[4px_4px_8px_0px_rgba(0,0,0,0.25)] gap-4">
+    <div className="w-full max-w-[785px] mx-auto px-2 md:px-4">
+      <div className="relative bg-white flex items-center w-full min-h-[60px] md:min-h-[80px] px-3 md:px-4 rounded-[12px] md:rounded-[16px] shadow-[2px_2px_6px_0px_rgba(0,0,0,0.2)] md:shadow-[4px_4px_8px_0px_rgba(0,0,0,0.25)] gap-2 md:gap-4">
           
         {/* Left Action: Plus */}
         <button 
@@ -127,7 +127,7 @@ export default function ChatBox() {
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
             placeholder={isInputFocused ? "" : placeholder}
-            className="flex-1 bg-transparent text-[#3A424E] placeholder-[#3A424E]/50 focus:outline-none text-base font-medium h-full py-4 text-[16px]"
+            className="flex-1 bg-transparent text-[#3A424E] placeholder-[#3A424E]/50 focus:outline-none text-sm md:text-base font-medium h-full py-3 md:py-4"
             disabled={isLoading}
         />
 

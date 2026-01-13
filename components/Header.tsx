@@ -1,13 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
-import { User } from 'lucide-react';
+import { User, Menu, X, LogOut } from 'lucide-react';
 
 export default function Header({ transparent = false }: { transparent?: boolean }) {
   const { isAuthenticated, openAuthModal, logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${transparent ? 'bg-transparent border-b border-transparent' : 'bg-white/30 backdrop-blur-md border-b border-white/20 shadow-lg'}`}>
@@ -19,21 +21,21 @@ export default function Header({ transparent = false }: { transparent?: boolean 
             alt="Nubo Educação" 
             width={225} 
             height={60} 
-            className="h-10 w-auto"
+            className="h-8 md:h-10 w-auto"
             priority
           />
         </Link>
 
-        {/* Actions */}
-        <div className="flex items-center gap-4">
-          {isAuthenticated ? (
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-4">
+            {isAuthenticated ? (
             <>
-              <Link href="/profile" className="p-2 rounded-full hover:bg-black/5 transition-colors text-[#3A424E] hover:text-[#38B1E4]" title="Meu Perfil">
-                <User size={24} />
+              <Link href="/profile" className="p-2 rounded-full hover:bg-[#38B1E4]/5 transition-colors text-[#38B1E4]" title="Meu Perfil">
+                <User size={24} strokeWidth={2} />
               </Link>
               <button 
                 onClick={logout}
-                className="text-neutral-600 hover:text-[#38B1E4] text-sm font-medium transition-colors"
+                className="text-[#38B1E4] hover:text-[#38B1E4]/80 text-sm font-bold font-nunito transition-colors"
               >
                 Sair
               </button>
@@ -42,13 +44,13 @@ export default function Header({ transparent = false }: { transparent?: boolean 
             <>
               <button 
                 onClick={openAuthModal}
-                className="px-6 py-2 rounded-full border border-[#38B1E4] text-[#38B1E4] hover:bg-[#38B1E4]/10 text-base font-bold transition-colors"
+                className="px-6 py-2 rounded-full border border-[#38B1E4] text-[#38B1E4] hover:bg-[#38B1E4]/10 text-base font-bold font-nunito transition-colors"
               >
                 Login
               </button>
               <button 
                 onClick={openAuthModal}
-                className="bg-[#38B1E4] text-white px-6 py-2 rounded-full text-base font-bold hover:bg-[#2a9ac9] transition-colors shadow-sm"
+                className="bg-[#38B1E4] text-white px-6 py-2 rounded-full text-base font-bold font-nunito hover:bg-[#38B1E4]/90 transition-colors shadow-sm"
               >
                 Começar
               </button>
@@ -59,14 +61,62 @@ export default function Header({ transparent = false }: { transparent?: boolean 
           {process.env.NODE_ENV === 'development' && (
             <button
               onClick={() => isAuthenticated ? logout() : openAuthModal()}
-              className="ml-2 text-xs px-2 py-1 bg-yellow-600/20 text-yellow-600 rounded border border-yellow-600/50 hover:bg-yellow-600/30 transition-colors"
+              className="ml-2 text-xs px-2 py-1 bg-yellow-600/20 text-yellow-600 rounded border border-yellow-600/50 hover:bg-yellow-600/30 transition-colors font-nunito"
               title="Dev: Toggle Auth"
             >
               🔧 {isAuthenticated ? 'Auth: ON' : 'Auth: OFF'}
             </button>
           )}
         </div>
+
+        {/* Mobile Hamburger */}
+        <button 
+            className="md:hidden p-2 text-[#38B1E4]"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+            {isMobileMenuOpen ? <X size={24} strokeWidth={2} /> : <Menu size={24} strokeWidth={2} />}
+        </button>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-20 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-4 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2 font-nunito">
+            {isAuthenticated ? (
+                <>
+                    <Link 
+                        href="/profile" 
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#38B1E4]/5 text-[#38B1E4]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                        <User size={20} strokeWidth={2} />
+                        <span className="font-bold">Meu Perfil</span>
+                    </Link>
+                    <button 
+                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 w-full text-left"
+                    >
+                        <LogOut size={20} strokeWidth={2} />
+                        <span className="font-bold">Sair</span>
+                    </button>
+                </>
+            ) : (
+                <div className="flex flex-col gap-3">
+                    <button 
+                        onClick={() => { openAuthModal(); setIsMobileMenuOpen(false); }}
+                        className="w-full py-3 rounded-full border border-[#38B1E4] text-[#38B1E4] font-bold"
+                    >
+                        Login
+                    </button>
+                    <button 
+                        onClick={() => { openAuthModal(); setIsMobileMenuOpen(false); }}
+                        className="w-full py-3 rounded-full bg-[#38B1E4] text-white font-bold shadow-md"
+                    >
+                        Começar
+                    </button>
+                </div>
+            )}
+        </div>
+      )}
     </header>
   );
 }

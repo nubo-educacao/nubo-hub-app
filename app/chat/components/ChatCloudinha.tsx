@@ -151,6 +151,7 @@ export default function ChatCloudinha({
   }, [messages, isTyping, isLoadingHistory]);
 
   // Fetch History & Handle Initial Message
+  // 1. Fetch History
   useEffect(() => {
     if (user) {
       const fetchHistory = async () => {
@@ -161,10 +162,8 @@ export default function ChatCloudinha({
           .eq('user_id', user.id)
           .order('created_at', { ascending: true });
 
-        let history: Message[] = [];
-
-        if (data && data.length > 0) {
-          history = data.map((msg: any) => ({
+        if (data) {
+          const history = data.map((msg: any) => ({
             id: msg.id,
             sender: msg.sender,
             text: msg.content,
@@ -172,26 +171,9 @@ export default function ChatCloudinha({
           }));
           setMessages(history);
         } else {
-          // Only show greeting if no history AND no initial message pending
-          if (!initialMessage) {
-            setMessages([]);
-          } else {
-            setMessages([]); // Start empty if we are about to send a message
-          }
+          setMessages([]);
         }
         setIsLoadingHistory(false);
-
-        // Handle Initial Message (Auto-send)
-        if (initialMessage && !hasSentInitialMessage.current) {
-          hasSentInitialMessage.current = true;
-          // Small delay to ensure state is ready
-          setTimeout(() => {
-            handleSendMessage(initialMessage);
-            if (onInitialMessageSent) {
-              onInitialMessageSent();
-            }
-          }, 500);
-        }
       };
       fetchHistory();
     } else {
@@ -199,8 +181,25 @@ export default function ChatCloudinha({
       setMessages([]);
       setIsLoadingHistory(false);
     }
+  }, [user]);
+
+  // 2. Handle Initial Message (Auto-send)
+  useEffect(() => {
+    // Only proceed if we have a message, haven't sent it yet, AND history is done loading
+    if (initialMessage && !hasSentInitialMessage.current && !isLoadingHistory) {
+      hasSentInitialMessage.current = true;
+      // Small delay to ensure state is ready
+      setTimeout(() => {
+        handleSendMessage(initialMessage);
+        if (onInitialMessageSent) {
+          onInitialMessageSent();
+        }
+      }, 500);
+    }
+    // Note: We intentionally do NOT include handleSendMessage in deps to avoid loops, 
+    // effectively treating it as a stable callback for this purpose.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, initialMessage]);
+  }, [initialMessage, isLoadingHistory, onInitialMessageSent]);
 
   const handleSendMessage = async (text: string) => {
     const tempId = Date.now().toString();
