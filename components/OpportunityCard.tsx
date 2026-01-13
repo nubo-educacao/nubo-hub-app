@@ -100,6 +100,8 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
     { id: 'ead', icon: Laptop, active: hasEaD, label: 'EAD' },
   ];
 
+  const activeOnlyShifts = shiftsConfig.filter(s => s.active);
+
   return (
     <div 
         onClick={handleViewDetails}
@@ -174,23 +176,45 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
         <div className="flex justify-between items-center mt-auto h-[40px]">
             {/* Shifts Pill */}
             <div className="bg-[#FF9900]/90 backdrop-blur-sm shadow-[0_2px_6px_rgba(255,153,0,0.25),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#FFB84D]/50 rounded-[166px] px-[12px] py-[6px] flex items-center gap-3 h-fit transition-all hover:scale-105 hover:shadow-[0_4px_10px_rgba(255,153,0,0.35),inset_0_-2px_4px_rgba(0,0,0,0.1)]">
-                    {shiftsConfig.map((shift, index) => (
-                        <div key={`${shift.id}-${index}`} className="flex items-center justify-center relative group/icon">
-                            <shift.icon 
-                                size={18} 
-                                color={shift.active ? "#FFFFFF" : "#FFFFFF"} 
-                                fill={shift.active ? "currentColor" : "none"}
-                                className={`${!shift.active ? "opacity-[0.5]" : "opacity-100 drop-shadow-md"} transition-all duration-300`}
-                                strokeWidth={2.5}
-                            />
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-[10px] rounded opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
-                                {shift.label}
-                                {/* Arrow */}
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/90"></div>
+                    {/* Desktop: All Shifts */}
+                    <div className="hidden md:flex items-center gap-3">
+                        {shiftsConfig.map((shift, index) => (
+                            <div key={`${shift.id}-${index}`} className="flex items-center justify-center relative group/icon">
+                                <shift.icon 
+                                    size={18} 
+                                    color={shift.active ? "#FFFFFF" : "#FFFFFF"} 
+                                    fill={shift.active ? "currentColor" : "none"}
+                                    className={`${!shift.active ? "opacity-[0.5]" : "opacity-100 drop-shadow-md"} transition-all duration-300`}
+                                    strokeWidth={2.5}
+                                />
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-[10px] rounded opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
+                                    {shift.label}
+                                    {/* Arrow */}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/90"></div>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+
+                    {/* Mobile: Active Shifts Only (Max 2) */}
+                    <div className="flex md:hidden items-center gap-2">
+                        {activeOnlyShifts.length >= 3 ? (
+                             <>
+                                {activeOnlyShifts.slice(0, 1).map((shift) => (
+                                    <shift.icon key={shift.id} size={18} color="#FFFFFF" fill="currentColor" strokeWidth={2.5} className="drop-shadow-md" />
+                                ))}
+                                <span className="text-white font-bold text-xs">
+                                    +{activeOnlyShifts.length - 1}
+                                </span>
+                             </>
+                        ) : (
+                             activeOnlyShifts.map((shift) => (
+                                <shift.icon key={shift.id} size={18} color="#FFFFFF" fill="currentColor" strokeWidth={2.5} className="drop-shadow-md" />
+                             ))
+                        )}
+                        {activeOnlyShifts.length === 0 && <span className="text-white/50 text-xs">-</span>}
+                    </div>
             </div>
 
             {/* View Details Link */}

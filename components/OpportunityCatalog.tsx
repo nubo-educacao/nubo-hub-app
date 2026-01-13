@@ -358,16 +358,16 @@ function OpportunityCatalogContent() {
     <section ref={catalogRef} className="relative pb-16 pt-8 scroll-mt-32">
       {/* Floating Container */}
       <div className="container mx-auto px-4">
-        <div className="bg-white/30 backdrop-blur-md border border-white/20 shadow-xl rounded-[40px] p-8 pt-16 relative min-h-[800px]">
+        <div className="bg-white/30 backdrop-blur-md border border-white/20 shadow-xl rounded-[24px] md:rounded-[40px] p-4 pt-12 md:p-8 md:pt-16 relative min-h-[600px] md:min-h-[800px]">
           
           {/* Title Pill */}
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#024F86] text-white px-12 py-4 rounded-xl shadow-lg z-10">
+          <div className="absolute -top-6 md:-top-8 left-1/2 -translate-x-1/2 bg-[#024F86] text-white px-8 md:px-12 py-3 md:py-4 rounded-xl shadow-lg z-10 w-[90%] md:w-auto text-center">
             <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider text-center">
               Explore oportunidades
             </h2>
           </div>
 
-          <div className="mb-8 mt-4">
+          <div className="mb-8 mt-12">
             <FilterPills selectedFilter={selectedFilter} onSelectFilter={handleSelectFilter}>
                {/* Sort Dropdown */}
                <div className="relative z-50">
@@ -395,7 +395,7 @@ function OpportunityCatalogContent() {
                 </div>
 
                 {/* Search Input */}
-                <div className="relative group w-48 md:w-64">
+                <div className="relative group w-full md:w-64">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                         <Search size={14} className="text-[#024F86]" />
                     </div>

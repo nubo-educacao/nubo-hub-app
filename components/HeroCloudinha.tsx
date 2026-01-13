@@ -31,9 +31,9 @@ export default function HeroCloudinha() {
         animate="show"
       >
         {/* Text Content */}
-        <div className="space-y-4 max-w-3xl">
+        <div className="space-y-4 max-w-3xl px-4">
           <motion.h1 
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-sky-900 tracking-tight"
+            className="text-3xl md:text-5xl lg:text-6xl font-bold text-sky-900 tracking-tight"
             variants={item}
           >
             Transforme seu potencial em <span className="text-sky-600">oportunidades reais</span>

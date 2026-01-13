@@ -51,8 +51,8 @@ function CarouselSection({ items, renderItem, title, count, iconColor, countColo
           <span className={`${countColor} text-white text-xs font-bold px-2 py-1 rounded-full`}>{count}</span>
       </div>
       
-      <div className="flex items-center gap-2 md:gap-4 relative group">
-        {/* Prev Button */}
+      {/* DESKTOP View: Arrows & Grid */}
+      <div className="hidden md:flex items-center gap-4 relative group">
         <button 
             onClick={prevParams}
             disabled={!showPrev}
@@ -65,19 +65,14 @@ function CarouselSection({ items, renderItem, title, count, iconColor, countColo
             <ChevronLeft size={32} />
         </button>
 
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+        <div className="grid grid-cols-2 gap-6 flex-1">
             {visibleItems.map(item => (
                 <div key={item.id} className="h-full">
                     {renderItem(item)}
                 </div>
             ))}
-            {/* Provide empty placeholders to maintain grid shape if odd number? 
-                Not strictly necessary if we just want 2 items max, but helps stability. 
-                However, existing code slices to ITEMS_PER_PAGE. */}
         </div>
         
-        {/* Next Button */}
         <button 
             onClick={nextParams}
             disabled={!showNext}
@@ -89,6 +84,15 @@ function CarouselSection({ items, renderItem, title, count, iconColor, countColo
         >
             <ChevronRight size={32} />
         </button>
+      </div>
+
+      {/* MOBILE View: Horizontal Scroll */}
+      <div className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-6 px-6 scrollbar-hide">
+        {items.map(item => (
+            <div key={item.id} className="min-w-[85vw] snap-center h-full">
+                {renderItem(item)}
+            </div>
+        ))}
       </div>
     </section>
   );
