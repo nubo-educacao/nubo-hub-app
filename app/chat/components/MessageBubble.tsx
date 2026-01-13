@@ -66,7 +66,7 @@ export default function MessageBubble({ message, userAvatar }: MessageBubbleProp
                 {message.text}
               </ReactMarkdown>
             ) : (
-             !isUser && (
+             !isUser && (!message.course_ids || message.course_ids.length === 0) && (
                 <div className="flex items-center gap-1.5 py-2 px-1 h-[24px]">
                   <span className="w-1.5 h-1.5 bg-[#024F86]/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                   <span className="w-1.5 h-1.5 bg-[#024F86]/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
