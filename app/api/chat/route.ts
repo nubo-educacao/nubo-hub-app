@@ -1,67 +1,48 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// Removed edge runtime to fix local dev connection termination issues
+// export const runtime = 'edge'; 
+
 export async function POST(request: Request) {
   try {
-    const { message, history } = await request.json();
+    const { message } = await request.json();
     const authHeader = request.headers.get('Authorization');
-    console.log('[API Chat] Auth Header present:', !!authHeader);
-
-    // Initialize Supabase Client
+    
+    // We can still do lightweight auth checks here or getting User ID if needed for logging
+    // But for streaming performance, we forward quickly.
+    
+    // Initialize Supabase Client (Optional here if agent handles persistence)
+    // Kept for user ID extraction
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    
-    // Create client with user's token if available to respect RLS
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: authHeader ? { Authorization: authHeader } : undefined,
       },
     });
 
-    // 1. Get User ID (optional, but good for verification)
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (userError) {
-        console.error('[API Chat] getUser Error:', userError);
-    }
-    console.log('[API Chat] User:', user?.id);
-    
-    /*
-    if (user) {
-      // 2. Save User Message
-      await supabase.from('chat_messages').insert({
-        user_id: user.id,
-        sender: 'user',
-        content: message,
-      });
-    }
-    */
-
-    const webhookUrl = process.env.AGENT_URL || process.env.N8N_WEBHOOK_URL;
+    const webhookUrl = process.env.AGENT_URL || process.env.AGENT_URL; // Verify env naming
 
     if (!webhookUrl) {
       console.error('AGENT_URL is not defined');
-      return NextResponse.json(
-        { error: 'Configuration error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Configuration error' }, { status: 500 });
     }
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
+    if (authHeader) headers['Authorization'] = authHeader;
 
     const payload = {
       chatInput: message,
-      userId: user?.id || null, // Pass userId or null if not authenticated
-      history
+      userId: user?.id || null, 
     };
 
-    console.log('Sending to n8n:', JSON.stringify(payload, null, 2));
+    console.log(`[NextAPI] Forwarding to: ${webhookUrl}`);
+    console.log(`[NextAPI] Payload user: ${payload.userId}`);
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -70,49 +51,21 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      console.error(`n8n webhook error: ${response.status} ${response.statusText}`);
-      return NextResponse.json(
-        { error: 'Failed to communicate with AI service' },
-        { status: response.status }
-      );
+        console.error(`agent webhook error: ${response.status}`);
+        return NextResponse.json({ error: 'Agent Error' }, { status: response.status });
     }
 
-    const text = await response.text();
-    console.log('N8N Raw Response:', text);
-    
-    if (!text) {
-      console.error('N8N returned empty response');
-      return NextResponse.json(
-        { error: 'Empty response from AI service' },
-        { status: 502 }
-      );
-    }
+    // Proxy the stream
+    // Using simple ReadableStream passthrough
+    const stream = response.body;
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.error('Failed to parse N8N response:', e);
-      return NextResponse.json(
-        { error: 'Invalid JSON response from AI service' },
-        { status: 502 }
-      );
-    }
-    // Check for "response", "text", or "output" fields
-    const aiResponse = data.response || data.text || data.output || 'Desculpe, não consegui processar sua mensagem.';
-
-    /*
-    if (user) {
-      // 3. Save AI Message
-      await supabase.from('chat_messages').insert({
-        user_id: user.id,
-        sender: 'cloudinha',
-        content: aiResponse,
-      });
-    }
-    */
-
-    return NextResponse.json(data);
+    return new Response(stream, {
+        headers: {
+            'Content-Type': 'application/x-ndjson',
+            'Transfer-Encoding': 'chunked'
+        },
+        status: 200
+    });
 
   } catch (error) {
     console.error('Error in chat API:', error);
