@@ -1,15 +1,23 @@
 'use client';
 
 import React from 'react';
-import { Home, User, ChevronDown } from 'lucide-react';
+import { Home, User, ChevronDown, Sparkles, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export interface ChatHeaderProps {
   selectedFunctionality: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING';
   onSelectFunctionality: (func: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING') => void;
+  // New props for Match Switch
+  desktopMatchView?: 'OPPORTUNITIES' | 'PREFERENCES';
+  onDesktopMatchViewChange?: (view: 'OPPORTUNITIES' | 'PREFERENCES') => void;
 }
 
-export default function ChatHeader({ selectedFunctionality, onSelectFunctionality }: ChatHeaderProps) {
+export default function ChatHeader({ 
+    selectedFunctionality, 
+    onSelectFunctionality,
+    desktopMatchView,
+    onDesktopMatchViewChange
+}: ChatHeaderProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -44,9 +52,9 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
   };
 
   return (
-    <div className="w-full h-20 md:h-24 px-4 md:px-8 flex items-center justify-between border-b border-white/20 bg-white/20 backdrop-blur-sm z-20">
+    <div className="w-full h-20 md:h-24 px-4 md:px-8 flex items-center justify-between border-b border-white/20 bg-white/20 backdrop-blur-sm z-20 relative">
       {/* Left - Functionality Select (Icon + Text + Arrow) */}
-      <div className="flex items-center gap-3 md:gap-4">
+      <div className="flex items-center gap-3 md:gap-4 z-10">
           {/* Home Icon - Navigate to Home */}
           <div 
              onClick={() => router.push('/')}
@@ -105,11 +113,41 @@ export default function ChatHeader({ selectedFunctionality, onSelectFunctionalit
                )}
           </div>
       </div>
+      
+      {/* CENTER - Match Switch (Conditionally Rendered) */}
+      {selectedFunctionality === 'MATCH' && desktopMatchView && onDesktopMatchViewChange && (
+         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex z-10">
+             <div className="flex items-center gap-1 bg-white/50 border border-white/40 p-1 rounded-full shadow-sm">
+                <button 
+                    onClick={() => onDesktopMatchViewChange('OPPORTUNITIES')}
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 text-sm font-bold ${
+                        desktopMatchView === 'OPPORTUNITIES' 
+                        ? 'bg-[#024F86] text-white shadow-sm' 
+                        : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
+                    }`}
+                >
+                    <Sparkles size={14} />
+                    Oportunidades
+                </button>
+                <button 
+                    onClick={() => onDesktopMatchViewChange('PREFERENCES')}
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 text-sm font-bold ${
+                        desktopMatchView === 'PREFERENCES' 
+                        ? 'bg-[#024F86] text-white shadow-sm' 
+                        : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
+                    }`}
+                >
+                    <Settings size={14} />
+                    Preferências
+                </button>
+             </div>
+         </div>
+      )}
 
       {/* Right - User Profile */}
       <button 
         onClick={() => router.push('/profile')}
-        className="p-2 rounded-full hover:bg-[#024F86]/5 transition-colors text-[#024F86]"
+        className="p-2 rounded-full hover:bg-[#024F86]/5 transition-colors text-[#024F86] z-10"
         title="Meu Perfil"
       >
         <User size={28} strokeWidth={2} />

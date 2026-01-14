@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import UserDataSection from '@/components/profile/UserDataSection';
 import FavoritesSection from '@/components/profile/FavoritesSection';
+import UserPreferencesSection from '@/components/profile/UserPreferencesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getUserProfileService, UserProfile } from '@/services/supabase/profile';
 import { getUserFavoritesDetailsService, FavoriteDetails } from '@/services/supabase/favorites';
+import { getUserPreferencesService, UserPreferences } from '@/services/supabase/preferences';
 import { Montserrat } from 'next/font/google';
 import { Loader2 } from 'lucide-react';
 import CloudBackground from '@/components/CloudBackground';
@@ -21,13 +23,9 @@ export default function ProfilePage() {
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [favorites, setFavorites] = useState<FavoriteDetails>({ courses: [], partners: [] });
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ... (useEffect Logic remains same)
-  // Re-state the useEffect logic explicitly to ensure no loss of logic during replacement if lines shift, 
-  // but for replace_file_content heavily bounded, I will just replace the render part mostly.
-  // actually, safer to replace the whole file content to ensure structure is correct.
-  
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/');
@@ -39,13 +37,15 @@ export default function ProfilePage() {
         
         try {
             console.log('ProfilePage: Fetching data for user', user.id);
-            const [profileRes, favoritesRes] = await Promise.all([
+            const [profileRes, favoritesRes, preferencesRes] = await Promise.all([
                 getUserProfileService(),
-                getUserFavoritesDetailsService()
+                getUserFavoritesDetailsService(),
+                getUserPreferencesService()
             ]);
 
             console.log('ProfilePage: Profile result:', profileRes);
             console.log('ProfilePage: Favorites result:', favoritesRes);
+            console.log('ProfilePage: Preferences result:', preferencesRes);
 
             if (profileRes.data) {
                 setProfile(profileRes.data);
@@ -54,6 +54,8 @@ export default function ProfilePage() {
             }
             
             if (favoritesRes.data) setFavorites(favoritesRes.data);
+            if (preferencesRes.data) setPreferences(preferencesRes.data);
+            
         } catch (err) {
             console.error('ProfilePage: Error fetching data:', err);
         } finally {
@@ -109,12 +111,12 @@ export default function ProfilePage() {
                     onProfileUpdate={(updated) => setProfile(updated)} 
                 />
 
-                {/* Preferences (Placeholder) */}
-                <div className="bg-white/50 backdrop-blur-sm border border-dashed border-[#024F86]/20 rounded-2xl p-6 md:p-8">
-                    <h2 className="text-xl font-bold text-[#024F86] mb-2">Preferências do Usuário</h2>
-                    <p className="text-[#636E7C]">
-                        Em breve, você poderá personalizar suas preferências de busca e notificações aqui.
-                    </p>
+                {/* Preferences */}
+                <div className="relative z-20">
+                    <UserPreferencesSection 
+                        preferences={preferences} 
+                        onUpdate={(updated) => setPreferences(updated)} 
+                    />
                 </div>
 
                 {/* Favorites */}

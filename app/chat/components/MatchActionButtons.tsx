@@ -16,7 +16,7 @@ export default function MatchActionButtons({ onRefine, onSatisfied, onRestart }:
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border border-sky-200 rounded-xl text-sky-600 hover:bg-sky-50 transition-all shadow-sm font-medium"
         >
           <SlidersHorizontal size={18} />
-          Gostei, mas quero refinar
+          Quero refinar resultados
         </button>
         
         <button
@@ -33,7 +33,7 @@ export default function MatchActionButtons({ onRefine, onSatisfied, onRestart }:
         className="w-full flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:text-slate-600 text-sm transition-colors"
       >
         <RotateCcw size={14} />
-        Quero refazer o passo 1
+        Recomeçar busca
       </button>
     </div>
   );

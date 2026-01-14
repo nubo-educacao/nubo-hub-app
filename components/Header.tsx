@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
-import { User, Menu, X, LogOut } from 'lucide-react';
+import { User, Menu, X, LogOut, MessageCircle } from 'lucide-react';
 
 export default function Header({ transparent = false }: { transparent?: boolean }) {
   const { isAuthenticated, openAuthModal, logout } = useAuth();
@@ -25,6 +25,17 @@ export default function Header({ transparent = false }: { transparent?: boolean 
             priority
           />
         </Link>
+
+        {/* Desktop Navigation (Centered) */}
+        <div className="hidden md:flex absolute left-1/2 -translate-x-1/2">
+          <Link 
+            href="/chat" 
+            className="flex items-center gap-2 text-[#38B1E4] hover:text-[#38B1E4]/80 text-lg font-bold font-nunito transition-all border-b-2 border-transparent hover:border-[#38B1E4]"
+          >
+            <MessageCircle size={20} strokeWidth={2.5} />
+            <span>Chat</span>
+          </Link>
+        </div>
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
@@ -81,6 +92,14 @@ export default function Header({ transparent = false }: { transparent?: boolean 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-20 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-4 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2 font-nunito">
+            <Link 
+                href="/chat" 
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#38B1E4]/5 text-[#38B1E4]"
+                onClick={() => setIsMobileMenuOpen(false)}
+            >
+                <MessageCircle size={20} strokeWidth={2} />
+                <span className="font-bold">Chat</span>
+            </Link>
             {isAuthenticated ? (
                 <>
                     <Link 

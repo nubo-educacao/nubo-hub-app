@@ -93,8 +93,11 @@ export default function ChatBox() {
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+  const MAX_CHARS = 2000;
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSend();
     }
   };
@@ -103,12 +106,12 @@ export default function ChatBox() {
   
   return (
     <div className="w-full max-w-[785px] mx-auto px-2 md:px-4">
-      <div className="relative bg-white flex items-center w-full min-h-[60px] md:min-h-[80px] px-3 md:px-4 rounded-[12px] md:rounded-[16px] shadow-[2px_2px_6px_0px_rgba(0,0,0,0.2)] md:shadow-[4px_4px_8px_0px_rgba(0,0,0,0.25)] gap-2 md:gap-4">
+      <div className="relative bg-white flex items-end w-full min-h-[60px] md:min-h-[80px] px-3 md:px-4 rounded-[12px] md:rounded-[16px] shadow-[2px_2px_6px_0px_rgba(0,0,0,0.2)] md:shadow-[4px_4px_8px_0px_rgba(0,0,0,0.25)] gap-2 md:gap-4 py-2">
           
         {/* Left Action: Plus */}
         <button 
             disabled={!isAuthenticated}
-            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50 transition-colors disabled:opacity-50 text-[#38B1E4]"
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50 transition-colors disabled:opacity-50 text-[#38B1E4] mb-1"
             aria-label="Adicionar anexo"
         >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -118,24 +121,30 @@ export default function ChatBox() {
             </svg>
         </button>
 
-        {/* Input Field */}
-        <input
-            type="text"
+        {/* Textarea Field */}
+        <textarea
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => setInputValue(e.target.value.slice(0, MAX_CHARS))}
             onKeyDown={handleKeyDown}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
             placeholder={isInputFocused ? "" : placeholder}
-            className="flex-1 bg-transparent text-[#3A424E] placeholder-[#3A424E]/50 focus:outline-none text-sm md:text-base font-medium h-full py-3 md:py-4"
+            className="flex-1 bg-transparent text-[#3A424E] placeholder-[#3A424E]/50 focus:outline-none text-sm md:text-base font-medium py-3 md:py-4 resize-none min-h-[40px] max-h-[150px] overflow-y-auto"
             disabled={isLoading}
+            rows={1}
+            style={{ height: 'auto' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = Math.min(target.scrollHeight, 150) + 'px';
+            }}
         />
 
         {/* Right Action: Send */}
         <button 
             onClick={handleSend}
             disabled={!inputValue.trim() || isLoading}
-            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
+            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 mb-1 ${
                 inputValue.trim() 
                 ? 'bg-[#38B1E4] text-white hover:bg-[#2a9acb] shadow-sm' 
                 : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
