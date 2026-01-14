@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import ChatInput from './ChatInput';
 import MatchActionButtons from './MatchActionButtons';
@@ -39,10 +40,12 @@ export interface Message {
   sender: 'user' | 'cloudinha';
   text: string;
   timestamp: Date;
-  opportunity_ids?: string[];
   course_ids?: string[];
+  opportunity_ids?: string[];
   thinking_groups?: ThinkingGroup[];
+  is_onboarding_success?: boolean; // New Flag
 }
+
 
 import { supabase } from '@/lib/supabaseClient';
 
@@ -71,21 +74,28 @@ const ITEM_LABEL_MAP: Record<string, string> = {
     'sisu_agent': 'Pensando',
     'prouni_agent': 'Pensando',
     'match_workflow': 'Pensando',
+    'match_iterative': 'Pensando',
     'onboarding_workflow': 'Pensando',
+    'onboarding_agent': 'Pensando',
     'onboarding_name': 'Passo 1 - Nome',
     'onboarding_age': 'Passo 2 - Idade',
     'onboarding_city': 'Passo 3 - Localização',
     'onboarding_education': 'Passo 4 - Escolaridade',
     'logModerationTool': 'Registrando Log de Moderação',
-    'logModeration': 'Registrando Log de Moderação'
+    'logModeration': 'Registrando Log de Moderação',
+    'guardrails_check': 'Analisando mensagem',
+    'preload_student_profile': 'Buscando perfil'
 };
 
 const GROUP_LABEL_MAP: Record<string, string> = {
     'RouterAgent': 'Analisando Contexto',
     'sisu_agent': 'Perguntando pro Especialista Sisu',
     'prouni_agent': 'Perguntando pro Especialista Prouni',
-    'match_workflow': 'Consultando Agente de Match',
-    'onboarding_workflow': 'Iniciando Onboarding'
+    'match_workflow': 'Agente de Match',
+    'match_iterative': 'Agente de Match',
+    'onboarding_workflow': 'Iniciando Onboarding',
+    'onboarding_agent': 'Agente de Onboarding',
+    'guardrails_check': 'Analisando Contexto'
 };
 
 const getRouterLabel = (args?: any, output?: string) => {
@@ -126,19 +136,34 @@ export default function ChatCloudinha({
   initialMessage, 
   onInitialMessageSent,
   onOpportunitiesFound,
-  onFunctionalitySwitch 
+  onFunctionalitySwitch,
+  onProfileUpdated,
+  onClearOpportunities,
+  initialMatchStatus
 }: { 
   initialMessage?: string;
   onInitialMessageSent?: () => void;
   onOpportunitiesFound?: (ids: string[]) => void;
   onFunctionalitySwitch?: (func: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING') => void;
+  onProfileUpdated?: () => void;
+  onClearOpportunities?: () => void;
+  initialMatchStatus?: 'reviewing' | 'finished' | null;
 }) {
   const { user, isAuthenticated, session } = useAuth();
   
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
   const [isTyping, setIsTyping] = React.useState(false);
-  const [showMatchActions, setShowMatchActions] = React.useState(false);
+  
+  // Initialize with prop if available
+  const [showMatchActions, setShowMatchActions] = React.useState(initialMatchStatus === 'reviewing');
+
+  // Sync with prop changes (e.g. async load)
+  React.useEffect(() => {
+      if (initialMatchStatus === 'reviewing') {
+          setShowMatchActions(true);
+      }
+  }, [initialMatchStatus]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastProcessedMessage = useRef<string | undefined>(undefined);
 
@@ -289,7 +314,7 @@ export default function ChatCloudinha({
                               else if (target === 'onboarding_workflow') {
                                   // Save the current user message to trigger restart later if needed
                                   // We use 'text' directly because 'messages' state might be stale in this closure
-                                  if (text) {
+                                  if (text && !localStorage.getItem('nubo_onboarding_trigger')) {
                                       localStorage.setItem('nubo_onboarding_trigger', text);
                                   }
                                   onFunctionalitySwitch('ONBOARDING');
@@ -304,21 +329,43 @@ export default function ChatCloudinha({
                             const isGroupStarter = event.tool in GROUP_LABEL_MAP;
 
                             if (isGroupStarter) {
-                                // Start new Group AND add the item (e.g. "Pensando")
-                                const newGroup: ThinkingGroup = {
-                                    id: event.tool,
-                                    label: getGroupLabel(event.tool, event.args),
-                                    status: 'loading',
-                                    items: [{
-                                        tool: event.tool,
+                                // Check if we already have a group with this label (merge instead of creating new)
+                                const targetLabel = getGroupLabel(event.tool, event.args);
+                                const existingGroupIdx = groups.findIndex(g => g.label === targetLabel && g.status === 'loading');
+                                
+                                if (existingGroupIdx !== -1) {
+                                    // Add to existing group instead of creating new one
+                                    const updatedGroups = [...groups];
+                                    const existingGroup = updatedGroups[existingGroupIdx];
+                                    updatedGroups[existingGroupIdx] = {
+                                        ...existingGroup,
+                                        items: [...existingGroup.items, {
+                                            tool: event.tool,
+                                            status: 'loading',
+                                            label: getToolLabel(event.tool, event.args)
+                                        }]
+                                    };
+                                    return {
+                                        ...msg,
+                                        thinking_groups: updatedGroups
+                                    };
+                                } else {
+                                    // Start new Group AND add the item (e.g. "Pensando")
+                                    const newGroup: ThinkingGroup = {
+                                        id: event.tool,
+                                        label: targetLabel,
                                         status: 'loading',
-                                        label: getToolLabel(event.tool, event.args)
-                                    }]
-                                };
-                                return {
-                                    ...msg,
-                                    thinking_groups: [...groups, newGroup]
-                                };
+                                        items: [{
+                                            tool: event.tool,
+                                            status: 'loading',
+                                            label: getToolLabel(event.tool, event.args)
+                                        }]
+                                    };
+                                    return {
+                                        ...msg,
+                                        thinking_groups: [...groups, newGroup]
+                                    };
+                                }
                             } else {
                                 // Add item to last group
                                 if (lastGroup && lastGroup.status === 'loading') {
@@ -393,9 +440,21 @@ export default function ChatCloudinha({
                                 // If so, mark the Group as done too.
                                 const isGroupStarter = event.tool === lastGroup.id;
                                 
+                                let groupStatus = isGroupStarter ? 'done' : lastGroup.status;
+
+                                // [HACK] Special combining logic for "Analisando Contexto"
+                                // Keep group open through all initial steps
+                                if (event.tool === 'guardrails_check' || event.tool === 'preload_student_profile') {
+                                    groupStatus = 'loading'; // Keep open until RouterAgent finishes
+                                }
+                                if (event.tool === 'RouterAgent') {
+                                    groupStatus = 'done'; // Close after Router finishes
+                                }
+
+
                                 updatedGroups[updatedGroups.length - 1] = {
                                     ...lastGroup,
-                                    status: isGroupStarter ? 'done' : lastGroup.status,
+                                    status: groupStatus as 'done' | 'loading',
                                     items
                                 };
 
@@ -432,8 +491,13 @@ export default function ChatCloudinha({
                                         
                                         let ids: string[] = [];
 
-                                        // New Format: { course_ids: [...] }
-                                        if (payload.course_ids && Array.isArray(payload.course_ids)) {
+                                        // New Format (v2): { summary: "", results: [...] }
+                                        if (payload.results && Array.isArray(payload.results)) {
+                                             ids = payload.results.map((r: any) => r.course_id).filter(Boolean);
+                                             console.log("[ChatCloudinha] Found 'results' in payload:", ids.length);
+                                        }
+                                        // New Format (v1): { course_ids: [...] }
+                                        else if (payload.course_ids && Array.isArray(payload.course_ids)) {
                                              ids = payload.course_ids;
                                              console.log("[ChatCloudinha] Found 'course_ids' in payload:", ids.length);
                                         } 
@@ -521,14 +585,15 @@ export default function ChatCloudinha({
 
                                         // A) Onboarding Check
                                         if (profile && profile.onboarding_completed === true) {
-                                            const triggerMsg = localStorage.getItem('nubo_onboarding_trigger');
-                                            if (triggerMsg) {
-                                                console.log("Onboarding Complete! Restarting flow with:", triggerMsg);
-                                                localStorage.removeItem('nubo_onboarding_trigger');
-                                                setTimeout(() => {
-                                                     handleSendMessage(triggerMsg);
-                                                }, 1000);
+                                            // Trigger UI Refresh
+                                            if (onProfileUpdated) {
+                                                console.log("[ChatCloudinha] Triggering onProfileUpdated (Profile Updated)");
+                                                onProfileUpdated();
                                             }
+                                            
+                                            // Mark message as success (Frontend Component Trigger)
+                                            // We relying on page.tsx to handle the auto-trigger via onProfileUpdated -> Effect
+                                            return { ...msg, is_onboarding_success: true, thinking_groups: updatedGroups };
                                         }
                                         
                                         // B) Auto-Search Results Check (Deterministic Flow)
@@ -550,8 +615,13 @@ export default function ChatCloudinha({
                                              
                                             let ids: string[] = [];
                                             
-                                            // New Format: { course_ids: [...] }
-                                            if (payload.course_ids && Array.isArray(payload.course_ids)) {
+                                            // New Format (v2): { summary: "", results: [...] }
+                                            if (payload.results && Array.isArray(payload.results)) {
+                                                ids = payload.results.map((r: any) => r.course_id).filter(Boolean);
+                                                console.log("[ChatCloudinha] Found 'results' in auto-search:", ids.length);
+                                            }
+                                            // New Format (v1): { course_ids: [...] }
+                                            else if (payload.course_ids && Array.isArray(payload.course_ids)) {
                                                 ids = payload.course_ids;
                                                 console.log("[ChatCloudinha] Found 'course_ids' in auto-search:", ids.length);
                                             }
@@ -577,6 +647,12 @@ export default function ChatCloudinha({
 
                                      } catch (e) {
                                          console.error("Error processing updateStudentProfile output:", e);
+                                     }
+
+                                     // Trigger UI Refresh
+                                     if (onProfileUpdated) {
+                                         console.log("[ChatCloudinha] Triggering onProfileUpdated (Profile Updated)");
+                                         onProfileUpdated();
                                      }
                                 }
                             }
@@ -655,48 +731,46 @@ export default function ChatCloudinha({
 
       try {
           if (action === 'refine') {
-              // 1. Update DB to confirm results and allow workflow to advance
-              // We need to merge with existing workflow_data ideally, but for now simple update might suffice if column is jsonb
-              // using rpc or just reading first? simpler to proper update if we can.
-              // Let's assume we can merge or just set it. 
-              // Safest: Fetch, update, set.
-              
-              const { data: requestData } = await supabase
-                .from('user_preferences')
-                .select('workflow_data')
-                .eq('user_id', user.id)
-                .single();
-                
-              const currentWf = requestData?.workflow_data || {};
-              
-              await supabase.from('user_preferences').update({ 
-                  workflow_data: { ...currentWf, match_search_confirmed: true } 
-              }).eq('user_id', user.id);
-
-              // 2. Trigger Workflow Advancement
-              // We send a message that "means nothing" to the prompt but triggers the workflow evaluation
-              handleSendMessage("Avançar para análise socioeconômica"); 
+              // Iterative Model: Just ask the agent to suggest a refinement
+              // The agent will analyze context and suggest the most useful next step
+              handleSendMessage("Quero refinar minha busca"); 
               
           } else if (action === 'satisfied') {
-              // Just close actions usually. Maybe log it.
-               handleSendMessage("Estou satisfeito por enquanto.");
+              // 1. Persist 'finished' state so buttons don't reappear on reload
+              const { data: currentPrefs } = await supabase.from('user_preferences').select('workflow_data').eq('user_id', user.id).single();
+              const currentWf = currentPrefs?.workflow_data || {};
+              
+              await supabase.from('user_preferences').update({
+                  workflow_data: { ...currentWf, match_status: 'finished' }
+              }).eq('user_id', user.id);
+
+              // 2. User is done - close actions and confirm
+              handleSendMessage("Estou satisfeito com essas oportunidades.");
                
           } else if (action === 'restart') {
-              // 1. Clear Preferences
+              // 1. Clear ALL preferences for a fresh start
               await supabase.from('user_preferences').update({ 
                   course_interest: null,
                   enem_score: null,
                   preferred_shifts: null,
                   university_preference: null,
-                  workflow_data: { match_search_confirmed: false }
-              }).eq('user_id', user.id); // Assuming user_id exists
+                  per_capita_income: null,
+                  location_preference: null,
+                  program_preference: null,
+                  quota_types: null,
+                  workflow_data: {} // Clears persisted search results too
+              }).eq('user_id', user.id);
+              
+              // 2. Clear frontend state
+              if (onClearOpportunities) {
+                  onClearOpportunities();
+              }
 
-              // 2. Trigger Workflow Restart
-              handleSendMessage("Quero buscar outro curso");
+              // 3. Trigger fresh workflow start
+              handleSendMessage("Quero recomeçar minha busca");
           }
       } catch (err) {
           console.error("Error handling match action:", err);
-          // Fallback to text if API fails?
       }
   };
 
@@ -705,15 +779,20 @@ export default function ChatCloudinha({
       {/* Header */}
       <div className="h-[97px] flex items-center px-6 border-b border-white/20 flex-shrink-0 bg-white/10 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full relative overflow-hidden shadow-sm border border-white/20">
-             <div className="w-full h-full bg-gradient-to-tr from-[#024F86] to-[#38B1E4] flex items-center justify-center">
-                <span className="text-2xl drop-shadow-md">☁️</span>
-             </div>
+          <div className="w-12 h-12 rounded-full relative overflow-hidden shadow-sm border border-white/20 bg-white">
+             <Image 
+               src="/assets/cloudinha.png" 
+               alt="Cloudinha" 
+               width={48} 
+               height={48} 
+               className="object-cover"
+               quality={100}
+             />
           </div>
           <div className="flex flex-col">
             <h2 className="text-[16px] font-bold text-[#024F86] leading-[24px]">Cloudinha</h2>
             <p className="text-[14px] text-[#636E7C] leading-[20px]">
-              Assistente Virtual
+              Em desenvolvimento
             </p>
           </div>
         </div>
@@ -774,20 +853,53 @@ export default function ChatCloudinha({
                  </div>
              )}
 
-             {/* Message Bubble - ALWAYS LAST (Shows dots if thinking, text if done) */}
-             <MessageBubble message={msg} userAvatar={user?.avatar} />
-
-             {msg.course_ids && msg.course_ids.length > 0 && (
+              {/* Message Bubble - ALWAYS LAST (Shows dots if thinking, text if done) */}
+             {/* Message Bubble OR Success Component */}
+             {msg.is_onboarding_success ? (
                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="w-full"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="w-full flex justify-start"
                  >
-                    <div className="p-4 bg-white/40 rounded-xl border border-[#024F86]/10 text-sm text-[#024F86] flex items-center gap-3 shadow-sm backdrop-blur-sm">
-                        <span className="text-xl">👉</span>
-                        <span className="font-medium">Encontrei {msg.course_ids.length} oportunidades! Veja os detalhes no painel ao lado.</span>
+                    <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3 shadow-sm backdrop-blur-sm max-w-[80%]">
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                            <Sparkles className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div className="flex flex-col">
+                             <span className="text-sm font-semibold text-green-700">Perfil Atualizado! 🚀</span>
+                             <span className="text-xs text-green-600/80">Tudo pronto para buscar suas oportunidades.</span>
+                        </div>
                     </div>
                  </motion.div>
+             ) : (
+                 (msg.text || msg.sender === 'user') && (
+                     <MessageBubble 
+                        message={msg} 
+                        userAvatar={user?.avatar} 
+                        onFeedback={(score: number, type: string) => {
+                            if (!user) return;
+                            // Generate/Use Session ID
+                            // We need to persist a session ID. For now we can use a ref or generate one if empty
+                            let currentSessionId = sessionStorage.getItem('nubo_chat_session_id');
+                            if (!currentSessionId) {
+                                 currentSessionId = crypto.randomUUID();
+                                 sessionStorage.setItem('nubo_chat_session_id', currentSessionId);
+                            }
+        
+                            supabase.from('agent_feedback').insert({
+                                user_id: user.id,
+                                session_id: currentSessionId,
+                                feedback_type: type,
+                                score: score,
+                                content: score === 1 ? 'Thumbs Up' : 'Thumbs Down',
+                                metadata: { message_id: msg.id }
+                            }).then(({ error }) => {
+                                if (error) console.error("Feedback error:", error);
+                                else console.log("Feedback sent:", score);
+                            });
+                        }}
+                     />
+                 )
              )}
           </div>
         ))}

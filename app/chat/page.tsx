@@ -1,24 +1,44 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import ChatCloudinha from './components/ChatCloudinha';
 import OpportunityCarousel from './components/OpportunityCarousel';
+import MatchPlaceholder from './components/MatchPlaceholder';
 import ChatHeader from './components/ChatHeader';
 import AuthModal from '@/components/AuthModal'; 
-import { MessageSquare, Layout, User } from 'lucide-react';
+import { MessageSquare, Layout, User, Loader2, Sparkles, Settings } from 'lucide-react';
 import CloudBackground from '@/components/CloudBackground';
 import UserDataSection from '@/components/profile/UserDataSection';
+import UserPreferencesSection from '@/components/profile/UserPreferencesSection';
 import { getUserProfileService, UserProfile } from '@/services/supabase/profile';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function ChatPage() {
   const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction, isAuthenticated, isLoading, user } = useAuth();
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
   const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [preferences, setPreferences] = useState<any>(null); // Load prefs for edit section
+  const [savedMatchStatus, setSavedMatchStatus] = useState<'reviewing' | 'finished' | null>(null); // Persistence for Match Actions
+  
   const [selectedFunctionality, setSelectedFunctionality] = useState<'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING'>('MATCH');
   const [activeTab, setActiveTab] = useState<'CHAT' | 'CONTENT'>('CHAT');
+  
+  // Desktop Match View Mode
+  const [desktopMatchView, setDesktopMatchView] = useState<'OPPORTUNITIES' | 'PREFERENCES'>('OPPORTUNITIES');
+  
+  const [isPending, startTransition] = useTransition();
+  const [pendingTarget, setPendingTarget] = useState<'CHAT' | 'CONTENT' | null>(null);
+
+  const handleTabSwitch = (tab: 'CHAT' | 'CONTENT') => {
+    if (activeTab === tab) return;
+    setPendingTarget(tab);
+    startTransition(() => {
+        setActiveTab(tab);
+    });
+  };
   const [isReady, setIsReady] = useState(false);
   const router = useRouter();
 
@@ -41,11 +61,61 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (user) {
+        // Fetch Profile + Preferences (Parallel or Sequential)
+        // 1. Profile (Existing)
         getUserProfileService().then(({ data }) => {
+            console.log("[ChatPage] Profile fetched:", data?.onboarding_completed);
             if (data) setProfile(data);
         });
+
+        // 2. Preferences (New - for Workflow Data & Edit Section)
+        const fetchPreferences = async () => {
+             const { data } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
+             if (data) {
+                 setPreferences(data);
+                 // Check persistence
+                 if (data.workflow_data) {
+                     const wf = data.workflow_data as any;
+                     
+                     // Restore Carousel
+                     if (Array.isArray(wf.last_course_ids) && wf.last_course_ids.length > 0) {
+                         console.log("[ChatPage] Restoring persisted opportunities:", wf.last_course_ids.length);
+                         setActiveCourseIds(wf.last_course_ids);
+                     }
+                     
+                     // Restore Match Actions Buttons
+                     if (wf.match_status) {
+                         console.log("[ChatPage] Restoring match status:", wf.match_status);
+                         setSavedMatchStatus(wf.match_status);
+                     }
+                 }
+             }
+        };
+        fetchPreferences();
     }
   }, [user]);
+  
+  // Auto-Trigger logic when Onboarding finishes (via Chat or UI)
+  useEffect(() => {
+    // Wait for profile to be loaded
+    if (!profile) return;
+
+    console.log("[ChatPage] Checking Onboarding Trigger. Completed:", profile.onboarding_completed);
+    
+    if (profile.onboarding_completed) {
+        const triggerMsg = localStorage.getItem('nubo_onboarding_trigger');
+        if (triggerMsg) {
+            console.log("[ChatPage] Onboarding complete. Triggering saved intent:", triggerMsg);
+            
+            // Wait a bit to ensure the "Profile Updated" component renders first
+            setTimeout(() => {
+                setInitialMessage(triggerMsg);
+            }, 100);
+
+            localStorage.removeItem('nubo_onboarding_trigger');
+        }
+    }
+  }, [profile]); // Dependency on profile object updates
 
   const handleUIOnboardingComplete = () => {
        // On successful save from UI, we want to Trigger the Agent to proceed.
@@ -63,6 +133,8 @@ export default function ChatPage() {
 
   const handleOpportunitiesFound = (ids: string[]) => {
       setActiveCourseIds(ids);
+      // Auto-switch to view opportunities if user was on preferences
+      setDesktopMatchView('OPPORTUNITIES');
   };
 
   if (!isReady) return null; // Or a loading spinner
@@ -83,25 +155,33 @@ export default function ChatPage() {
           <div className="md:hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 w-max">
             <div className="flex items-center gap-1 bg-white/70 backdrop-blur-xl border border-white/40 p-1.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
                 <button 
-                    onClick={() => setActiveTab('CHAT')}
+                    onClick={() => handleTabSwitch('CHAT')}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 ${
                         activeTab === 'CHAT' 
                         ? 'bg-[#024F86] text-white shadow-md' 
                         : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
                     }`}
                 >
-                    <MessageSquare size={18} strokeWidth={2.5} />
+                    {isPending && pendingTarget === 'CHAT' ? (
+                        <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                        <MessageSquare size={18} strokeWidth={2.5} />
+                    )}
                     <span className="text-xs font-bold uppercase tracking-wide">Chat</span>
                 </button>
                 <button 
-                    onClick={() => setActiveTab('CONTENT')}
+                    onClick={() => handleTabSwitch('CONTENT')}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 ${
                         activeTab === 'CONTENT' 
                         ? 'bg-[#024F86] text-white shadow-md' 
                         : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
                     }`}
                 >
-                    <Layout size={18} strokeWidth={2.5} />
+                    {isPending && pendingTarget === 'CONTENT' ? (
+                        <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                        <Layout size={18} strokeWidth={2.5} />
+                    )}
                     <span className="text-xs font-bold uppercase tracking-wide">Painel</span>
                 </button>
             </div>
@@ -121,6 +201,19 @@ export default function ChatPage() {
                   if (window.innerWidth < 768) setActiveTab('CONTENT'); 
               }}
               onFunctionalitySwitch={setSelectedFunctionality}
+              initialMatchStatus={savedMatchStatus}
+              onProfileUpdated={() => {
+                  if (user) {
+                      console.log("Refreshing profile...");
+                      getUserProfileService().then(({ data }) => {
+                          if (data) setProfile(data);
+                      });
+                       supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle()
+                         .then(({data}) => setPreferences(data));
+                  }
+              }}
+              // Pass clearing capability for reset
+              onClearOpportunities={() => setActiveCourseIds([])}
             />
           </div>
 
@@ -134,17 +227,41 @@ export default function ChatPage() {
                  <div className="flex-1 bg-white/40 backdrop-blur-md rounded-[32px] border border-white/40 shadow-xl overflow-hidden flex flex-col relative">
                      
                      {/* Header */}
-                     <div className="relative z-20 bg-white/30 backdrop-blur-xl border-b border-white/20">
+                     <div className="relative z-20 bg-white/30 backdrop-blur-xl border-b border-white/20 flex flex-col">
                         <ChatHeader 
                             selectedFunctionality={selectedFunctionality} 
                             onSelectFunctionality={setSelectedFunctionality}
+                            desktopMatchView={desktopMatchView}
+                            onDesktopMatchViewChange={setDesktopMatchView}
                         />
                      </div>
 
                      {/* Main Content Area */}
                      <div className="flex-1 relative z-10 p-4 md:p-8 flex flex-col overflow-hidden">
+                        
+                        {/* MATCH Workflow */}
                         {selectedFunctionality === 'MATCH' && (
-                            <OpportunityCarousel courseIds={activeCourseIds} />
+                            <div className="w-full h-full flex flex-col">
+                                {desktopMatchView === 'OPPORTUNITIES' ? (
+                                    activeCourseIds.length > 0 ? (
+                                        <OpportunityCarousel courseIds={activeCourseIds} />
+                                    ) : (
+                                        <MatchPlaceholder />
+                                    )
+                                ) : (
+                                    <div className="w-full h-full overflow-y-auto">
+                                        <div className="min-h-full flex flex-col justify-center p-4 md:p-8">
+                                            <UserPreferencesSection 
+                                                preferences={preferences} 
+                                                onUpdate={(updated) => {
+                                                    setPreferences(updated);
+                                                    // Could trigger search or visual feedback
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}
                         
                         {selectedFunctionality === 'PROUNI' && (
@@ -187,3 +304,4 @@ export default function ChatPage() {
     </div>
   );
 }
+
