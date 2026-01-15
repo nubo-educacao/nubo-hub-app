@@ -4,108 +4,67 @@ import { motion } from 'framer-motion';
 
 export default function CloudBackground() {
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-b from-[#FFFFFF] via-[#EAF9FF] to-[#D6F0FF]">
+    // Strengthened gradient to avoid "white washout" while maintaining brand feel
+    <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-b from-[#F0F7FF] via-[#E6F4FF] to-[#D6F0FF]">
       
-      {/* Cloud 1 - Soft Blue Drifting Right - Base Layer */}
+      {/* 
+        OPTIMIZATION:
+        - Reduced from 7 clouds to 3 key clouds.
+        - Added 'will-change-transform' for compositor hints.
+        - Slower animations to reduce visual noise and rendering load.
+      */}
+
+      {/* Cloud 1 - Primary Soft Main Cloud (Top Left) */}
       <motion.div
-        className="absolute top-[5%] -left-[25%] w-[1200px] h-[600px] bg-[#38B1E4] rounded-full blur-[240px] opacity-70"
+        className="absolute top-[-10%] -left-[10%] w-[900px] h-[500px] bg-[#38B1E4] rounded-full blur-[140px] opacity-[0.4]"
+        style={{ willChange: 'transform' }}
         animate={{
-          x: ['-20%', '120vw'],
+          x: ['-5%', '5%'],
+          y: ['0%', '5%'],
         }}
         transition={{
-          duration: 45,
+          duration: 20,
           repeat: Infinity,
-          ease: "linear",
-          repeatType: "loop"
+          repeatType: "reverse",
+          ease: "easeInOut"
         }}
       />
 
-       {/* Cloud 2 - White brightness moving slower */}
-       <motion.div
-        className="absolute top-[20%] -left-[10%] w-[600px] h-[500px] bg-white rounded-full blur-[40px] opacity-80"
-        style={{ mixBlendMode: 'overlay' }}
-        animate={{
-          x: ['-10%', '110vw'],
-        }}
-        transition={{
-          duration: 60,
-          repeat: Infinity,
-          ease: "linear",
-          delay: 5
-        }}
-      />
-
-      {/* Cloud 3 - Deep blue at bottom - MUCH LARGER */}
+      {/* Cloud 2 - Deep Anchor Cloud (Bottom Right) - Adds contrast */}
       <motion.div
-        className="absolute bottom-[-20%] -left-[20%] w-[1400px] h-[700px] bg-[#024F86] rounded-full blur-[160px] opacity-[0.16]"
+        className="absolute bottom-[-20%] -right-[10%] w-[1000px] h-[600px] bg-[#024F86] rounded-full blur-[160px] opacity-[0.10]"
+        style={{ willChange: 'transform' }}
         animate={{
-           x: ['-10%', '110vw'],
+          x: ['5%', '-5%'],
+          y: ['5%', '-5%'],
         }}
         transition={{
-          duration: 80,
+          duration: 25,
           repeat: Infinity,
-          ease: "linear",
-        }}
-      />
-
-       {/* Cloud 4 - Medium Blue accent, faster - LARGER */}
-       <motion.div
-        className="absolute top-[35%] -left-[30%] w-[800px] h-[500px] bg-[#38B1E4] rounded-full blur-[140px] opacity-25"
-        animate={{
-          x: ['-20%', '120vw'],
-        }}
-        transition={{
-          duration: 35,
-          repeat: Infinity,
-          ease: "linear",
+          repeatType: "reverse",
+          ease: "easeInOut",
           delay: 2
         }}
       />
 
-      {/* Cloud 5 - NEW - Dark Blue drifting mid-high to add contrast */}
+      {/* Cloud 3 - Drifting Highlight (Middle) - Adds movement */}
       <motion.div
-        className="absolute top-[15%] -left-[40%] w-[900px] h-[500px] bg-[#024F86] rounded-full blur-[180px] opacity-[0.12]"
+        className="absolute top-[40%] left-[20%] w-[600px] h-[400px] bg-white rounded-full blur-[100px] opacity-60"
+        style={{ willChange: 'transform', mixBlendMode: 'overlay' }}
         animate={{
-          x: ['-20%', '120vw'],
+          x: ['-10%', '10%'],
+          scale: [1, 1.1, 1],
         }}
         transition={{
-          duration: 55,
+          duration: 30,
           repeat: Infinity,
-          ease: "linear",
-          delay: 8
+          repeatType: "reverse",
+          ease: "easeInOut",
         }}
       />
 
-      {/* Cloud 6 - NEW - Sky Blue drifting low */}
-      <motion.div
-        className="absolute bottom-[10%] -left-[35%] w-[1000px] h-[600px] bg-[#38B1E4] rounded-full blur-[160px] opacity-20"
-        animate={{
-          x: ['-20%', '120vw'],
-        }}
-        transition={{
-          duration: 70,
-          repeat: Infinity,
-          ease: "linear",
-          delay: 12
-        }}
-      />
-      
-       {/* Cloud 7 - Another white highlight */}
-      <motion.div
-        className="absolute top-[60%] -left-[15%] w-[700px] h-[400px] bg-white rounded-full blur-[100px] opacity-90"
-        animate={{
-          x: ['-20%', '120vw'],
-        }}
-        transition={{
-          duration: 50,
-          repeat: Infinity,
-          ease: "linear",
-          delay: 15
-        }}
-      />
-      
-      {/* Static/Ambient light to ensure it's not too flat */}
-       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-white blur-[150px] opacity-40 rounded-full pointer-events-none" />
+      {/* Static ambient overlay to smooth things out without animation cost */}
+      <div className="absolute inset-0 bg-white/20 pointer-events-none" />
     </div>
   );
 }

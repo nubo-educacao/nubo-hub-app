@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, KeyboardEvent } from 'react';
+import React, { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
+import { PHRASES } from '@/components/ConversationStarters';
 
 export default function ChatBox() {
   const { isAuthenticated, openAuthModal, setPendingAction, pendingAction } = useAuth();
@@ -21,14 +22,32 @@ export default function ChatBox() {
   });
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const PHRASES = [
-    "Me ajude a encontrar a oportunidade ideal...",
-    "Como funciona o processo do SISU?",
-    "Tenho direito a bolsas do Prouni?",
-    "Quais os documentos necessários para me matricular na faculdade?",
-    "Como consigo uma vaga de Jovem Aprendiz?",
-    "Me ajude a escolher um curso."
-  ];
+  const [showStarters, setShowStarters] = useState(false);
+  const startersRef = useRef<HTMLDivElement>(null);
+  const toggleButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close starters when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        startersRef.current && 
+        !startersRef.current.contains(event.target as Node) &&
+        toggleButtonRef.current &&
+        !toggleButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowStarters(false);
+      }
+    };
+
+    if (showStarters) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStarters]);
+
 
   useEffect(() => {
     if (isInputFocused) {
@@ -93,6 +112,17 @@ export default function ChatBox() {
     }
   };
 
+  const handleStarterClick = (phrase: string) => {
+    setShowStarters(false);
+    setPendingAction({ type: 'chat', payload: { message: phrase } });
+    
+    if (isAuthenticated) {
+        router.push('/chat');
+    } else {
+        openAuthModal();
+    }
+  };
+
   const MAX_CHARS = 2000;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -108,13 +138,45 @@ export default function ChatBox() {
     <div className="w-full max-w-[785px] mx-auto px-2 md:px-4">
       <div className="relative bg-white flex items-end w-full min-h-[60px] md:min-h-[80px] px-3 md:px-4 rounded-[12px] md:rounded-[16px] shadow-[2px_2px_6px_0px_rgba(0,0,0,0.2)] md:shadow-[4px_4px_8px_0px_rgba(0,0,0,0.25)] gap-2 md:gap-4 py-2">
           
+        {/* Conversation Starters Popup */}
+        {showStarters && (
+            <div 
+                ref={startersRef}
+                className="absolute bottom-full left-0 mb-3 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 px-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+            >
+                <div className="flex justify-between items-center px-3 py-1 mb-1">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Sugestões
+                    </span>
+                    <button 
+                        onClick={() => setShowStarters(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                    {PHRASES.map((phrase, index) => (
+                        <button
+                            key={index}
+                            onClick={() => handleStarterClick(phrase)}
+                            className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-sky-50 hover:text-[#005F99] rounded-lg transition-colors mx-1"
+                        >
+                            {phrase}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {/* Left Action: Plus */}
         <button 
-            disabled={!isAuthenticated}
-            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50 transition-colors disabled:opacity-50 text-[#38B1E4] mb-1"
+            ref={toggleButtonRef}
+            onClick={() => setShowStarters(!showStarters)}
+            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors mb-1 ${showStarters ? 'bg-sky-100 text-[#005F99]' : 'hover:bg-sky-50 text-[#38B1E4]'}`}
             aria-label="Adicionar anexo"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-6 h-6 transition-transform duration-200 ${showStarters ? 'rotate-45' : ''}`}>
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M8 12h8"/>
                 <path d="M12 8v8"/>

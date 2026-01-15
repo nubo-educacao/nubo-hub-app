@@ -5,12 +5,13 @@ import { motion, Variants } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 
-const PHRASES = [
+export const PHRASES = [
+  "Como a Cloudinha funciona?",
   "Me ajude a encontrar a oportunidade ideal...",
   "Como funciona o processo do SISU?",
   "Tenho direito a bolsas do Prouni?",
-  "Quais os prazos de inscrição do ENEM?",
-  "Como consigo uma vaga de Jovem Aprendiz?"
+  "Em quais faculdades eu tenho mais chance com a minha nota?",
+  "Quais cursos existem perto de onde eu moro?"
 ];
 
 export default function ConversationStarters() {
