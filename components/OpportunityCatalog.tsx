@@ -17,7 +17,7 @@ function OpportunityCatalogContent() {
   const isFirstMount = useRef(true);
 
   // Initialize state from URL params
-  const [selectedFilter, setSelectedFilter] = useState(searchParams.get('filter') || 'Parceiros');
+  const [selectedFilter, setSelectedFilter] = useState(searchParams.get('filter') || 'Seleção Nubo');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'proximas');
 
@@ -56,7 +56,7 @@ function OpportunityCatalogContent() {
   const updateUrl = (newFilter: string, newSearch: string, newSort: string) => {
     const params = new URLSearchParams(searchParams.toString());
     
-    if (newFilter && newFilter !== 'Parceiros') params.set('filter', newFilter);
+    if (newFilter && newFilter !== 'Seleção Nubo') params.set('filter', newFilter);
     else params.delete('filter');
 
     if (newSearch) params.set('q', newSearch);
@@ -79,9 +79,9 @@ function OpportunityCatalogContent() {
   // Fetch Logic
   useEffect(() => {
     // Determine if we should fetch based on filter
-    if (selectedFilter !== 'Parceiros' && selectedFilter !== 'Fáceis de entrar') {
+    if (selectedFilter !== 'Oportunidades de parceiros' && selectedFilter !== 'Seleção Nubo') {
       loadInitialCourses();
-    } else if (selectedFilter === 'Parceiros') {
+    } else if (selectedFilter === 'Oportunidades de parceiros') {
       loadPartners();
     }
     
@@ -90,7 +90,7 @@ function OpportunityCatalogContent() {
 
   // Debounce search
   useEffect(() => {
-     if (selectedFilter !== 'Parceiros' && selectedFilter !== 'Fáceis de entrar') {
+     if (selectedFilter !== 'Oportunidades de parceiros' && selectedFilter !== 'Seleção Nubo') {
         const timer = setTimeout(() => {
             loadInitialCourses();
             // Update URL for search query here since it's debounced input
@@ -242,7 +242,7 @@ function OpportunityCatalogContent() {
   };
 
   const renderContent = () => {
-    if (selectedFilter === 'Parceiros') {
+    if (selectedFilter === 'Oportunidades de parceiros') {
       if (partnersLoading) {
           return (
           <div className="flex items-center justify-center py-16">
@@ -278,7 +278,7 @@ function OpportunityCatalogContent() {
       );
     }
 
-    if (selectedFilter !== 'Parceiros' && selectedFilter !== 'Fáceis de entrar') {
+    if (selectedFilter !== 'Oportunidades de parceiros' && selectedFilter !== 'Seleção Nubo') {
       if (loading) {
         return (
           <div className="flex items-center justify-center py-16">
@@ -355,7 +355,7 @@ function OpportunityCatalogContent() {
   };
 
   return (
-    <section ref={catalogRef} className="relative pb-16 pt-8 scroll-mt-32">
+    <section id="oportunidades" ref={catalogRef} className="relative pb-16 pt-8 scroll-mt-32">
       {/* Floating Container */}
       <div className="container mx-auto px-4">
         <div className="bg-white/30 backdrop-blur-md border border-white/20 shadow-xl rounded-[24px] md:rounded-[40px] p-4 pt-12 md:p-8 md:pt-16 relative min-h-[600px] md:min-h-[800px]">

@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import ChatInput from './ChatInput';
+import MobileTabSwitch from './MobileTabSwitch';
 import MatchActionButtons from './MatchActionButtons';
 import MessageBubble from './MessageBubble';
 // import OpportunityCarousel from './OpportunityCarousel'; // Moved to Page level
@@ -71,6 +72,7 @@ const ITEM_LABEL_MAP: Record<string, string> = {
     'duckDuckGoSearch': 'Buscando na Net',
     'smartResearchTool': 'Buscando Conhecimento',
     'smartResearch': 'Buscando Conhecimento',
+    'readRulesTool': 'Buscando Conhecimento',
     'sisu_agent': 'Pensando',
     'prouni_agent': 'Pensando',
     'match_workflow': 'Pensando',
@@ -109,7 +111,7 @@ const getRouterLabel = (args?: any, output?: string) => {
     if (target === 'sisu_workflow') return 'Transferindo para Especialista Sisu';
     if (target === 'match_workflow') return 'Transferindo para Agente de Match';
     if (target === 'onboarding_workflow') return 'Iniciando Onboarding';
-    return 'Decidindo melhor especialista...';
+    return 'Transferindo para Agente Principal';
 }
 
 const getToolLabel = (toolName: string, args?: any, output?: string): string => {
@@ -139,7 +141,11 @@ export default function ChatCloudinha({
   onFunctionalitySwitch,
   onProfileUpdated,
   onClearOpportunities,
-  initialMatchStatus
+  initialMatchStatus,
+  activeTab,
+  onTabSwitch,
+  isPending,
+  pendingTarget
 }: { 
   initialMessage?: string;
   onInitialMessageSent?: () => void;
@@ -148,6 +154,11 @@ export default function ChatCloudinha({
   onProfileUpdated?: () => void;
   onClearOpportunities?: () => void;
   initialMatchStatus?: 'reviewing' | 'finished' | null;
+  // Mobile Nav Props
+  activeTab?: 'CHAT' | 'CONTENT';
+  onTabSwitch?: (tab: 'CHAT' | 'CONTENT') => void;
+  isPending?: boolean;
+  pendingTarget?: 'CHAT' | 'CONTENT' | null;
 }) {
   const { user, isAuthenticated, session } = useAuth();
   
@@ -198,9 +209,21 @@ export default function ChatCloudinha({
             text: msg.content,
             timestamp: new Date(msg.created_at),
           }));
-          setMessages(history);
+          
+          setMessages(prev => {
+              // Merge: Keep local messages (temp IDs are usually timestamps, so numeric strings)
+              // We assume server IDs are UUIDs.
+              const localMessages = prev.filter(m => !isNaN(Number(m.id)));
+              
+              // De-duplicate if needed (though local vs server shouldn't collide on ID types)
+              // Just append local messages to the end of history
+              return [...history, ...localMessages];
+          });
         } else {
-          setMessages([]);
+           setMessages(prev => {
+              const localMessages = prev.filter(m => !isNaN(Number(m.id)));
+              return [...localMessages]; // Keep locals even if history empty
+           });
         }
         setIsLoadingHistory(false);
       };
@@ -798,9 +821,27 @@ export default function ChatCloudinha({
         </div>
       </div>
 
+      {/* Mobile Switch - Integrated into Flow (Only shows if props provided) */}
+      {activeTab && onTabSwitch && (
+          <div className="md:hidden flex-none p-4 pb-0 flex justify-center w-full z-30">
+             <MobileTabSwitch 
+                activeTab={activeTab} 
+                onTabSwitch={onTabSwitch}
+                isPending={isPending || false}
+                pendingTarget={pendingTarget || null}
+             />
+          </div>
+      )}
+
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#024F86]/20 scrollbar-track-transparent">
-        {messages.map((msg) => (
+        {isLoadingHistory ? (
+          <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px]">
+            <Loader2 className="w-8 h-8 text-[#024F86] animate-spin" />
+            <p className="text-sm font-medium text-[#024F86]">Carregando mensagens...</p>
+          </div>
+        ) : messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-6">
              {/* Render Thinking Groups (Hierarchical) - ALWAYS FIRST */}
              {msg.thinking_groups && msg.thinking_groups.length > 0 && (
@@ -928,10 +969,13 @@ export default function ChatCloudinha({
                 onRestart={() => handleMatchAction('restart')}
             />
         )}
-        <div className={showMatchActions ? 'opacity-50 pointer-events-none' : ''}>
-            <ChatInput onSendMessage={handleSendMessage} isLoading={isTyping} />
+        <div className="w-full max-w-4xl mx-auto px-4 pb-4">
+          <ChatInput 
+            onSendMessage={handleSendMessage} 
+            isLoading={isTyping}
+          />
         </div>
-      </div>
+    </div>
     </div>
   );
 }

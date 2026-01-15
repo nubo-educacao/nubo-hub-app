@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
@@ -39,6 +40,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,7 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     
     if (data.session) {
-      setIsAuthModalOpen(false);
+      if (pendingAction?.type === 'redirect') {
+        router.push(pendingAction.payload.url);
+        setPendingAction(null);
+        setIsAuthModalOpen(false);
+      } else if (pendingAction?.type === 'chat') {
+        // Don't close modal for chat action, let the chat page/component handle it
+      } else {
+        setIsAuthModalOpen(false);
+      }
     }
     
     return { data, error };

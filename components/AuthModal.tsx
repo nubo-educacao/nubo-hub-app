@@ -5,9 +5,11 @@ import { X, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function AuthModal() {
-  const { isAuthModalOpen, closeAuthModal, signInWithWhatsapp, signInWithDemo, verifyOtp, pendingAction } = useAuth();
+  const router = useRouter();
+  const { isAuthModalOpen, closeAuthModal, signInWithWhatsapp, signInWithDemo, verifyOtp, pendingAction, setPendingAction } = useAuth();
   const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -77,6 +79,10 @@ export default function AuthModal() {
         if (pendingAction?.type === 'chat') {
            // Do nothing, keep spinner. The ChatBox component will handle redirect.
            // The modal will be closed by the destination page (ChatPage)
+        } else if (pendingAction?.type === 'redirect') {
+            router.push(pendingAction.payload.url);
+            setPendingAction(null);
+            closeAuthModal();
         } else {
            closeAuthModal();
         }
@@ -145,7 +151,7 @@ export default function AuthModal() {
 
         {/* Header */}
         <div className="flex flex-col items-center gap-1 mb-6">
-          <h2 className="font-nunito font-semibold text-[16px] leading-[24px] text-[#38B1E4] text-center">
+          <h2 className="font-montserrat font-semibold text-[16px] leading-[24px] text-[#38B1E4] text-center">
             {step === 'PHONE' ? 'Entre no Nubo' : 'Verifique seu número'}
           </h2>
           <p className="font-montserrat font-medium text-[14px] leading-[17.5px] text-[#707A7E] text-center w-[270px]">
@@ -252,7 +258,7 @@ export default function AuthModal() {
                      </svg>
                   </div>
                 )}
-                <span className="font-nunito font-semibold text-[16px] text-[#38B1E4]">
+                <span className="font-montserrat font-semibold text-[14px] text-[#38B1E4]">
                   Receber código no Whatsapp
                 </span>
               </button>
@@ -302,7 +308,7 @@ export default function AuthModal() {
                 ) : (
                   <Check size={20} className="text-white" />
                 )}
-                <span className="font-nunito font-semibold text-[16px] text-white">
+                <span className="font-montserrat font-semibold text-[16px] text-white">
                   Confirmar
                 </span>
               </button>

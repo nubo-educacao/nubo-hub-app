@@ -32,9 +32,9 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
       animate={{ opacity: 1, y: 0, scale: 1 }}
       className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} group`}
     >
-      <div className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+      <div className={`flex items-end gap-2 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
         {/* Avatar (Only for Cloudinha) */}
-        {!isUser && (
+        {!isUser ? (
           <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden shadow-sm bg-white border border-gray-200">
             <Image 
               src="/assets/cloudinha.png" 
@@ -45,6 +45,9 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
               quality={100}
             />
           </div>
+        ) : (
+             // Spacer for User to match Avatar width + gap
+             <div className="w-8 h-8 flex-shrink-0 opacity-0" />
         )}
 
         {/* Bubble */}

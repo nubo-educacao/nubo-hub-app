@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat, Nunito, Lora } from "next/font/google";
+import { Montserrat, Lora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
 import { Toaster } from "sonner";
 
-const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({ 
   subsets: ["latin"],
   variable: "--font-montserrat",
-});
-const nunito = Nunito({ 
-  subsets: ["latin"],
-  variable: "--font-nunito",
 });
 const lora = Lora({
   subsets: ["latin"],
@@ -31,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.className} ${montserrat.variable} ${nunito.variable} ${lora.variable} bg-neutral-950 text-white antialiased`}>
+      <body className={`${montserrat.className} ${montserrat.variable} ${lora.variable} bg-neutral-950 text-white antialiased`}>
         <AuthProvider>
           {children}
           <AuthModal />
@@ -41,3 +36,4 @@ export default function RootLayout({
     </html>
   );
 }
+
