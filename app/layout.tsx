@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat, Lora } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
@@ -32,6 +33,10 @@ export default function RootLayout({
           <AuthModal />
           <Toaster richColors position="top-center" />
         </AuthProvider>
+        <Script 
+          src="https://t.contentsquare.net/uxa/a41506ab63916.js" 
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

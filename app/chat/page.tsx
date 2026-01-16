@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import ChatCloudinha from './components/ChatCloudinha';
 import OpportunityCarousel from './components/OpportunityCarousel';
@@ -42,6 +42,7 @@ export default function ChatPage() {
   };
   const [isReady, setIsReady] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -56,9 +57,19 @@ export default function ChatPage() {
     if (pendingAction?.type === 'chat') {
       setInitialMessage(pendingAction.payload.message);
       clearPendingAction();
+    } else {
+        // Check for URL message param
+        const msgParam = searchParams.get('message');
+        if (msgParam) {
+            setInitialMessage(msgParam);
+            // Optional: clean up URL
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('message');
+            router.replace(`/chat?${params.toString()}`, { scroll: false });
+        }
     }
     setIsReady(true);
-  }, [closeAuthModal, pendingAction, clearPendingAction]);
+  }, [closeAuthModal, pendingAction, clearPendingAction, searchParams, router]);
 
   useEffect(() => {
     if (user) {
@@ -184,7 +195,17 @@ export default function ChatPage() {
                           if (data) setProfile(data);
                       });
                        supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle()
-                         .then(({data}) => setPreferences(data));
+                         .then(({data}) => {
+                             setPreferences(data);
+                             if (data?.workflow_data) {
+                                  const wf = data.workflow_data as any;
+                                  if (Array.isArray(wf.last_course_ids) && wf.last_course_ids.length > 0) {
+                                      console.log("[ChatPage] Restoring refreshed opportunities:", wf.last_course_ids.length);
+                                      setActiveCourseIds(wf.last_course_ids);
+                                      setDesktopMatchView('OPPORTUNITIES');
+                                  }
+                             }
+                         });
                   }
               }}
               // Pass clearing capability for reset
@@ -238,6 +259,7 @@ export default function ChatPage() {
                                                     setPreferences(updated);
                                                     // Could trigger search or visual feedback
                                                 }}
+                                                onMatchFound={(ids) => handleOpportunitiesFound(ids)}
                                             />
                                         </div>
                                     </div>

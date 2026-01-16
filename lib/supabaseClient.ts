@@ -24,9 +24,10 @@ const CustomStorage = {
   setItem: (key: string, value: string): void => {
     if (typeof window === 'undefined') return;
     
-    // Check if we should use persistent storage
+    // Check if we should use persistent storage (default) or session storage
     // We'll use a specific key in localStorage to track preference
-    const isPersistent = window.localStorage.getItem('supabase-auth-preference') === 'persistent';
+    // Default to persistent unless explicitly set to 'session'
+    const isPersistent = window.localStorage.getItem('supabase-auth-preference') !== 'session';
     
     if (isPersistent) {
       window.localStorage.setItem(key, value);
@@ -46,9 +47,9 @@ const CustomStorage = {
 export const setAuthPersistence = (isPersistent: boolean) => {
   if (typeof window === 'undefined') return;
   if (isPersistent) {
-    window.localStorage.setItem('supabase-auth-preference', 'persistent');
+    window.localStorage.removeItem('supabase-auth-preference'); // Default is persistent
   } else {
-    window.localStorage.removeItem('supabase-auth-preference');
+    window.localStorage.setItem('supabase-auth-preference', 'session');
   }
 };
 

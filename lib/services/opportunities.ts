@@ -222,6 +222,7 @@ export async function fetchCoursesWithOpportunities(
         opportunity_type: opp.opportunity_type,
         scholarship_type: opp.scholarship_type,
         concurrency_tags: opp.concurrency_tags, // Add this
+        is_nubo_pick: opp.is_nubo_pick,
         cutoff_score: opp.cutoff_score,
         type
       };

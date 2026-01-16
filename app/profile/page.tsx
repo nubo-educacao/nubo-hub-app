@@ -14,6 +14,7 @@ import { Montserrat } from 'next/font/google';
 import { Loader2 } from 'lucide-react';
 import CloudBackground from '@/components/CloudBackground';
 import BackButton from '@/components/BackButton';
+import Footer from '@/components/Footer';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -125,6 +126,7 @@ export default function ProfilePage() {
 
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
