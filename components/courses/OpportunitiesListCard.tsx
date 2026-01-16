@@ -121,10 +121,10 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                     <Icon size={24} className="text-[#024F86]" />
                     
                     {/* Tooltip */}
-                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
+                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
                         {label}
                         {/* Arrow */}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/90"></div>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800/90"></div>
                     </div>
                   </div>
                 </td>
@@ -141,10 +141,10 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                         {opp.scholarship_type && (
                             <div className="relative group/info inline-flex items-center ml-1">
                                 <Info size={16} className="text-slate-400 cursor-help hover:text-[#024F86] transition-colors" />
-                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800/95 text-white text-xs rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
+                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800/95 text-white text-xs rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
                                     {opp.scholarship_type}
                                     {/* Arrow */}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800/95"></div>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800/95"></div>
                                 </div>
                             </div>
                         )}
