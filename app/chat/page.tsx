@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import ChatCloudinha from './components/ChatCloudinha';
@@ -16,7 +16,7 @@ import MobileTabSwitch from './components/MobileTabSwitch';
 import { getUserProfileService, UserProfile } from '@/services/supabase/profile';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction, isAuthenticated, isLoading, user } = useAuth();
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
   const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
@@ -305,6 +305,18 @@ export default function ChatPage() {
       {/* Auth Modal */}
       <AuthModal />
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+       <div className="flex items-center justify-center h-screen bg-[#F0F4FA]">
+          <div className="w-12 h-12 border-4 border-[#024F86] border-t-transparent rounded-full animate-spin"></div>
+       </div>
+    }>
+      <ChatPageContent />
+    </Suspense>
   );
 }
 
