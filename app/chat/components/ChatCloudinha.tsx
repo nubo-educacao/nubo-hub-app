@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import ChatInput from './ChatInput';
 import MobileTabSwitch from './MobileTabSwitch';
-import MatchActionButtons from './MatchActionButtons';
+
 import MessageBubble from './MessageBubble';
 // import OpportunityCarousel from './OpportunityCarousel'; // Moved to Page level
 import { motion, AnimatePresence } from 'framer-motion';
@@ -57,6 +57,8 @@ const ITEM_LABEL_MAP: Record<string, string> = {
     'getStudentProfile': 'Lendo Perfil do Estudante',
     'updateStudentProfileTool': 'Editando Perfil do Estudante',
     'updateStudentProfile': 'Editando Perfil do Estudante',
+    'updateStudentPreferencesTool': 'Editando Preferências do Estudante',
+    'updateStudentPreferences': 'Editando Preferências do Estudante',
     'searchOpportunitiesTool': 'Buscando Oportunidades',
     'searchOpportunities': 'Buscando Oportunidades',
     'search_opportunities': 'Buscando Oportunidades',
@@ -76,6 +78,7 @@ const ITEM_LABEL_MAP: Record<string, string> = {
     'sisu_agent': 'Pensando',
     'prouni_agent': 'Pensando',
     'match_workflow': 'Pensando',
+    'match_agent': 'Pensando',
     'match_iterative': 'Pensando',
     'onboarding_workflow': 'Pensando',
     'onboarding_agent': 'Pensando',
@@ -86,15 +89,17 @@ const ITEM_LABEL_MAP: Record<string, string> = {
     'logModerationTool': 'Registrando Log de Moderação',
     'logModeration': 'Registrando Log de Moderação',
     'guardrails_check': 'Analisando mensagem',
-    'preload_student_profile': 'Buscando perfil'
+    'preload_student_profile': 'Buscando perfil',
+    'suggestRefinementTool': 'Refinando sugestões'
 };
 
 const GROUP_LABEL_MAP: Record<string, string> = {
     'RouterAgent': 'Analisando Contexto',
     'sisu_agent': 'Perguntando pro Especialista Sisu',
     'prouni_agent': 'Perguntando pro Especialista Prouni',
-    'match_workflow': 'Agente de Match',
-    'match_iterative': 'Agente de Match',
+    'match_workflow': 'Consultando Agente de Match',
+    'match_agent': 'Consultando Agente de Match',
+    'match_iterative': 'Consultando Agente de Match',
     'onboarding_workflow': 'Iniciando Onboarding',
     'onboarding_agent': 'Agente de Onboarding',
     'guardrails_check': 'Analisando Contexto'
@@ -167,14 +172,7 @@ export default function ChatCloudinha({
   const [isTyping, setIsTyping] = React.useState(false);
   
   // Initialize with prop if available
-  const [showMatchActions, setShowMatchActions] = React.useState(initialMatchStatus === 'reviewing');
 
-  // Sync with prop changes (e.g. async load)
-  React.useEffect(() => {
-      if (initialMatchStatus === 'reviewing') {
-          setShowMatchActions(true);
-      }
-  }, [initialMatchStatus]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastProcessedMessage = useRef<string | undefined>(undefined);
 
@@ -537,7 +535,7 @@ export default function ChatCloudinha({
                                             console.log("[ChatCloudinha] Opportunities found (Direct Search). Showing actions.");
 
                                             // Block Input & Show Actions
-                                            setShowMatchActions(true);
+
 
                                             if (onOpportunitiesFound) {
                                                 setTimeout(() => onOpportunitiesFound(ids), 0);
@@ -658,7 +656,7 @@ export default function ChatCloudinha({
                                                 console.log("[ChatCloudinha] Opportunities found (Auto-Search). Showing actions.");
 
                                                 // Block Input & Show Actions
-                                                setShowMatchActions(true);
+
 
                                                 if (onOpportunitiesFound) {
                                                     setTimeout(() => onOpportunitiesFound(ids), 0);
@@ -678,10 +676,83 @@ export default function ChatCloudinha({
                                          onProfileUpdated();
                                      }
                                 }
-                            }
+                                }
+                                
+                                // --- SPECIAL HANDLING: Update Student Preferences (Match Flow) ---
+                                if (['updateStudentPreferencesTool', 'updateStudentPreferences'].includes(event.tool)) {
+                                     try {
+                                        // 1. Parse Output
+                                        let data;
+                                        try {
+                                            data = JSON.parse(event.output);
+                                        } catch (e) {
+                                            // Fallback unwrappers
+                                            const marker = "'result': '"; 
+                                            const startIdx = event.output.indexOf(marker);
+                                            if (startIdx !== -1) {
+                                                try {
+                                                    const contentStart = startIdx + marker.length;
+                                                    const contentEnd = event.output.lastIndexOf("'");
+                                                    if (contentEnd > contentStart) {
+                                                        let inner = event.output.substring(contentStart, contentEnd);
+                                                        inner = inner.replace(/\\'/g, "'").replace(/\\\\/g, "\\");
+                                                        data = JSON.parse(inner);
+                                                    }
+                                                } catch (e2) {}
+                                            }
+                                        }
+
+                                        if (data) {
+                                            const payload = data.result || data;
+                                            
+                                            // Check for direct search results in payload
+                                            if (payload.auto_search_results) {
+                                                console.log("[ChatCloudinha] Found auto_search_results in preferences update");
+                                                
+                                                // Try to parse inner string if needed
+                                                let searchData = payload.auto_search_results;
+                                                if (typeof searchData === 'string') {
+                                                    try { searchData = JSON.parse(searchData); } catch(e){}
+                                                }
+                                                
+                                                const searchPayload = searchData.result || searchData;
+                                                
+                                                // Check for "results" or "course_ids"
+                                                let ids: string[] = [];
+                                                if (searchPayload.results && Array.isArray(searchPayload.results)) {
+                                                    ids = searchPayload.results.map((r: any) => r.course_id).filter(Boolean);
+                                                } else if (searchPayload.course_ids && Array.isArray(searchPayload.course_ids)) {
+                                                    ids = searchPayload.course_ids;
+                                                }
+                                                
+                                                if (ids.length > 0) {
+                                                     console.log("[ChatCloudinha] Extracted IDs from preferences update:", ids.length);
+
+                                                     if (onOpportunitiesFound) setTimeout(() => onOpportunitiesFound(ids), 0);
+                                                     // Update local message state
+                                                     const updatedMsg = { ...msg, course_ids: ids, thinking_groups: updatedGroups };
+                                                     // If we found IDs directly, we return early
+                                                     // But we STILL want to trigger onProfileUpdated to sync DB state
+                                                     if (onProfileUpdated) onProfileUpdated();
+                                                     return updatedMsg;
+                                                }
+                                            }
+                                            
+                                            // Always trigger Profile Update if preferences changed
+                                            if (payload.preferences_updated || payload.search_performed) {
+                                                console.log("[ChatCloudinha] Preferences updated, triggering refresh");
+                                                if (onProfileUpdated) onProfileUpdated();
+                                            }
+                                        }
+                                     } catch (e) {
+                                         console.error("Error processing updateStudentPreferences output:", e);
+                                     }
+                                }
+
                             return { ...msg, thinking_groups: updatedGroups };
                         }));
-                    } 
+                    }
+
                     else if (event.type === 'error') {
                         console.error("Stream Error:", event.content);
                         setMessages((prev) => prev.map(msg => {
@@ -747,55 +818,7 @@ export default function ChatCloudinha({
     }
   };
 
-  const handleMatchAction = async (action: 'refine' | 'satisfied' | 'restart') => {
-      setShowMatchActions(false);
-      
-      if (!user) return;
 
-      try {
-          if (action === 'refine') {
-              // Iterative Model: Just ask the agent to suggest a refinement
-              // The agent will analyze context and suggest the most useful next step
-              handleSendMessage("Quero refinar minha busca"); 
-              
-          } else if (action === 'satisfied') {
-              // 1. Persist 'finished' state so buttons don't reappear on reload
-              const { data: currentPrefs } = await supabase.from('user_preferences').select('workflow_data').eq('user_id', user.id).single();
-              const currentWf = currentPrefs?.workflow_data || {};
-              
-              await supabase.from('user_preferences').update({
-                  workflow_data: { ...currentWf, match_status: 'finished' }
-              }).eq('user_id', user.id);
-
-              // 2. User is done - close actions and confirm
-              handleSendMessage("Estou satisfeito com essas oportunidades.");
-               
-          } else if (action === 'restart') {
-              // 1. Clear ALL preferences for a fresh start
-              await supabase.from('user_preferences').update({ 
-                  course_interest: null,
-                  enem_score: null,
-                  preferred_shifts: null,
-                  university_preference: null,
-                  per_capita_income: null,
-                  location_preference: null,
-                  program_preference: null,
-                  quota_types: null,
-                  workflow_data: {} // Clears persisted search results too
-              }).eq('user_id', user.id);
-              
-              // 2. Clear frontend state
-              if (onClearOpportunities) {
-                  onClearOpportunities();
-              }
-
-              // 3. Trigger fresh workflow start
-              handleSendMessage("Quero recomeçar minha busca");
-          }
-      } catch (err) {
-          console.error("Error handling match action:", err);
-      }
-  };
 
   return (
     <div className="flex flex-col h-full bg-transparent">
@@ -962,13 +985,7 @@ export default function ChatCloudinha({
 
       {/* Input Area */}
       <div className="p-4 px-6 pb-6 pt-4">
-        {showMatchActions && (
-            <MatchActionButtons 
-                onRefine={() => handleMatchAction('refine')}
-                onSatisfied={() => handleMatchAction('satisfied')}
-                onRestart={() => handleMatchAction('restart')}
-            />
-        )}
+
         <div className="w-full max-w-4xl mx-auto px-4 pb-4">
           <ChatInput 
             onSendMessage={handleSendMessage} 

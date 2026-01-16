@@ -108,7 +108,7 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
               <th className="px-6 py-4 font-semibold text-center w-[10%]">Turno</th>
               <th className="px-6 py-4 font-semibold w-[45%]">Tipo</th>
               <th className="px-6 py-4 font-semibold text-center w-[20%] whitespace-nowrap">Nota de Corte</th>
-              <th className="px-6 py-4 font-semibold text-center w-[25%]">Ação</th>
+              {/* <th className="px-6 py-4 font-semibold text-center w-[25%]">Ação</th> */}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -153,7 +153,7 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                 <td className="px-6 py-4 font-bold text-[#024F86] text-center">
                    {opp.cutoff_score ? opp.cutoff_score.toFixed(2) : '-'}
                 </td>
-                <td className="px-6 py-4 text-center">
+                {/* <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => handleFindSimilar(opp.id)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#38B1E4] text-[#38B1E4] rounded-full hover:bg-[#38B1E4] hover:text-white transition-all text-sm font-semibold"
@@ -161,7 +161,7 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                     <Search className="w-4 h-4" />
                     Procurar similar
                   </button>
-                </td>
+                </td> */}
               </tr>
             )})}
           </tbody>

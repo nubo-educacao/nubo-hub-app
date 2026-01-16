@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserPreferences, updateUserPreferencesService, getAvailableCoursesService } from '@/services/supabase/preferences';
+import { UserPreferences, updateUserPreferencesService, getAvailableCoursesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
 import { MultiSelect, Option } from '@/components/ui/MultiSelect';
 import { Montserrat } from 'next/font/google';
 import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase } from 'lucide-react';
@@ -11,6 +11,7 @@ const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600'
 interface UserPreferencesSectionProps {
   preferences: UserPreferences | null;
   onUpdate: (updated: UserPreferences) => void;
+  onMatchFound?: (courseIds: string[]) => void;
 }
 
 interface InputFieldProps {
@@ -101,7 +102,7 @@ const QUOTA_OPTIONS: Option[] = [
 ];
 
 
-export default function UserPreferencesSection({ preferences, onUpdate }: UserPreferencesSectionProps) {
+export default function UserPreferencesSection({ preferences, onUpdate, onMatchFound }: UserPreferencesSectionProps) {
     const [formData, setFormData] = useState<Partial<UserPreferences>>({});
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -149,6 +150,49 @@ export default function UserPreferencesSection({ preferences, onUpdate }: UserPr
         setLoading(false);
     };
 
+    const handleMatch = async () => {
+        setLoading(true);
+        
+        // Ensure we save current preferences first? Or just use what is in formData usually?
+        // Let's use formData to be immediate.
+        
+        const params: MatchOpportunitiesParams = {
+            course_interests: formData.course_interest && formData.course_interest.length > 0 ? formData.course_interest : null,
+            enem_score: formData.enem_score || null,
+            income_per_capita: formData.family_income_per_capita || null,
+            quota_types: formData.quota_types && formData.quota_types.length > 0 ? formData.quota_types : null,
+            preferred_shifts: formData.preferred_shifts && formData.preferred_shifts.length > 0 ? formData.preferred_shifts : null,
+            program_preference: formData.program_preference || null,
+            user_lat: null, // location not implemented in UI yet
+            user_long: null,
+            city_name: formData.location_preference || null,
+            page_size: 145,
+            page_number: 0
+        };
+
+        const { data, error } = await matchOpportunitiesService(params);
+        setLoading(false);
+
+        if (error) {
+            alert('Erro ao buscar matches: ' + error.message);
+        } else if (data) {
+            console.log('Match Results:', data);
+            
+            // Extract IDs
+            const ids = data.map((item: any) => item.course_id || item.id).filter(Boolean);
+            
+            if (ids.length > 0) {
+               if (onMatchFound) {
+                   onMatchFound(ids);
+               } else {
+                   alert(`Encontrados ${data.length} cursos correspondentes via Match! Detalhes no console.`);
+               }
+            } else {
+                alert('Nenhum curso encontrado com esses critérios. Tente flexibilizar seus filtros.');
+            }
+        }
+    };
+
     return (
         <div className={`bg-white/30 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl p-6 md:p-8 ${montserrat.className}`}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -163,12 +207,13 @@ export default function UserPreferencesSection({ preferences, onUpdate }: UserPr
                 </div>
 
                 <div className="flex gap-2 w-full md:w-auto">
-                     {/* Match Button - Disabled */}
+                    {/* Match Button */}
                     <button
-                        disabled={true}
-                        className="flex-1 md:flex-none px-4 py-2 bg-gray-200 text-gray-400 rounded-full font-bold cursor-not-allowed border border-gray-300 flex items-center justify-center gap-2"
-                        title="Em breve"
+                        onClick={handleMatch}
+                        disabled={loading}
+                        className="flex-1 md:flex-none px-4 py-2 bg-[#1BBBCD] text-white hover:bg-[#158fa0] rounded-full font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
+                       {loading ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />} 
                        Gerar Match
                     </button>
 

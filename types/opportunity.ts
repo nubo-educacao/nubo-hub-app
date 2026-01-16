@@ -5,6 +5,7 @@ export interface OpportunityDisplay {
   shift: string;
   opportunity_type: string | null; // e.g., 'sisu', 'prouni'
   scholarship_type: string; // e.g., 'Integral', 'Parcial'
+  is_nubo_pick?: boolean; // New field
   concurrency_tags?: string[]; // New field
   cutoff_score: number | null;
   type: 'Pública' | 'Privada' | 'Parceiro'; // Derived from scholarship_type/opportunity_type
@@ -47,6 +48,7 @@ export function mapToCourseDisplayData(data: CourseWithRelations): CourseDisplay
       shift: opp.shift,
       opportunity_type: opp.opportunity_type,
       scholarship_type: opp.scholarship_type,
+      is_nubo_pick: (opp as any).is_nubo_pick, // Cast to any if not yet in DB types
       concurrency_tags: opp.concurrency_tags, // Add this
       cutoff_score: opp.cutoff_score,
       type

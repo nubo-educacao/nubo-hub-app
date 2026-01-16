@@ -111,3 +111,33 @@ export async function getAvailableCoursesService(): Promise<{ data: string[] | n
         return { data: null, error: e };
     }
 }
+
+export interface MatchOpportunitiesParams {
+    course_interests: string[] | null;
+    enem_score: number | null;
+    income_per_capita: number | null;
+    quota_types: string[] | null;
+    preferred_shifts: string[] | null;
+    program_preference: string | null;
+    user_lat: number | null;
+    user_long: number | null;
+    city_name: string | null;
+    page_size: number;
+    page_number: number;
+}
+
+export async function matchOpportunitiesService(params: MatchOpportunitiesParams): Promise<{ data: any[] | null; error: any }> {
+    try {
+        const { data, error } = await supabase.rpc('match_opportunities', params);
+        
+        if (error) {
+            console.error('Error fetching match opportunities:', error);
+            return { data: null, error };
+        }
+
+        return { data, error: null };
+    } catch (e) {
+        console.error("Exception fetching match opportunities:", e);
+        return { data: null, error: e };
+    }
+}

@@ -3,6 +3,7 @@ import { Montserrat } from 'next/font/google';
 import CloudBackground from '@/components/CloudBackground';
 import Header from '@/components/Header';
 import { getCourseDetails, getImportantDates } from '@/lib/services/opportunities';
+import Footer from '@/components/Footer';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import SisuProuniCard from '@/components/courses/SisuProuniCard';
@@ -117,6 +118,7 @@ export default async function OpportunityDetails({ params }: PageProps) {
 
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

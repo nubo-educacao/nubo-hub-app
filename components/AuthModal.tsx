@@ -226,7 +226,7 @@ export default function AuthModal() {
                     </div>
                  </div>
                 <label htmlFor="terms" className="text-[11px] font-montserrat font-medium text-[#707A7E] leading-tight select-none cursor-pointer">
-                  Li e concordo com os <a href="#" className="text-[#38B1E4] hover:underline">Termos de Serviço</a> e <a href="#" className="text-[#38B1E4] hover:underline">Política de Privacidade</a>.
+                  Li e concordo com os <a href="/assets/termos-de-uso.pdf" target="_blank" rel="noopener noreferrer" className="text-[#38B1E4] hover:underline">Termos de Uso</a> e <a href="/assets/politica-de-privacidade.pdf" target="_blank" rel="noopener noreferrer" className="text-[#38B1E4] hover:underline">Política de Privacidade</a>.
                 </label>
               </div>
 

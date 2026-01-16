@@ -416,6 +416,14 @@ function OpportunityCatalogContent() {
                     </div>
                 )}
             </FilterPills>
+
+            {selectedFilter === 'Seleção Nubo' && (
+              <div className="mt-6 text-center px-4">
+                <p className="text-sm text-[#024F86] bg-[#024F86]/5 py-2 px-4 rounded-lg inline-block border border-[#024F86]/10">
+                  Curadoria do Nubo com base no SISU 2025, reunindo oportunidades cujo número de inscritos foi menor do que o  número de vagas
+                </p>
+              </div>
+            )}
           </div>
 
           {renderContent()}

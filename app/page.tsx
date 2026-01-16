@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import HeroCloudinha from "@/components/HeroCloudinha";
 import OpportunityCatalog from "@/components/OpportunityCatalog";
 import CloudBackground from "@/components/CloudBackground";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
           <OpportunityCatalog />
         </div>
       </div>
+      <Footer />
     </main>
   );
 }
