@@ -44,9 +44,29 @@ export function PartnerCard({
   const router = useRouter();
 
   // Parse dates if available to show simpler string
-  const dateDisplay = dates && Array.isArray(dates) && dates.length > 0 
-    ? `${new Date(dates[0].start_date).toLocaleDateString('pt-BR', {day: 'numeric', month: 'short'})} - ${new Date(dates[0].end_date).toLocaleDateString('pt-BR', {day: 'numeric', month: 'short'})}`
-    : 'Datas disponíveis no site';
+  const dateDisplay = React.useMemo(() => {
+    if (!dates || !Array.isArray(dates) || dates.length === 0) {
+      return 'Datas disponíveis no site';
+    }
+
+    const firstDate = dates[0];
+    if (!firstDate?.start_date) return 'Datas disponíveis no site';
+
+    const startDate = new Date(firstDate.start_date);
+    if (isNaN(startDate.getTime())) return 'Datas disponíveis no site';
+
+    const startStr = startDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+
+    if (firstDate.end_date) {
+      const endDate = new Date(firstDate.end_date);
+      if (!isNaN(endDate.getTime())) {
+        const endStr = endDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+        return `${startStr} - ${endStr}`;
+      }
+    }
+
+    return startStr;
+  }, [dates]);
 
 
   // Check favorite status on load/auth

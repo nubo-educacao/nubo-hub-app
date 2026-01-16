@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPreferences, updateUserPreferencesService, getAvailableCoursesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
 import { MultiSelect, Option } from '@/components/ui/MultiSelect';
 import { Montserrat } from 'next/font/google';
-import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase } from 'lucide-react';
+import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase, Trash2 } from 'lucide-react';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -383,6 +383,28 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                 />
 
             </div>
+
+            {isEditing && (
+                <div className="flex justify-end mt-6">
+                    <button
+                        onClick={() => setFormData({
+                            course_interest: null,
+                            enem_score: null,
+                            family_income_per_capita: null,
+                            university_preference: null,
+                            program_preference: null,
+                            preferred_shifts: null,
+                            quota_types: null,
+                            location_preference: null,
+                            state_preference: null
+                        })}
+                        className="flex items-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors text-sm font-bold"
+                    >
+                        <Trash2 size={16} />
+                        Limpar Preferências
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

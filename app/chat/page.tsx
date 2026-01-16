@@ -147,13 +147,18 @@ function ChatPageContent() {
       setActiveCourseIds(ids);
       // Auto-switch to view opportunities if user was on preferences
       setDesktopMatchView('OPPORTUNITIES');
+      
+      // Mobile: Switch to Panel (CONTENT) when opportunities are found
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          setActiveTab('CONTENT');
+      }
   };
 
   if (!isReady) return null; // Or a loading spinner
 
   /* Responsive Layout */
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-[#F0F4FA]">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#F0F4FA]">
       
       {/* Background Layer */}
       <div className="absolute inset-0 z-0">
@@ -182,10 +187,7 @@ function ChatPageContent() {
             <ChatCloudinha 
               initialMessage={initialMessage} 
               onInitialMessageSent={handleInitialMessageSent}
-              onOpportunitiesFound={(ids) => {
-                  handleOpportunitiesFound(ids);
-                  if (window.innerWidth < 768) setActiveTab('CONTENT'); 
-              }}
+              onOpportunitiesFound={handleOpportunitiesFound}
               onFunctionalitySwitch={setSelectedFunctionality}
               initialMatchStatus={savedMatchStatus}
               onProfileUpdated={() => {
@@ -201,8 +203,7 @@ function ChatPageContent() {
                                   const wf = data.workflow_data as any;
                                   if (Array.isArray(wf.last_course_ids) && wf.last_course_ids.length > 0) {
                                       console.log("[ChatPage] Restoring refreshed opportunities:", wf.last_course_ids.length);
-                                      setActiveCourseIds(wf.last_course_ids);
-                                      setDesktopMatchView('OPPORTUNITIES');
+                                      handleOpportunitiesFound(wf.last_course_ids);
                                   }
                              }
                          });
@@ -311,7 +312,7 @@ function ChatPageContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-       <div className="flex items-center justify-center h-screen bg-[#F0F4FA]">
+       <div className="flex items-center justify-center h-[100dvh] bg-[#F0F4FA]">
           <div className="w-12 h-12 border-4 border-[#024F86] border-t-transparent rounded-full animate-spin"></div>
        </div>
     }>

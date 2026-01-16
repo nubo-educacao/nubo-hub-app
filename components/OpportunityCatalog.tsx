@@ -79,7 +79,7 @@ function OpportunityCatalogContent() {
   // Fetch Logic
   useEffect(() => {
     // Determine if we should fetch based on filter
-    if (selectedFilter !== 'Oportunidades de parceiros' && selectedFilter !== 'Seleção Nubo') {
+    if (selectedFilter !== 'Oportunidades de parceiros') {
       loadInitialCourses();
     } else if (selectedFilter === 'Oportunidades de parceiros') {
       loadPartners();
@@ -90,7 +90,7 @@ function OpportunityCatalogContent() {
 
   // Debounce search
   useEffect(() => {
-     if (selectedFilter !== 'Oportunidades de parceiros' && selectedFilter !== 'Seleção Nubo') {
+     if (selectedFilter !== 'Oportunidades de parceiros') {
         const timer = setTimeout(() => {
             loadInitialCourses();
             // Update URL for search query here since it's debounced input
@@ -278,7 +278,7 @@ function OpportunityCatalogContent() {
       );
     }
 
-    if (selectedFilter !== 'Oportunidades de parceiros' && selectedFilter !== 'Seleção Nubo') {
+    if (selectedFilter !== 'Oportunidades de parceiros') {
       if (loading) {
         return (
           <div className="flex items-center justify-center py-16">
@@ -308,6 +308,15 @@ function OpportunityCatalogContent() {
       }
 
       if (!loading && !error && courses.length === 0) {
+        if (selectedFilter === 'Seleção Nubo') {
+          return (
+            <div className="bg-white/50 border border-white/20 rounded-lg p-16 text-center min-h-[400px] flex flex-col items-center justify-center">
+              <h3 className="text-xl font-bold text-[#024F86] mb-2">Em breve</h3>
+              <p className="text-[#636E7C]">Estamos trabalhando para trazer mais oportunidades nesta categoria.</p>
+            </div>
+          );
+        }
+
         return (
           <div className="bg-white/50 border border-white/20 rounded-lg p-12 text-center">
             <p className="text-[#024F86] text-lg">Nenhuma oportunidade encontrada</p>
@@ -346,12 +355,8 @@ function OpportunityCatalogContent() {
     }
     
     // Default placeholder for other filters
-    return (
-      <div className="bg-white/50 border border-white/20 rounded-lg p-16 text-center min-h-[400px] flex flex-col items-center justify-center">
-        <h3 className="text-xl font-bold text-[#024F86] mb-2">Em breve</h3>
-        <p className="text-[#636E7C]">Estamos trabalhando para trazer mais oportunidades nesta categoria.</p>
-      </div>
-    );
+    // Default placeholder for unknown filters
+    return null;
   };
 
   return (
