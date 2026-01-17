@@ -165,7 +165,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
             program_preference: formData.program_preference || null,
             user_lat: null, // location not implemented in UI yet
             user_long: null,
-            city_name: formData.location_preference || null,
+            city_names: formData.location_preference ? [formData.location_preference] : null,
             page_size: 145,
             page_number: 0
         };

@@ -49,18 +49,31 @@ export function PartnerCard({
       return 'Datas disponíveis no site';
     }
 
+    const toUtcDate = (dateStr: string) => {
+       const date = new Date(dateStr);
+       // Add the timezone offset to get the correct date in UTC-as-local representation
+       // Or simpler: treat the string as UTC and format it in UTC.
+       return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    };
+
+    // Better approach: Let's just treat the YYYY-MM-DD as UTC and ask for UTC formatting
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '';
+        // "UTC" timezone ensures 2026-02-03T00:00:00.000Z stays 03 in output
+        return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+    };
+
     const firstDate = dates[0];
     if (!firstDate?.start_date) return 'Datas disponíveis no site';
 
-    const startDate = new Date(firstDate.start_date);
-    if (isNaN(startDate.getTime())) return 'Datas disponíveis no site';
-
-    const startStr = startDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const startStr = formatDate(firstDate.start_date);
+    if (!startStr) return 'Datas disponíveis no site';
 
     if (firstDate.end_date) {
-      const endDate = new Date(firstDate.end_date);
-      if (!isNaN(endDate.getTime())) {
-        const endStr = endDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+      const endStr = formatDate(firstDate.end_date);
+      if (endStr) {
         return `${startStr} - ${endStr}`;
       }
     }
