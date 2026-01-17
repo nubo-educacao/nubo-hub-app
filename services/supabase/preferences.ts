@@ -121,7 +121,7 @@ export interface MatchOpportunitiesParams {
     program_preference: string | null;
     user_lat: number | null;
     user_long: number | null;
-    city_name: string | null;
+    city_names: string[] | null;
     page_size: number;
     page_number: number;
 }

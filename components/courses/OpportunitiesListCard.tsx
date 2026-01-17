@@ -8,6 +8,7 @@ export interface Opportunity {
   id: string;
   shift: string;
   scholarship_type?: string;
+  concurrency_type?: string;
   concurrency_tags?: string[][] | any; // Supports JSONB array of arrays
   cutoff_score: number | null;
   opportunity_type: string;
@@ -133,16 +134,16 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                         {opp.concurrency_tags && opp.concurrency_tags.length > 0 ? (
                             renderTags(opp.concurrency_tags)
                         ) : (
-                             // Fallback only if tags are missing but type exists, or for old data
-                             opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
+                             // Fallback: Use concurrency_type (Sisu) or scholarship_type (Prouni)
+                             opp.concurrency_type || opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
                         )}
                         
                         {/* Info Tooltip for full description */}
-                        {opp.scholarship_type && (
+                        {(opp.scholarship_type || opp.concurrency_type) && (
                             <div className="relative group/info inline-flex items-center ml-1">
                                 <Info size={16} className="text-slate-400 cursor-help hover:text-[#024F86] transition-colors" />
                                 <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800/95 text-white text-xs rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
-                                    {opp.scholarship_type}
+                                    {opp.concurrency_type || opp.scholarship_type}
                                     {/* Arrow */}
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800/95"></div>
                                 </div>
