@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserPreferences, updateUserPreferencesService, getAvailableCoursesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
-import { MultiSelect, Option } from '@/components/ui/MultiSelect';
+import { UserPreferences, updateUserPreferencesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Montserrat } from 'next/font/google';
 import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase, Trash2 } from 'lucide-react';
+import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
+import { CourseAutocomplete } from '@/components/ui/CourseAutocomplete';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -106,27 +108,12 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
     const [formData, setFormData] = useState<Partial<UserPreferences>>({});
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [availableCourses, setAvailableCourses] = useState<Option[]>([]);
-    const [coursesLoading, setCoursesLoading] = useState(false);
 
     useEffect(() => {
         if (preferences) {
             setFormData(preferences);
         }
     }, [preferences]);
-
-    useEffect(() => {
-        // Fetch courses once
-        const fetchCourses = async () => {
-            setCoursesLoading(true);
-            const { data } = await getAvailableCoursesService();
-            if (data) {
-                setAvailableCourses(data.map(c => ({ label: c, value: c })));
-            }
-            setCoursesLoading(false);
-        };
-        fetchCourses();
-    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -166,7 +153,9 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
             user_lat: null, // location not implemented in UI yet
             user_long: null,
             city_names: formData.location_preference ? [formData.location_preference] : null,
-            page_size: 145,
+            state_names: formData.state_preference ? [formData.state_preference] : null,
+            university_preference: formData.university_preference || null,
+            page_size: 2880,
             page_number: 0
         };
 
@@ -245,24 +234,13 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Course Interest - MultiSelect */}
-                <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
-                        <BookOpen size={14} />
-                        Cursos de Interesse
-                    </label>
-                     {isEditing ? (
-                        <MultiSelect 
-                            options={availableCourses}
-                            selected={formData.course_interest || []}
-                            onChange={(vals) => handleMultiSelectChange('course_interest', vals)}
-                            placeholder="Selecione cursos..."
-                            disabled={coursesLoading}
-                        />
-                     ) : (
-                        <ArrayDisplay items={formData.course_interest} />
-                     )}
-                </div>
+                {/* Course Interest - Autocomplete */}
+                <CourseAutocomplete
+                    label="Cursos de Interesse"
+                    selected={formData.course_interest || []}
+                    onChange={(courses) => setFormData(prev => ({ ...prev, course_interest: courses }))}
+                    isEditing={isEditing}
+                />
 
                  {/* Enem Score */}
                  <InputField
@@ -358,17 +336,28 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                      )}
                 </div>
 
-                 {/* Location Preference */}
-                 <InputField
+                 {/* Location Preference - City Autocomplete */}
+                 <CityAutocomplete
                     label="Cidade de Preferência"
-                    name="location_preference"
                     value={formData.location_preference || ''}
-                    onChange={handleChange}
-                    icon={MapPin}
-                    placeholder="Ex: São Paulo"
+                    stateValue={formData.state_preference || ''}
+                    onChange={(city) => {
+                        if (city) {
+                            setFormData(prev => ({
+                                ...prev,
+                                location_preference: city.name,
+                                state_preference: city.state
+                            }));
+                        } else {
+                            setFormData(prev => ({
+                                ...prev,
+                                location_preference: null,
+                                state_preference: null
+                            }));
+                        }
+                    }}
                     isEditing={isEditing}
-                    displayValue={formData.location_preference}
-                />
+                 />
 
                  {/* State Preference */}
                  <InputField
