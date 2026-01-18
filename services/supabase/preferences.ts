@@ -122,6 +122,8 @@ export interface MatchOpportunitiesParams {
     user_lat: number | null;
     user_long: number | null;
     city_names: string[] | null;
+    state_names: string[] | null;
+    university_preference: string | null;
     page_size: number;
     page_number: number;
 }
