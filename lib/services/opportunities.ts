@@ -11,9 +11,14 @@ export interface CourseDetail {
     semester: string;
     shift: string;
     scholarship_type: string; // 'Integral', etc.
+    concurrency_type?: string;
     cutoff_score: number | null;
     opportunity_type: string;
-    concurrency_tags?: string[]; // Add this
+    concurrency_tags?: string[];
+    scholarship_tags?: string[];
+    opportunitiessisuvacancies?: {
+        vagas_ociosas_2025: number;
+    } | null;
   }[];
   campus: {
     name: string;
@@ -72,9 +77,14 @@ export async function getCourseDetails(courseId: string): Promise<CourseDetail |
         semester,
         shift,
         scholarship_type,
+        concurrency_type,
         cutoff_score,
         opportunity_type,
-        concurrency_tags
+        concurrency_tags,
+        scholarship_tags,
+        opportunitiessisuvacancies (
+            vagas_ociosas_2025
+        )
       ),
       campus:campus_id (
         name,
@@ -195,6 +205,19 @@ export async function fetchCoursesWithOpportunities(
     user_long
   });
 
+  console.log('--- DEBUG: fetchCoursesWithOpportunities ---');
+  console.log('Params:', { sort_by, user_city, user_state, user_lat, user_long });
+  
+  if (data && data.length > 0) {
+      console.log('RPC Response (First 3 items):', data.slice(0, 3).map((d: any) => ({
+          name: d.course_name,
+          city: d.city,
+          distance_km: d.distance_km // CHECK THIS VALUE
+      })));
+  } else {
+      console.log('RPC Response: No data found');
+  }
+
   if (error) {
     console.error('Error fetching courses:', error);
     return { data: [], error: error.message, hasMore: false };
@@ -221,6 +244,8 @@ export async function fetchCoursesWithOpportunities(
         shift: opp.shift,
         opportunity_type: opp.opportunity_type,
         scholarship_type: opp.scholarship_type,
+        scholarship_tags: opp.scholarship_tags,
+        concurrency_type: opp.concurrency_type,
         concurrency_tags: opp.concurrency_tags, // Add this
         is_nubo_pick: opp.is_nubo_pick,
         cutoff_score: opp.cutoff_score,

@@ -115,6 +115,9 @@ function OpportunityCatalogContent() {
 
      navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
+        let city = 'Localização Atual';
+        let state = '';
+
         try {
             // Using OpenStreetMap Nominatim for better accuracy
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`, {
@@ -122,32 +125,35 @@ function OpportunityCatalogContent() {
                     'User-Agent': 'Nubo/1.0' // Good practice for OSM
                 }
             });
-            const data = await res.json();
             
-            if (data.address) {
-                 const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county;
-                 let state = data.address.state;
-                 
-                 // Simple brazilian state mapper (fallback)
-                 const stateMapping: {[key: string]: string} = {
-                     'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM', 'Bahia': 'BA', 'Ceará': 'CE',
-                     'Distrito Federal': 'DF', 'Espírito Santo': 'ES', 'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT',
-                     'Mato Grosso do Sul': 'MS', 'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
-                     'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
-                     'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
-                     'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
-                 };
-
-                 if (state && stateMapping[state]) {
-                     state = stateMapping[state];
-                 }
-
-                 setUserLocation({ city: city || 'Localização detectada', state: state || '', lat: latitude, long: longitude });
-                 console.log("Geolocation updated:", { city, state, latitude, longitude });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.address) {
+                     city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || city;
+                     state = data.address.state || state;
+                     
+                     // Simple brazilian state mapper (fallback)
+                     const stateMapping: {[key: string]: string} = {
+                         'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM', 'Bahia': 'BA', 'Ceará': 'CE',
+                         'Distrito Federal': 'DF', 'Espírito Santo': 'ES', 'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT',
+                         'Mato Grosso do Sul': 'MS', 'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
+                         'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
+                         'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
+                         'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
+                     };
+    
+                     if (state && stateMapping[state]) {
+                         state = stateMapping[state];
+                     }
+                }
             }
         } catch (e) {
-            console.error("Error getting location", e);
+            console.error("Error getting address details", e);
         }
+
+        // Always set location if we have coords, even if address lookup failed
+        setUserLocation({ city, state, lat: latitude, long: longitude });
+        console.log("Geolocation updated:", { city, state, latitude, longitude });
      }, (err) => {
         console.error("Geolocation error", err);
         setIsLocationDenied(true);
