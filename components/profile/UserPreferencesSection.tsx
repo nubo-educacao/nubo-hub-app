@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserPreferences, updateUserPreferencesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
-import { MultiSelect } from '@/components/ui/MultiSelect';
+import { MultiSelect, Option } from '@/components/ui/MultiSelect';
 import { Montserrat } from 'next/font/google';
 import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase, Trash2 } from 'lucide-react';
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
