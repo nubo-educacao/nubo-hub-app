@@ -10,8 +10,12 @@ export interface Opportunity {
   scholarship_type?: string;
   concurrency_type?: string;
   concurrency_tags?: string[][] | any; // Supports JSONB array of arrays
+  scholarship_tags?: string[][] | any;
   cutoff_score: number | null;
   opportunity_type: string;
+  opportunitiessisuvacancies?: {
+    vagas_ociosas_2025: number;
+  } | null;
 }
 
 interface OpportunitiesListCardProps {
@@ -131,13 +135,13 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                 </td>
                 <td className="px-6 py-4 text-slate-600">
                     <div className="flex flex-wrap items-center gap-2">
-                        {opp.concurrency_tags && opp.concurrency_tags.length > 0 ? (
-                            renderTags(opp.concurrency_tags)
+                        {/* Check for tags (Sisu uses concurrency_tags, Prouni uses scholarship_tags) */}
+                        {(opp.concurrency_tags && opp.concurrency_tags.length > 0) || (opp.scholarship_tags && opp.scholarship_tags.length > 0) ? (
+                            renderTags(opp.concurrency_tags || opp.scholarship_tags)
                         ) : (
-                             // Fallback: Use concurrency_type (Sisu) or scholarship_type (Prouni)
                              opp.concurrency_type || opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
                         )}
-                        
+
                         {/* Info Tooltip for full description */}
                         {(opp.scholarship_type || opp.concurrency_type) && (
                             <div className="relative group/info inline-flex items-center ml-1">
@@ -149,10 +153,16 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
                                 </div>
                             </div>
                         )}
+
+                        {opp.opportunitiessisuvacancies && opp.opportunitiessisuvacancies.vagas_ociosas_2025 > 0 && (
+                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-700 text-emerald-100 whitespace-nowrap ml-2">
+                                 Vagas Ociosas
+                             </span>
+                        )}
                     </div>
                 </td>
                 <td className="px-6 py-4 font-bold text-[#024F86] text-center">
-                   {opp.cutoff_score ? opp.cutoff_score.toFixed(2) : '-'}
+                   {typeof opp.cutoff_score === 'number' ? opp.cutoff_score.toFixed(2) : '-'}
                 </td>
                 {/* <td className="px-6 py-4 text-center">
                   <button

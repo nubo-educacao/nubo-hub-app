@@ -78,15 +78,20 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
 
   // Logic: Cutoff Score Range
   const cutoffScores = course.opportunities
-    .map(o => o.cutoff_score || 0)
-    .filter(s => s >= 0); // Include 0
+    .map(o => o.cutoff_score)
+    .filter((s): s is number => typeof s === 'number');
   
-  const minCutoff = cutoffScores.length > 0 ? Math.min(...cutoffScores) : 0;
-  const maxCutoff = cutoffScores.length > 0 ? Math.max(...cutoffScores) : 0;
-  const cutoffDisplay = minCutoff === maxCutoff ? `${minCutoff}` : `${minCutoff} - ${maxCutoff}`;
+  const minCutoff = cutoffScores.length > 0 ? Math.min(...cutoffScores) : null;
+  const maxCutoff = cutoffScores.length > 0 ? Math.max(...cutoffScores) : null;
+  
+  let cutoffDisplay = 'não há dados de 2025';
+  if (minCutoff !== null && maxCutoff !== null) {
+      cutoffDisplay = minCutoff === maxCutoff ? `${minCutoff}` : `${minCutoff} - ${maxCutoff}`;
+  }
 
   // Logic: Unique Opportunity Types for Badges
   const uniqueTypes = Array.from(new Set(course.opportunities.map(o => o.opportunity_type).filter(Boolean))).slice(0, 2); // Limit to 2 for space
+  const hasIdleVacancies = course.opportunities.some(o => o.is_nubo_pick);
 
   // Logic: Active Shifts
   const activeShifts = new Set(course.opportunities.map(o => o.shift));
@@ -116,6 +121,11 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
                     {type}
                  </span>
              ))}
+             {hasIdleVacancies && (
+                 <span className="text-[10px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#10B981]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(16,185,129,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#34D399]/50 uppercase ml-2">
+                     VAGAS OCIOSAS
+                 </span>
+             )}
         </div>
 
         <div className="absolute top-4 right-4 z-20">
