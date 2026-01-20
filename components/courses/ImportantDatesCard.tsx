@@ -23,8 +23,12 @@ export default function ImportantDatesCard({ dates }: ImportantDatesCardProps) {
   const sortedDates = [...dates]
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
     .filter((date) => {
-       const dateObj = new Date(date.start_date);
+       // Filter based on end_date if available, otherwise start_date
+       // This keeps active events visible even if they started in the past
+       const dateToCheck = date.end_date || date.start_date;
+       const dateObj = new Date(dateToCheck);
        const today = new Date();
+       // Compare with today at 00:00:00 to keep events expiring today inclusive
        return dateObj >= new Date(today.setHours(0, 0, 0, 0));
     })
     .slice(0, 3);
