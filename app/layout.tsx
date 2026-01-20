@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
+import FacebookPixel from "../components/FacebookPixel";
 import { Toaster } from "sonner";
 
 const montserrat = Montserrat({ 
@@ -76,6 +77,7 @@ export default function RootLayout({
           <AuthModal />
           <Toaster richColors position="top-center" />
         </AuthProvider>
+        <FacebookPixel />
         <Script 
           src="https://t.contentsquare.net/uxa/a41506ab63916.js" 
           strategy="afterInteractive"
