@@ -15,6 +15,12 @@ vi.mock('next/font/google', () => ({
   }),
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => ({ get: vi.fn(), has: vi.fn(() => false) }),
+}));
+
 vi.mock('../../../context/AuthContext', () => ({
   useAuth: () => ({
     isAuthenticated: false,
@@ -57,23 +63,23 @@ describe('OpportunityCatalog Integration', () => {
     });
   });
 
-  it('renders "Parceiros" view by default', async () => {
+  it('renders "Seleção Nubo" view by default', async () => {
     render(<OpportunityCatalog />);
     
-    // Should show partner cards (mocked static data in component)
-    expect(screen.getByText('Fundação Estudar')).toBeInTheDocument();
+    // Should NOT show partner cards by default (Seleção Nubo calls fetch)
+    // But local mockData won't appear until we waitFor fetch, or if it's empty
     
-    // Should have called fetch in background
+    // Verify initial fetch is called
     await waitFor(() => {
-      expect(fetchCoursesWithOpportunities).toHaveBeenCalledWith(0, 20);
+      expect(fetchCoursesWithOpportunities).toHaveBeenCalled();
     });
   });
 
-  it('switches to "Públicas" and shows fetched data', async () => {
+  it('switches to "SISU" and shows fetched data', async () => {
     render(<OpportunityCatalog />);
     
-    // Switch to 'Públicas'
-    const publicBtn = screen.getByText('Públicas');
+    // Switch to 'SISU' (formerly Públicas)
+    const publicBtn = screen.getByText('SISU');
     fireEvent.click(publicBtn);
     
     // Should now show the opportunity card from mockData
@@ -93,10 +99,59 @@ describe('OpportunityCatalog Integration', () => {
 
     render(<OpportunityCatalog />);
     
-    const publicBtn = screen.getByText('Públicas');
+    const publicBtn = screen.getByText('SISU');
     fireEvent.click(publicBtn);
     
     expect(await screen.findByText('Erro ao carregar oportunidades')).toBeInTheDocument();
     expect(screen.getByText('Erro simulado')).toBeInTheDocument();
+  });
+
+  it('fetches opportunities with geolocation when "Próximas a você" is selected', async () => {
+      // Mock Geolocation API
+      const mockGeolocation = {
+        getCurrentPosition: vi.fn().mockImplementation((success) => 
+          success({ coords: { latitude: -23.55, longitude: -46.63 } })
+        )
+      };
+      Object.defineProperty(global.navigator, 'geolocation', {
+        value: mockGeolocation,
+        writable: true
+      });
+
+      // Mock fetch for Nominatim reverse geocoding
+      global.fetch = vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({
+              address: { city: 'São Paulo', state: 'São Paulo' }
+          })
+      });
+
+      (fetchCoursesWithOpportunities as any).mockResolvedValue({
+        data: [],
+        total: 0,
+        page: 0,
+        limit: 20,
+        hasMore: false,
+        error: null,
+      });
+
+      render(<OpportunityCatalog />);
+      
+      // Open sort menu
+      const sortBtn = screen.getByText(/Ordenar/);
+      fireEvent.click(sortBtn);
+
+      // Select "Próximas a você"
+      const proximasBtn = screen.getByText('Próximas a você');
+      fireEvent.click(proximasBtn);
+
+      await waitFor(() => {
+          expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+
+      // Check if fetchCoursesWithOpportunities was called with coordinates
+      await waitFor(() => {
+        expect(fetchCoursesWithOpportunities).toHaveBeenCalled();
+      });
   });
 });

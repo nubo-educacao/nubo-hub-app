@@ -1,5 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
+
+expect.extend(matchers);
+
+afterEach(() => {
+  cleanup();
+});
 
 // Fix env vars before imports
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://test-url';
@@ -41,7 +48,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock useAuth
-vi.mock('../../../components/context/AuthContext', () => ({ 
+vi.mock('../../../context/AuthContext', () => ({ 
   useAuth: () => ({
     isAuthenticated: false,
     openAuthModal: vi.fn(),
@@ -49,6 +56,11 @@ vi.mock('../../../components/context/AuthContext', () => ({
     setPendingAction: vi.fn(),
     clearPendingAction: vi.fn(),
   }),
+}));
+
+// Mock supabaseClient to verify env vars or avoid crash
+vi.mock('../../../lib/supabaseClient', () => ({
+  supabase: {}
 }));
 
 describe('PartnerCard', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapToCourseDisplayData } from '@/types/opportunity';
+import { mapToCourseDisplayData } from '../../types/opportunity';
 import { CourseWithRelations } from '@/types/database.types';
 
 describe('mapToCourseDisplayData', () => {
