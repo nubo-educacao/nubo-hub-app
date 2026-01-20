@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import ChatInput from './ChatInput';
 import MobileTabSwitch from './MobileTabSwitch';
+import MatchWizard from './MatchWizard';
 
 import MessageBubble from './MessageBubble';
 // import OpportunityCarousel from './OpportunityCarousel'; // Moved to Page level
@@ -150,7 +151,11 @@ export default function ChatCloudinha({
   activeTab,
   onTabSwitch,
   isPending,
-  pendingTarget
+  pendingTarget,
+  onWizardRequest,
+  inputDisabled,
+  triggerMessage,
+  onTriggerMessageSent
 }: { 
   initialMessage?: string;
   onInitialMessageSent?: () => void;
@@ -164,14 +169,36 @@ export default function ChatCloudinha({
   onTabSwitch?: (tab: 'CHAT' | 'CONTENT') => void;
   isPending?: boolean;
   pendingTarget?: 'CHAT' | 'CONTENT' | null;
+  // Wizard Integration
+  onWizardRequest?: () => void;
+  inputDisabled?: boolean;
+  // Trigger Logic
+  triggerMessage?: string | null;
+  onTriggerMessageSent?: () => void;
 }) {
   const { user, isAuthenticated, session } = useAuth();
   
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
   const [isTyping, setIsTyping] = React.useState(false);
+  // Removed local isInputBlocked in favor of props from parent
   
   // Initialize with prop if available
+  // Ref to track if we already sent the trigger (avoid loops if prop not cleared fast enough)
+  const triggerSentRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+     if (triggerMessage && triggerMessage !== triggerSentRef.current && !isTyping) {
+         console.log("[ChatCloudinha] Auto-triggering message:", triggerMessage);
+         triggerSentRef.current = triggerMessage;
+         handleSendMessage(triggerMessage);
+         if (onTriggerMessageSent) onTriggerMessageSent();
+     }
+     // partial reset ref if cleared?
+     if (!triggerMessage) {
+         triggerSentRef.current = null;
+     }
+  }, [triggerMessage, isTyping]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastProcessedMessage = useRef<string | undefined>(undefined);
@@ -324,6 +351,19 @@ export default function ChatCloudinha({
                             : msg
                         ));
                     }
+                     else if (event.type === 'control') {
+                          console.log("[ChatCloudinha] Received CONTROL event:", event);
+                          if (event.action === 'block_input') {
+                              // Trigger parent to show wizard (which will disable input via props)
+                              if (onWizardRequest) onWizardRequest();
+                              
+                              // Mobile: also switch tab so they see it
+                              if (onFunctionalitySwitch) onFunctionalitySwitch('MATCH');
+                              if (onTabSwitch && typeof window !== 'undefined' && window.innerWidth < 768) {
+                                  onTabSwitch('CONTENT');
+                              }
+                          }
+                     }
                     else if (event.type === 'tool_start') {
                         // CHECK FOR CONTEXT SWITCH (Via Router OR Workflow Enforcement)
                         if (onFunctionalitySwitch) {
@@ -542,6 +582,12 @@ export default function ChatCloudinha({
                                             }
                                             return { ...msg, course_ids: ids, thinking_groups: updatedGroups };
                                         }
+                                    }
+
+                                    // 3. Fallback/Sync: Always trigger profile update to check DB for saved workflow_data
+                                    if (onProfileUpdated) {
+                                         console.log("[ChatCloudinha] Search finished. Triggering DB refresh to check workflow_data.");
+                                         setTimeout(() => onProfileUpdated(), 500);
                                     }
                                 }
 
@@ -990,9 +1036,13 @@ export default function ChatCloudinha({
           <ChatInput 
             onSendMessage={handleSendMessage} 
             isLoading={isTyping}
+            disabled={isTyping || inputDisabled}
           />
         </div>
     </div>
+
+
+
     </div>
   );
 }

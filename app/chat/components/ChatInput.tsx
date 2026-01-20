@@ -7,11 +7,12 @@ import { Send, Loader2, X } from 'lucide-react';
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
   isLoading?: boolean;
+  disabled?: boolean;
 }
 
 import { PHRASES } from '@/components/ConversationStarters';
 
-export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
+export default function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [showStarters, setShowStarters] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -64,7 +65,7 @@ export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) 
   };
 
   const handleSend = () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || disabled) return;
 
     if (!isAuthenticated) {
       setPendingAction({ type: 'chat', payload: { message: inputValue } });
@@ -124,14 +125,15 @@ export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) 
         </div>
       )}
 
-      <div className="flex items-end w-full bg-white border border-[#E3E8EF] rounded-[24px] px-2 py-2 shadow-lg gap-2">
+      <div className={`flex items-end w-full bg-white border border-[#E3E8EF] rounded-[24px] px-2 py-2 shadow-lg gap-2 ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}>
         
         {/* Plus Button */}
         <button 
             ref={toggleButtonRef}
             type="button"
             onClick={() => setShowStarters(!showStarters)}
-            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors mb-1 ${showStarters ? 'bg-sky-100 text-[#005F99]' : 'hover:bg-sky-50 text-[#38B1E4]'}`}
+            disabled={disabled}
+            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors mb-1 ${showStarters ? 'bg-sky-100 text-[#005F99]' : 'hover:bg-sky-50 text-[#38B1E4]'} ${disabled ? 'pointer-events-none' : ''}`}
         >
              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-6 h-6 transition-transform duration-200 ${showStarters ? 'rotate-45' : ''}`}>
                 <circle cx="12" cy="12" r="10"/>
@@ -145,9 +147,12 @@ export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value.slice(0, MAX_CHARS))}
             onKeyDown={handleKeyDown}
-            placeholder={isAuthenticated ? "Digite sua mensagem..." : "Faça login para conversar..."}
-            disabled={isLoading}
-            className="w-full bg-transparent border-none text-[#374151] placeholder-gray-400 focus:outline-none focus:ring-0 text-[15px] px-2 py-3 min-h-[48px] max-h-[150px] resize-none overflow-y-auto"
+            placeholder={
+                disabled ? "Complete o cadastro para continuar..." : 
+                isAuthenticated ? "Digite sua mensagem..." : "Faça login para conversar..."
+            }
+            disabled={isLoading || disabled}
+            className="w-full bg-transparent border-none text-[#374151] placeholder-gray-400 focus:outline-none focus:ring-0 text-[15px] px-2 py-3 min-h-[48px] max-h-[150px] resize-none overflow-y-auto disabled:cursor-not-allowed"
             rows={1}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
