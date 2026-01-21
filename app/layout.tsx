@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
 import FacebookPixel from "../components/FacebookPixel";
+import ReferralTracker from "../components/ReferralTracker";
 import { Toaster } from "sonner";
 
 const montserrat = Montserrat({ 
@@ -78,6 +79,7 @@ export default function RootLayout({
           <Toaster richColors position="top-center" />
         </AuthProvider>
         <FacebookPixel />
+        <ReferralTracker />
         <Script 
           src="https://t.contentsquare.net/uxa/a41506ab63916.js" 
           strategy="afterInteractive"
