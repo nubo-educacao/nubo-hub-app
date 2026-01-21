@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { UserPreferences, updateUserPreferencesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
 import { MultiSelect, Option } from '@/components/ui/MultiSelect';
 import { Montserrat } from 'next/font/google';
-import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase, Trash2 } from 'lucide-react';
+import { Settings, Edit2, Save, Loader2, BookOpen, GraduationCap, MapPin, DollarSign, Users, Briefcase, Trash2, Check, Info, Calculator, Plus, X } from 'lucide-react';
+import { ConcurrencyTag } from '@/types/concurrency';
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import { CourseAutocomplete } from '@/components/ui/CourseAutocomplete';
 
@@ -93,21 +94,102 @@ const SHIFTS_OPTIONS: Option[] = [
     { label: 'EAD', value: 'EAD' }
 ];
 
-const QUOTA_OPTIONS: Option[] = [
-    { label: 'PPI (Pretos, Pardos e Indígenas)', value: 'PPI' },
-    { label: 'Escola Pública', value: 'ESCOLA_PUBLICA' },
-    { label: 'Baixa Renda (até 1,5 SM)', value: 'BAIXA_RENDA' },
-    { label: 'PCD (Pessoas com Deficiência)', value: 'PCD' },
-    { label: 'Quilombolas', value: 'QUILOMBOLAS' },
-    { label: 'Trans', value: 'TRANS' },
-    { label: 'Rural/Campo', value: 'RURAL' },
+const QUOTA_OPTIONS = [
+    { id: ConcurrencyTag.AMPLA_CONCORRENCIA, label: 'Ampla Concorrência', description: 'Vagas sem critérios específicos de cota.' },
+    { id: ConcurrencyTag.ESCOLA_PUBLICA, label: 'Escola Pública', description: 'Para quem cursou todo o ensino médio em escola pública.' },
+    { id: ConcurrencyTag.BAIXA_RENDA, label: 'Baixa Renda', description: 'Para estudantes de baixa renda familiar, conforme critérios do edital.' },
+    { id: ConcurrencyTag.PPI, label: 'PPI (Pretos, Pardos e Indígenas)', description: 'Para estudantes autodeclarados pretos, pardos ou indígenas.' },
+    { id: ConcurrencyTag.PRETOS_E_PARDOS, label: 'Pretos e Pardos', description: 'Para estudantes autodeclarados pretos ou pardos.' },
+    { id: ConcurrencyTag.INDIGENAS, label: 'Indígenas', description: 'Para estudantes indígenas, conforme critérios específicos do edital.' },
+    { id: ConcurrencyTag.QUILOMBOLAS, label: 'Quilombolas', description: 'Para estudantes pertencentes a comunidades quilombolas.' },
+    { id: ConcurrencyTag.PCD, label: 'Pessoa com Deficiência (PCD)', description: 'Para pessoas com deficiência, conforme laudo exigido no edital.' },
+    { id: ConcurrencyTag.TRANS, label: 'Trans / Travesti', description: 'Para pessoas trans ou travestis, quando previsto pela instituição.' },
+    { id: ConcurrencyTag.RURAL, label: 'Rural / Campo', description: 'Para estudantes oriundos de áreas rurais ou do campo.' },
+    { id: ConcurrencyTag.AGRICULTURA_FAMILIAR, label: 'Agricultura Familiar', description: 'Para estudantes de famílias que vivem da agricultura familiar.' },
+    { id: ConcurrencyTag.REFUGIADOS, label: 'Refugiados', description: 'Para pessoas com status de refugiado reconhecido no Brasil.' },
+    { id: ConcurrencyTag.CIGANOS, label: 'Ciganos', description: 'Para estudantes pertencentes a comunidades ciganas.' },
+    { id: ConcurrencyTag.AUTISMO, label: 'Autismo', description: 'Para pessoas no espectro autista, quando previsto no edital.' },
+    { id: ConcurrencyTag.ALTAS_HABILIDADES, label: 'Altas Habilidades', description: 'Para estudantes com altas habilidades ou superdotação.' },
+    { id: ConcurrencyTag.EJA_ENCCEJA, label: 'EJA / ENCCEJA', description: 'Para quem concluiu os estudos pelo EJA ou ENCCEJA.' },
+    { id: ConcurrencyTag.PROFESSOR, label: 'Professor da Rede Pública', description: 'Para professores que atuam na rede pública de ensino.' },
+    { id: ConcurrencyTag.MILITAR, label: 'Militares e Familiares', description: 'Para policiais, bombeiros, militares ou seus familiares, conforme regras específicas.' },
+    { id: ConcurrencyTag.EFA, label: 'Escolas Família Agrícola (EFA)', description: 'Para egressos de Escolas Família Agrícola.' },
+    { id: ConcurrencyTag.PRIVACAO_LIBERDADE, label: 'Privação de Liberdade', description: 'Para pessoas em privação de liberdade ou que cumprem medidas socioeducativas.' },
+    { id: ConcurrencyTag.PCD_AUDITIVA, label: 'Deficiência Auditiva / Surdos', description: 'Para pessoas com deficiência auditiva, candidatos a cursos como Letras-Libras.' },
+    { id: ConcurrencyTag.ESCOLA_PRIVADA_BOLSA_INTEGRAL, label: 'Escola Privada com Bolsa', description: 'Para quem estudou em escola privada com bolsa integral.' },
+    { id: ConcurrencyTag.OUTROS_ESPECIFICO, label: 'Outros Critérios Específicos', description: 'Outros critérios de cota específicos não listados acima.' },
 ];
+
+// Helper for Income Calculation
+const SALARIO_MINIMO = 1518.00;
+
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
 
 
 export default function UserPreferencesSection({ preferences, onUpdate, onMatchFound }: UserPreferencesSectionProps) {
     const [formData, setFormData] = useState<Partial<UserPreferences>>({});
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Income Calculator State
+    const [familyCount, setFamilyCount] = useState<string>('');
+    const [memberIncomes, setMemberIncomes] = useState<string[]>([]);
+    const [socialBenefits, setSocialBenefits] = useState<string>('');
+    const [alimony, setAlimony] = useState<string>('');
+    const [useCalculator, setUseCalculator] = useState(false);
+
+    useEffect(() => {
+        if (useCalculator && isEditing) {
+             const count = parseInt(familyCount) || 0;
+             const incomes = memberIncomes.map(i => parseFloat(i.replace(',', '.'))).filter(n => !isNaN(n)).reduce((a, b) => a + b, 0);
+             const benefits = parseFloat(socialBenefits.replace(',', '.')) || 0;
+             const alim = parseFloat(alimony.replace(',', '.')) || 0;
+             
+             const totalIncome = incomes + benefits + alim;
+             const perCapita = count > 0 ? totalIncome / count : 0;
+             
+             setFormData(prev => ({ ...prev, family_income_per_capita: perCapita }));
+        }
+    }, [familyCount, memberIncomes, socialBenefits, alimony, useCalculator, isEditing]);
+
+    const handleFamilyCountChange = (val: string) => {
+        setFamilyCount(val);
+        const count = parseInt(val);
+        if (!isNaN(count) && count > 0) {
+            setMemberIncomes(prev => {
+                const newIncomes = [...prev];
+                if (count > prev.length) {
+                    for (let i = prev.length; i < count; i++) newIncomes.push('');
+                } else {
+                    newIncomes.splice(count);
+                }
+                return newIncomes;
+            });
+        } else {
+            setMemberIncomes([]);
+        }
+    };
+
+    const handleMemberIncomeChange = (idx: number, val: string) => {
+        setMemberIncomes(prev => {
+            const newArr = [...prev];
+            newArr[idx] = val;
+            return newArr;
+        });
+    };
+
+    const toggleQuota = (id: string) => {
+        setFormData(prev => {
+            const current = prev.quota_types || [];
+            if (current.includes(id)) {
+                return { ...prev, quota_types: current.filter(x => x !== id) };
+            } else {
+                return { ...prev, quota_types: [...current, id] };
+            }
+        });
+    };
 
     useEffect(() => {
         if (preferences) {
@@ -255,18 +337,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                     displayValue={formData.enem_score}
                 />
 
-                {/* Family Income */}
-                <InputField
-                    label="Renda Per Capita (R$)"
-                    name="family_income_per_capita"
-                    value={formData.family_income_per_capita || ''}
-                    onChange={handleChange}
-                    type="number"
-                    icon={DollarSign}
-                    placeholder="Ex: 1500.00"
-                    isEditing={isEditing}
-                    displayValue={formData.family_income_per_capita ? `R$ ${formData.family_income_per_capita}` : null}
-                />
+
 
                 {/* University Preference */}
                 <InputField
@@ -318,23 +389,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                      )}
                 </div>
 
-                 {/* Quota Types - MultiSelect */}
-                 <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
-                        <Users size={14} />
-                        Cotas
-                    </label>
-                     {isEditing ? (
-                        <MultiSelect 
-                            options={QUOTA_OPTIONS}
-                            selected={formData.quota_types || []}
-                            onChange={(vals) => handleMultiSelectChange('quota_types', vals)}
-                            placeholder="Selecione cotas..."
-                        />
-                     ) : (
-                        <ArrayDisplay items={formData.quota_types} />
-                     )}
-                </div>
+
 
                  {/* Location Preference - City Autocomplete */}
                  <CityAutocomplete
@@ -370,6 +425,183 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                     isEditing={isEditing}
                     displayValue={formData.state_preference}
                 />
+
+                 {/* Quota Types - Custom Selector */}
+                 <div className="flex flex-col gap-1.5 w-full md:col-span-2">
+                    <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
+                        <Users size={14} />
+                        Modalidades de Cota
+                    </label>
+                     {isEditing ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar border rounded-lg p-2 border-white/40 bg-white/30">
+                            {QUOTA_OPTIONS.map((opt) => (
+                                <button
+                                    key={opt.id}
+                                    onClick={() => toggleQuota(opt.id)}
+                                    className={`relative flex items-center p-3 rounded-xl border transition-all text-left group ${
+                                        (formData.quota_types || []).includes(opt.id)
+                                        ? 'border-[#024F86] bg-[#E0F2FE]'
+                                        : 'border-white/60 bg-white/40 hover:border-[#024F86]/30'
+                                    }`}
+                                >
+                                    <div className="flex items-center w-full min-w-0">
+                                        <div className={`shrink-0 w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${
+                                            (formData.quota_types || []).includes(opt.id) ? 'border-[#024F86] bg-[#024F86]' : 'border-gray-300'
+                                        }`}>
+                                            {(formData.quota_types || []).includes(opt.id) && <Check size={12} className="text-white" />}
+                                        </div>
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                             <span className={`text-xs font-medium leading-tight truncate ${
+                                                (formData.quota_types || []).includes(opt.id) ? 'text-[#024F86]' : 'text-gray-600'
+                                            }`}>
+                                                {opt.label}
+                                            </span>
+                                        </div>
+                                        
+                                        {opt.description && (
+                                            <div className="group/tooltip relative ml-auto shrink-0 pl-2">
+                                                <Info size={14} className="text-gray-400 hover:text-[#024F86] cursor-help" />
+                                                <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-gray-800 text-white text-[10px] rounded-lg shadow-xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-50">
+                                                    {opt.description}
+                                                    <div className="absolute -bottom-1 right-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                     ) : (
+                         // Transform IDs back to Labels for display
+                        <div className="flex flex-wrap gap-1">
+                            {formData.quota_types && formData.quota_types.length > 0 ? (
+                                formData.quota_types.map((qId, idx) => {
+                                    const opt = QUOTA_OPTIONS.find(o => o.id === qId);
+                                    return (
+                                        <span key={idx} className="bg-[#E0F2FE] text-[#024F86] text-xs px-2 py-0.5 rounded-full" title={opt?.description}>
+                                            {opt?.label || qId}
+                                        </span>
+                                    );
+                                })
+                            ) : (
+                                <span className="text-gray-400 italic">Não informado</span>
+                            )}
+                        </div>
+                     )}
+                </div>
+
+                 {/* Family Income - Advanced Calculator */}
+                 <div className="flex flex-col gap-1.5 w-full md:col-span-2 bg-[#F8FAFC] p-4 rounded-xl border border-gray-100">
+                     <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2 mb-2">
+                        <DollarSign size={14} />
+                        Renda Familiar
+                     </label>
+                     
+                     <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                            <div className="text-[#3A424E]">
+                                <span className="text-sm font-medium">Renda Per Capita Atual:</span>
+                                <span className="ml-2 text-lg font-bold text-[#024F86]">
+                                    {formData.family_income_per_capita 
+                                        ? formatCurrency(formData.family_income_per_capita)
+                                        : 'Não informado'}
+                                </span>
+                                {formData.family_income_per_capita && (
+                                    <span className="ml-2 text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+                                        {(formData.family_income_per_capita / SALARIO_MINIMO).toFixed(2)} salários mínimos
+                                    </span>
+                                )}
+                            </div>
+                            {isEditing && !useCalculator && (
+                                <button 
+                                    onClick={() => setUseCalculator(true)}
+                                    className="text-xs bg-[#E0F2FE] text-[#024F86] px-3 py-1.5 rounded-lg font-medium hover:bg-[#d0ebfd] transition-colors flex items-center gap-1"
+                                >
+                                    <Calculator size={12} />
+                                    Calcular Renda
+                                </button>
+                            )}
+                        </div>
+
+                        {isEditing && useCalculator && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4 border-t pt-4 border-gray-200">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <InputField
+                                        label="Pessoas na casa"
+                                        name="familyCount"
+                                        value={familyCount}
+                                        onChange={(e) => handleFamilyCountChange(e.target.value)}
+                                        type="number"
+                                        icon={Users}
+                                        placeholder="Quantas pessoas moram com você?"
+                                        isEditing={true}
+                                    />
+                                    <InputField
+                                        label="Benefícios Sociais (Bolsa Família, BPC)"
+                                        name="socialBenefits"
+                                        value={socialBenefits}
+                                        onChange={(e) => setSocialBenefits(e.target.value)}
+                                        type="number"
+                                        icon={DollarSign}
+                                        placeholder="Valor total"
+                                        isEditing={true}
+                                    />
+                                    <InputField
+                                        label="Pensão Alimentícia"
+                                        name="alimony"
+                                        value={alimony}
+                                        onChange={(e) => setAlimony(e.target.value)}
+                                        type="number"
+                                        icon={DollarSign}
+                                        placeholder="Valor total"
+                                        isEditing={true}
+                                    />
+                                </div>
+
+                                {memberIncomes.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-semibold text-gray-600">Renda por pessoa (sem contar benefícios/pensão)</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                            {memberIncomes.map((inc, i) => (
+                                                <div key={i} className="bg-white p-2 rounded-lg border border-gray-200">
+                                                    <label className="text-xs text-gray-500 mb-1 block">Pessoa {i + 1}</label>
+                                                    <input
+                                                        type="number"
+                                                        value={inc}
+                                                        onChange={(e) => handleMemberIncomeChange(i, e.target.value)}
+                                                        className="w-full text-sm outline-none text-[#3A424E] placeholder:text-gray-300"
+                                                        placeholder="R$ 0,00"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <button 
+                                    onClick={() => setUseCalculator(false)}
+                                    className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+                                >
+                                    <X size={12} />
+                                    Fechar Calculadora (Manter Valor)
+                                </button>
+                            </div>
+                        )}
+                        
+                        {isEditing && !useCalculator && (
+                            <InputField
+                                label="Editar Valor Manualmente"
+                                name="family_income_per_capita"
+                                value={formData.family_income_per_capita || ''}
+                                onChange={handleChange}
+                                type="number"
+                                icon={DollarSign}
+                                placeholder="R$ 0,00"
+                                isEditing={true}
+                            />
+                        )}
+                     </div>
+                 </div>
 
             </div>
 

@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2, Check, ChevronRight, GraduationCap, Users, DollarSign, AlertCircle } from 'lucide-react';
+import { Loader2, Check, ChevronRight, GraduationCap, Users, DollarSign, AlertCircle, Info } from 'lucide-react';
+import { ConcurrencyTag } from '@/types/concurrency';
 
 interface MatchWizardProps {
   onComplete: () => void;
@@ -110,23 +111,28 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
   // --- STEP 2 STATE: QUOTAS ---
   const [selectedQuotas, setSelectedQuotas] = useState<string[]>([]);
   const QUOTA_OPTIONS = [
-    { id: 'AMPLA_CONCORRENCIA', label: 'Ampla Concorrência' },
-    { id: 'ESCOLA_PUBLICA', label: 'Escola Pública' },
-    { id: 'BAIXA_RENDA', label: 'Baixa Renda' },
-    { id: 'PPI', label: 'Preto / Pardo / Indígena' },
-    { id: 'PCD', label: 'Pessoa com Deficiência (PCD)' },
-    { id: 'QUILOMBOLAS', label: 'Quilombolas' },
-    { id: 'INDIGENAS', label: 'Indígenas' },
-    { id: 'TRANS', label: 'Trans / Travesti' },
-    { id: 'RURAL', label: 'Rural / Campo' },
-    { id: 'AGRICULTURA_FAMILIAR', label: 'Agricultura Familiar' },
-    { id: 'REFUGIADOS', label: 'Refugiados' },
-    { id: 'CIGANOS', label: 'Ciganos' },
-    { id: 'AUTISMO', label: 'Autismo' },
-    { id: 'ALTAS_HABILIDADES', label: 'Altas Habilidades' },
-    { id: 'NAO_GRADUACAO', label: 'Não possuo graduação' },
-    { id: 'EJA_ENCCEJA', label: 'EJA / ENCCEJA' },
-    { id: 'PROFESSOR', label: 'Professor da Rede Pública' },
+    { id: ConcurrencyTag.AMPLA_CONCORRENCIA, label: 'Ampla Concorrência', description: 'Vagas sem critérios específicos de cota.' },
+    { id: ConcurrencyTag.ESCOLA_PUBLICA, label: 'Escola Pública', description: 'Para quem cursou todo o ensino médio em escola pública.' },
+    { id: ConcurrencyTag.PPI, label: 'PPI (Pretos, Pardos e Indígenas)', description: 'Para estudantes autodeclarados pretos, pardos ou indígenas.' },
+    { id: ConcurrencyTag.PRETOS_E_PARDOS, label: 'Pretos e Pardos', description: 'Para estudantes autodeclarados pretos ou pardos.' },
+    { id: ConcurrencyTag.INDIGENAS, label: 'Indígenas', description: 'Para estudantes indígenas, conforme critérios específicos do edital.' },
+    { id: ConcurrencyTag.QUILOMBOLAS, label: 'Quilombolas', description: 'Para estudantes pertencentes a comunidades quilombolas.' },
+    { id: ConcurrencyTag.PCD, label: 'Pessoa com Deficiência (PCD)', description: 'Para pessoas com deficiência, conforme laudo exigido no edital.' },
+    { id: ConcurrencyTag.TRANS, label: 'Trans / Travesti', description: 'Para pessoas trans ou travestis, quando previsto pela instituição.' },
+    { id: ConcurrencyTag.RURAL, label: 'Rural / Campo', description: 'Para estudantes oriundos de áreas rurais ou do campo.' },
+    { id: ConcurrencyTag.AGRICULTURA_FAMILIAR, label: 'Agricultura Familiar', description: 'Para estudantes de famílias que vivem da agricultura familiar.' },
+    { id: ConcurrencyTag.REFUGIADOS, label: 'Refugiados', description: 'Para pessoas com status de refugiado reconhecido no Brasil.' },
+    { id: ConcurrencyTag.CIGANOS, label: 'Ciganos', description: 'Para estudantes pertencentes a comunidades ciganas.' },
+    { id: ConcurrencyTag.AUTISMO, label: 'Autismo', description: 'Para pessoas no espectro autista, quando previsto no edital.' },
+    { id: ConcurrencyTag.ALTAS_HABILIDADES, label: 'Altas Habilidades', description: 'Para estudantes com altas habilidades ou superdotação.' },
+    { id: ConcurrencyTag.EJA_ENCCEJA, label: 'EJA / ENCCEJA', description: 'Para quem concluiu os estudos pelo EJA ou ENCCEJA.' },
+    { id: ConcurrencyTag.PROFESSOR, label: 'Professor da Rede Pública', description: 'Para professores que atuam na rede pública de ensino.' },
+    { id: ConcurrencyTag.MILITAR, label: 'Militares e Familiares', description: 'Para policiais, bombeiros, militares ou seus familiares, conforme regras específicas.' },
+    { id: ConcurrencyTag.EFA, label: 'Escolas Família Agrícola (EFA)', description: 'Para egressos de Escolas Família Agrícola.' },
+    { id: ConcurrencyTag.PRIVACAO_LIBERDADE, label: 'Privação de Liberdade', description: 'Para pessoas em privação de liberdade ou que cumprem medidas socioeducativas.' },
+    { id: ConcurrencyTag.PCD_AUDITIVA, label: 'Deficiência Auditiva / Surdos', description: 'Para pessoas com deficiência auditiva, candidatos a cursos como Letras-Libras.' },
+    { id: ConcurrencyTag.ESCOLA_PRIVADA_BOLSA_INTEGRAL, label: 'Escola Privada com Bolsa', description: 'Para quem estudou em escola privada com bolsa integral.' },
+    { id: ConcurrencyTag.OUTROS_ESPECIFICO, label: 'Outros Critérios Específicos', description: 'Outros critérios de cota específicos não listados acima.' },
   ];
   const [noQuota, setNoQuota] = useState(false);
 
@@ -138,6 +144,7 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
   const [memberIncomes, setMemberIncomes] = useState<string[]>([]);
   const [socialBenefits, setSocialBenefits] = useState<string>('');
   const [alimony, setAlimony] = useState<string>('');
+  const [noIncomeInfo, setNoIncomeInfo] = useState(false);
 
   // --- HANDLERS ---
 
@@ -408,14 +415,19 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
 
       } else if (currentStep === 3) {
         // Save Income and Finish
-        const totalIncome = calculateTotalIncome();
-        const peopleVal = parseInt(familyCount);
+        // Save Income and Finish
+        let perCapita: number | null = null;
 
-        if (!familyCount || isNaN(peopleVal) || peopleVal <= 0) {
-            throw new Error("Por favor, preencha o número de pessoas.");
+        if (!noIncomeInfo) {
+            const totalIncome = calculateTotalIncome();
+            const peopleVal = parseInt(familyCount);
+
+            if (!familyCount || isNaN(peopleVal) || peopleVal <= 0) {
+                throw new Error("Por favor, preencha o número de pessoas.");
+            }
+
+            perCapita = totalIncome / peopleVal;
         }
-
-        const perCapita = totalIncome / peopleVal;
 
         const { error: incomeError } = await supabase.from('user_preferences').update({
             family_income_per_capita: perCapita,
@@ -453,6 +465,7 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
           return noQuota || selectedQuotas.length > 0;
       }
       if (currentStep === 3) {
+          if (noIncomeInfo) return true;
           const count = parseInt(familyCount);
           return !isNaN(count) && count > 0;
       }
@@ -576,15 +589,24 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
                                         : 'border-gray-100 bg-white hover:border-[#024F86]/30'
                                     } ${noQuota ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <div className="flex items-center w-full">
+                                    <div className="flex items-center w-full min-w-0">
                                         <div className={`shrink-0 w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${
                                             selectedQuotas.includes(opt.id) ? 'border-[#024F86] bg-[#024F86]' : 'border-gray-300'
                                         }`}>
                                             {selectedQuotas.includes(opt.id) && <Check size={12} className="text-white" />}
                                         </div>
-                                        <span className={`text-xs font-medium leading-tight ${selectedQuotas.includes(opt.id) ? 'text-[#024F86]' : 'text-gray-600'}`}>
+                                        <span className={`text-xs font-medium leading-tight mr-2 truncate ${selectedQuotas.includes(opt.id) ? 'text-[#024F86]' : 'text-gray-600'}`}>
                                             {opt.label}
                                         </span>
+                                        {opt.description && (
+                                            <div className="group relative ml-auto shrink-0">
+                                                <Info size={14} className="text-gray-400 hover:text-[#024F86] cursor-help" />
+                                                <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-gray-800 text-white text-[10px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                    {opt.description}
+                                                    <div className="absolute -bottom-1 right-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </button>
                             ))}
@@ -613,7 +635,7 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
                              <p className="text-sm text-gray-500">Para cálculo de Prouni e Fies.</p>
                          </div>
                          
-                         <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-5 border border-white/60 shadow-sm space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                         <div className={`bg-white/60 backdrop-blur-sm rounded-2xl p-5 border border-white/60 shadow-sm space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar transition-opacity duration-300 ${noIncomeInfo ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                              
                              {/* 1. Family Count */}
                              <div>
@@ -703,6 +725,18 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
                                      </div>
                                  </div>
                              )}
+                         </div>
+                         <div className="flex items-center justify-center space-x-2 pt-2">
+                             <input 
+                                 type="checkbox" 
+                                 id="noIncome" 
+                                 checked={noIncomeInfo} 
+                                 onChange={(e) => setNoIncomeInfo(e.target.checked)}
+                                 className="w-4 h-4 rounded border-gray-300 text-[#024F86] focus:ring-[#024F86]" 
+                             />
+                             <label htmlFor="noIncome" className="text-sm font-medium text-gray-500 cursor-pointer">
+                                 Não informar renda
+                             </label>
                          </div>
                     </div>
                 )}
