@@ -285,6 +285,17 @@ export default function ChatCloudinha({
   }, [initialMessage, isLoadingHistory, onInitialMessageSent]);
 
   const handleSendMessage = async (text: string) => {
+    // Check if this is the first user message to track Contact event
+    // We check existing messages for any from 'user'
+    const hasUserMessages = messages.some(m => m.sender === 'user');
+    
+    if (!hasUserMessages) {
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+            console.log('[ChatCloudinha] Tracking FB Pixel Contact event');
+            (window as any).fbq('track', 'Contact');
+        }
+    }
+
     const tempId = Date.now().toString();
     const newMessage: Message = {
       id: tempId,
