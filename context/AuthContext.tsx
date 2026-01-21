@@ -136,6 +136,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     
     if (data.session) {
+      // Check for referral code
+      const ref = localStorage.getItem('nubo_ref');
+      if (ref) {
+        const userId = data.session.user.id;
+        try {
+          // Check if profile exists and if referral is already set
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('id, referral_source')
+            .eq('id', userId)
+            .single();
+
+          if (profile) {
+            // Profile exists, update if referral_source is empty
+            if (!profile.referral_source) {
+              await supabase
+                .from('user_profiles')
+                .update({ referral_source: ref })
+                .eq('id', userId);
+            }
+          } else {
+            // Profile doesn't exist, create it with referral_source
+            // Note: Assuming RLS allows insert and other required fields are nullable/defaulted
+            await supabase
+              .from('user_profiles')
+              .insert({ id: userId, referral_source: ref });
+          }
+          
+          // Clear referral code after processing
+          localStorage.removeItem('nubo_ref');
+        } catch (err) {
+          console.error('Error processing referral:', err);
+          // Don't block login on referral error
+        }
+      }
+
       if (pendingAction?.type === 'redirect') {
         router.push(pendingAction.payload.url);
         setPendingAction(null);
