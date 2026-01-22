@@ -21,6 +21,7 @@ function ChatPageContent() {
   const { isAuthModalOpen, closeAuthModal, pendingAction, clearPendingAction, isAuthenticated, isLoading, user } = useAuth();
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
   const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
+  const [matchedOppsMap, setMatchedOppsMap] = useState<Record<string, string[]> | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [preferences, setPreferences] = useState<any>(null);
   const [savedMatchStatus, setSavedMatchStatus] = useState<'reviewing' | 'finished' | null>(null);
@@ -109,6 +110,9 @@ function ChatPageContent() {
                      if (Array.isArray(wf.last_course_ids) && wf.last_course_ids.length > 0) {
                          setActiveCourseIds(wf.last_course_ids);
                      }
+                     if (wf.last_opportunity_map) {
+                         setMatchedOppsMap(wf.last_opportunity_map);
+                     }
                      if (wf.match_status) {
                          setSavedMatchStatus(wf.match_status);
                      }
@@ -192,7 +196,9 @@ function ChatPageContent() {
   };
 
   const handleOpportunitiesFound = (ids: string[]) => {
-      setActiveCourseIds(ids);
+      // Deduplicate IDs to prevent layout glitches (Search returns 1 row per opportunity, not per course)
+      const uniqueIds = Array.from(new Set(ids));
+      setActiveCourseIds(uniqueIds);
       setDesktopMatchView('OPPORTUNITIES');
       
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -258,6 +264,9 @@ function ChatPageContent() {
                               if (Array.isArray(wf.last_course_ids) && wf.last_course_ids.length > 0) {
                                   console.log("[ChatPage] Found saved course IDs:", wf.last_course_ids.length);
                                   handleOpportunitiesFound(wf.last_course_ids);
+                              }
+                              if (wf.last_opportunity_map) {
+                                  setMatchedOppsMap(wf.last_opportunity_map);
                               } else {
                                   console.log("[ChatPage] No course IDs in workflow_data.");
                               }
@@ -322,7 +331,10 @@ function ChatPageContent() {
                                 ) : (
                                     desktopMatchView === 'OPPORTUNITIES' ? (
                                         activeCourseIds.length > 0 ? (
-                                            <OpportunityCarousel courseIds={activeCourseIds} />
+                                            <OpportunityCarousel 
+                                                courseIds={activeCourseIds} 
+                                                matchedOppsMap={matchedOppsMap}
+                                            />
                                         ) : (
                                             <MatchPlaceholder />
                                         )

@@ -25,6 +25,20 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
     async function loadData() {
         if (!user) return;
         try {
+            // Get Geolocation on Mount
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("Wizard Location:", position.coords);
+                        setGeoLocation({
+                            lat: position.coords.latitude,
+                            long: position.coords.longitude
+                        });
+                    },
+                    (err) => console.log("Geolocation denied/error:", err)
+                );
+            }
+
             // 1. Load Scores
             const { data: scores } = await supabase
                 .from('user_enem_scores')
@@ -145,6 +159,9 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
   const [socialBenefits, setSocialBenefits] = useState<string>('');
   const [alimony, setAlimony] = useState<string>('');
   const [noIncomeInfo, setNoIncomeInfo] = useState(false);
+  
+  // --- LOCATION STATE ---
+  const [geoLocation, setGeoLocation] = useState<{lat: number, long: number} | null>(null);
 
   // --- HANDLERS ---
 
@@ -432,6 +449,8 @@ export default function MatchWizard({ onComplete }: MatchWizardProps) {
         const { error: incomeError } = await supabase.from('user_preferences').update({
             family_income_per_capita: perCapita,
             registration_step: 'completed', // [STATE UPDATE] DONE
+            device_latitude: geoLocation?.lat ?? null,
+            device_longitude: geoLocation?.long ?? null,
             updated_at: new Date().toISOString()
         }).eq('user_id', user.id);
 

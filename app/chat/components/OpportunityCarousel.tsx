@@ -10,9 +10,10 @@ import { fetchOpportunitiesByCourseIds } from '@/lib/services/opportunities';
 
 interface OpportunityCarouselProps {
     courseIds?: string[];
+    matchedOppsMap?: Record<string, string[]> | null;
 }
 
-export default function OpportunityCarousel({ courseIds }: OpportunityCarouselProps) {
+export default function OpportunityCarousel({ courseIds, matchedOppsMap }: OpportunityCarouselProps) {
   const [courses, setCourses] = useState<CourseDisplayData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -31,7 +32,10 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
 
                   if (pageIds.length > 0) {
                       const data = await fetchOpportunitiesByCourseIds(pageIds);
-                      setCourses(data);
+                      // Restore order based on pageIds (which preserves Search ranking)
+                      // .in() clause does not guarantee order, so we force it here
+                      const sortedData = data.sort((a, b) => pageIds.indexOf(a.id) - pageIds.indexOf(b.id));
+                      setCourses(sortedData);
                   } else {
                       setCourses([]);
                   }
@@ -82,7 +86,10 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
                         transition={{ duration: 0.3 }}
                         className="w-full"
                     >
-                        <OpportunityCard course={course} />
+                        <OpportunityCard 
+                            course={course} 
+                            highlightedOpportunityIds={matchedOppsMap ? matchedOppsMap[course.id] : undefined}
+                        />
                     </motion.div>
                 ))}
             </div>
@@ -100,19 +107,28 @@ export default function OpportunityCarousel({ courseIds }: OpportunityCarouselPr
             <ChevronLeft size={16} />
             </button>
 
-            {/* Indicators */}
-            <div className="flex items-center gap-2 h-2 bg-[#024F86]/5 rounded-full px-2 py-3 backdrop-blur-sm">
-                {Array.from({ length: totalPages }).map((_, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => setCurrentPage(idx)}
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                            idx === currentPage 
-                                ? 'w-8 bg-[#024F86]' 
-                                : 'w-2 bg-[#024F86]/20 hover:bg-[#024F86]/40'
-                        }`}
-                    />
-                ))}
+            {/* Indicators / Page Count */}
+            <div className="flex items-center gap-2 h-8 bg-[#024F86]/5 rounded-full px-3 backdrop-blur-sm min-w-fit">
+                {totalPages <= 7 ? (
+                    // Show Dots for small number of pages
+                    Array.from({ length: totalPages }).map((_, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setCurrentPage(idx)}
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                                idx === currentPage 
+                                    ? 'w-8 bg-[#024F86]' 
+                                    : 'w-2 bg-[#024F86]/20 hover:bg-[#024F86]/40'
+                            }`}
+                            aria-label={`Ir para página ${idx + 1}`}
+                        />
+                    ))
+                ) : (
+                    // Show Text "Page X of Y" for large number of pages
+                    <span className="text-xs font-bold text-[#024F86] whitespace-nowrap px-2">
+                        Página {currentPage + 1} de {totalPages}
+                    </span>
+                )}
             </div>
 
             {/* Next Button */}
