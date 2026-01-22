@@ -16,10 +16,18 @@ const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600'
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ highlight_opps?: string }>;
 }
 
-export default async function OpportunityDetails({ params }: PageProps) {
+export default async function OpportunityDetails({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { highlight_opps } = await searchParams;
+  
+  // Parse highlighted opportunity IDs from query param
+  const highlightedOpportunityIds = highlight_opps 
+    ? highlight_opps.split(',').filter(Boolean) 
+    : [];
+  
   const course = await getCourseDetails(id);
 
   if (!course) {
@@ -112,7 +120,7 @@ export default async function OpportunityDetails({ params }: PageProps) {
                     <InstitutionDetailsCard institution={institutionData} course={courseData} campus={campusData} />
                  </div>
                  <div className="md:col-span-2">
-                      <OpportunitiesListCard opportunities={course.opportunities} />
+                      <OpportunitiesListCard opportunities={course.opportunities} highlightedOpportunityIds={highlightedOpportunityIds} />
                  </div>
             </div>
 

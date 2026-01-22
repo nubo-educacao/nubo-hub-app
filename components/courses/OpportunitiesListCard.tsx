@@ -13,6 +13,8 @@ export interface Opportunity {
   scholarship_tags?: string[][] | any;
   cutoff_score: number | null;
   opportunity_type: string;
+  year?: number;
+  semester?: string;
   opportunitiessisuvacancies?: {
     vagas_ociosas_2025: number;
   } | null;
@@ -20,6 +22,7 @@ export interface Opportunity {
 
 interface OpportunitiesListCardProps {
   opportunities: Opportunity[];
+  highlightedOpportunityIds?: string[];
 }
 
 const getTagStyle = (tag: string) => {
@@ -42,10 +45,20 @@ const getTagStyle = (tag: string) => {
   }
 };
 
-export default function OpportunitiesListCard({ opportunities }: OpportunitiesListCardProps) {
+export default function OpportunitiesListCard({ opportunities, highlightedOpportunityIds = [] }: OpportunitiesListCardProps) {
   const router = useRouter();
   
   console.log('Opportunities Data in Component:', opportunities);
+
+  const filteredOpportunities = opportunities.filter(opp => {
+    if (opp.opportunity_type === 'sisu') {
+      return opp.year === 2026;
+    }
+    if (opp.opportunity_type === 'prouni') {
+      return opp.semester === '1';
+    }
+    return true;
+  });
 
   const handleFindSimilar = (opportunityId: string) => {
     const message = `Quero encontrar oportunidade similar a ${opportunityId}`;
@@ -117,10 +130,15 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {opportunities.map((opp) => {
+            {filteredOpportunities.map((opp) => {
               const { icon: Icon, label } = getShiftDetails(opp.shift);
+              const isHighlighted = highlightedOpportunityIds.includes(opp.id);
               return (
-              <tr key={opp.id} className="hover:bg-blue-50/30 transition-colors">
+              <tr key={opp.id} className={`transition-colors ${
+                isHighlighted 
+                  ? 'bg-amber-50 border-l-4 border-l-amber-400 animate-pulse' 
+                  : 'hover:bg-blue-50/30'
+              }`}>
                 <td className="px-6 py-4 text-slate-700 font-medium">
                   <div className="relative group w-fit mx-auto">
                     <Icon size={24} className="text-[#024F86]" />
@@ -178,7 +196,7 @@ export default function OpportunitiesListCard({ opportunities }: OpportunitiesLi
           </tbody>
         </table>
       </div>
-      {opportunities.length === 0 && (
+      {filteredOpportunities.length === 0 && (
          <div className="p-8 text-center text-slate-500">
             Nenhuma oportunidade encontrada.
          </div>

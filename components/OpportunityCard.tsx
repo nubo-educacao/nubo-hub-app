@@ -12,12 +12,27 @@ const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600'
 
 interface OpportunityCardProps {
   course: CourseDisplayData;
+  highlightedOpportunityIds?: string[];
 }
 
-export default function OpportunityCard({ course }: OpportunityCardProps) {
+export default function OpportunityCard({ course, highlightedOpportunityIds }: OpportunityCardProps) {
   const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
+
+  // Calculate Opportunity Count (Highlighted or Total)
+  const matchingCount = highlightedOpportunityIds ? highlightedOpportunityIds.length : course.opportunities.length;
+  const countLabel = matchingCount === 1 ? '1 Oportunidade' : `${matchingCount} Oportunidades`;
+
+  // Construct URL with Highlight Param
+  const getDetailsUrl = () => {
+      let url = `/courses/${course.id}`;
+      // Only add param if we have specific highlights
+      if (highlightedOpportunityIds && highlightedOpportunityIds.length > 0) {
+          url += `?highlight_opps=${highlightedOpportunityIds.join(',')}`;
+      }
+      return url;
+  };
 
   // Check favorite status on load/auth
   useEffect(() => {
@@ -42,9 +57,10 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
       clearPendingAction();
     }
     
-    if (isAuthenticated && pendingAction?.type === 'redirect' && pendingAction.payload.url === `/courses/${course.id}`) {
+    // Updated Redirect Logic
+    if (isAuthenticated && pendingAction?.type === 'redirect' && pendingAction.payload.url?.startsWith(`/courses/${course.id}`)) {
       clearPendingAction();
-      router.push(`/courses/${course.id}`);
+      router.push(pendingAction.payload.url);
     }
   }, [isAuthenticated, pendingAction, course.id, clearPendingAction, router]);
 
@@ -68,12 +84,13 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
   };
 
   const handleViewDetails = () => {
+    const url = getDetailsUrl();
     if (!isAuthenticated) {
-      setPendingAction({ type: 'redirect', payload: { url: `/courses/${course.id}` } });
+      setPendingAction({ type: 'redirect', payload: { url } });
       openAuthModal();
       return;
     }
-    router.push(`/courses/${course.id}`);
+    router.push(url);
   };
 
   // Logic: Cutoff Score Range
@@ -128,7 +145,10 @@ export default function OpportunityCard({ course }: OpportunityCardProps) {
              )}
         </div>
 
-        <div className="absolute top-4 right-4 z-20">
+        <div className="absolute top-4 right-4 z-20 flex flex-row gap-2 items-center">
+            <span className="bg-white/90 backdrop-blur-sm text-[#024F86] text-[10px] font-bold px-2 py-1.5 rounded-md shadow-sm border border-[#024F86]/10 uppercase tracking-wide">
+                {countLabel}
+            </span>
             <button 
             onClick={handleFavorite}
             className="p-2 rounded-full transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
