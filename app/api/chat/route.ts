@@ -21,14 +21,15 @@ export async function POST(request: Request) {
         headers: authHeader ? { Authorization: authHeader } : undefined,
       },
     });
-
+    console.log('[NextAPI] Supabase client initialized. Checking user...');
     const { data: { user } } = await supabase.auth.getUser();
+    console.log(`[NextAPI] Supabase auth check done. User ID: ${user?.id || 'null'}`);
     
-    const webhookUrl = process.env.AGENT_URL || process.env.AGENT_URL; // Verify env naming
+    const webhookUrl = process.env.AGENT_URL;
 
     if (!webhookUrl) {
-      console.error('AGENT_URL is not defined');
-      return NextResponse.json({ error: 'Configuration error' }, { status: 500 });
+      console.error('[NextAPI] CRITICAL: AGENT_URL is not defined in environment variables');
+      return NextResponse.json({ error: 'Configuration error: AGENT_URL missing' }, { status: 500 });
     }
 
     const headers: HeadersInit = {
@@ -41,8 +42,8 @@ export async function POST(request: Request) {
       userId: user?.id || null, 
     };
 
-    console.log(`[NextAPI] Forwarding to: ${webhookUrl}`);
-    console.log(`[NextAPI] Payload user: ${payload.userId}`);
+    console.log(`[NextAPI] Attempting to fetch from: ${webhookUrl}`);
+    console.log(`[NextAPI] User ID from Supabase: ${user?.id || 'NOT_LOGGED_IN'}`);
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -51,9 +52,17 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-        console.error(`agent webhook error: ${response.status}`);
-        return NextResponse.json({ error: 'Agent Error' }, { status: response.status });
+        const errorText = await response.text();
+        console.error(`[NextAPI] Agent responded with error! Status: ${response.status}`);
+        console.error(`[NextAPI] Agent error body: ${errorText}`);
+        return NextResponse.json({ 
+            error: 'Agent Error', 
+            status: response.status,
+            details: errorText.substring(0, 100) 
+        }, { status: response.status });
     }
+
+    console.log('[NextAPI] Connection successful, starting stream...');
 
     // Proxy the stream
     // Using simple ReadableStream passthrough
