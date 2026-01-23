@@ -9,6 +9,7 @@ export interface CourseDetail {
   opportunities: {
     id: string;
     semester: string;
+    year: number; // Added
     shift: string;
     scholarship_type: string; // 'Integral', etc.
     concurrency_type?: string;
@@ -75,6 +76,7 @@ export async function getCourseDetails(courseId: string): Promise<CourseDetail |
       opportunities (
         id,
         semester,
+        year,
         shift,
         scholarship_type,
         concurrency_type,
