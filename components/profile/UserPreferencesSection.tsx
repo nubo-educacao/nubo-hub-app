@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import { UserPreferences, updateUserPreferencesService, matchOpportunitiesService, MatchOpportunitiesParams } from '@/services/supabase/preferences';
 import { MultiSelect, Option } from '@/components/ui/MultiSelect';
 import { Montserrat } from 'next/font/google';
@@ -129,6 +131,7 @@ const formatCurrency = (value: number) => {
 
 
 export default function UserPreferencesSection({ preferences, onUpdate, onMatchFound }: UserPreferencesSectionProps) {
+    const router = useRouter();
     const [formData, setFormData] = useState<Partial<UserPreferences>>({});
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -225,40 +228,64 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
         // Ensure we save current preferences first? Or just use what is in formData usually?
         // Let's use formData to be immediate.
         
+        // Get current user ID for the RPC call
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            alert('Erro: Usuário não autenticado.');
+            setLoading(false);
+            return;
+        }
+
         const params: MatchOpportunitiesParams = {
+            p_user_id: user.id,
             course_interests: formData.course_interest && formData.course_interest.length > 0 ? formData.course_interest : null,
-            enem_score: formData.enem_score || null,
-            income_per_capita: formData.family_income_per_capita || null,
+            // enem_score REMOVED (backend fetches from user_enem_scores)
+            income_per_capita: formData.family_income_per_capita ? Number(formData.family_income_per_capita) : null,
             quota_types: formData.quota_types && formData.quota_types.length > 0 ? formData.quota_types : null,
             preferred_shifts: formData.preferred_shifts && formData.preferred_shifts.length > 0 ? formData.preferred_shifts : null,
             program_preference: formData.program_preference || null,
-            user_lat: null, // location not implemented in UI yet
+            user_lat: null, 
             user_long: null,
             city_names: formData.location_preference ? [formData.location_preference] : null,
             state_names: formData.state_preference ? [formData.state_preference] : null,
-            university_preference: formData.university_preference || null,
+            // university_preference REMOVED from RPC
             page_size: 2880,
             page_number: 0
         };
+
+        console.log('Generating Match with Params:', params);
 
         const { data, error } = await matchOpportunitiesService(params);
         setLoading(false);
 
         if (error) {
-            alert('Erro ao buscar matches: ' + error.message);
+            // Check for timeout errors
+            const errorMsg = error.message || error.code || '';
+            if (errorMsg.includes('timeout') || errorMsg.includes('57014') || errorMsg.includes('canceling statement')) {
+                alert('Preferências muito amplas. Defina um ou mais parâmetros e faça o match novamente.');
+            } else {
+                alert('Erro ao buscar matches: ' + errorMsg);
+            }
         } else if (data) {
             console.log('Match Results:', data);
+            console.log('Match Results type:', typeof data, Array.isArray(data));
             
             // Extract IDs
             const ids = data.map((item: any) => item.course_id || item.id).filter(Boolean);
+            console.log('Extracted IDs:', ids.length, ids);
+            console.log('onMatchFound defined:', !!onMatchFound);
             
             if (ids.length > 0) {
                if (onMatchFound) {
+                   console.log('Calling onMatchFound with', ids.length, 'IDs');
                    onMatchFound(ids);
                } else {
-                   alert(`Encontrados ${data.length} cursos correspondentes via Match! Detalhes no console.`);
+                   // If not in chat page, redirect to chat with match trigger
+                   console.log('onMatchFound not defined - redirecting to chat');
+                   router.push('/chat');
                }
             } else {
+                console.log('No IDs extracted from results');
                 alert('Nenhum curso encontrado com esses critérios. Tente flexibilizar seus filtros.');
             }
         }

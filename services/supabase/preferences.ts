@@ -115,8 +115,8 @@ export async function getAvailableCoursesService(): Promise<{ data: string[] | n
 }
 
 export interface MatchOpportunitiesParams {
+    p_user_id: string; // New required parameter
     course_interests: string[] | null;
-    enem_score: number | null;
     income_per_capita: number | null;
     quota_types: string[] | null;
     preferred_shifts: string[] | null;
@@ -125,21 +125,24 @@ export interface MatchOpportunitiesParams {
     user_long: number | null;
     city_names: string[] | null;
     state_names: string[] | null;
-    university_preference: string | null;
+    // university_preference removed in SQL
     page_size: number;
     page_number: number;
 }
 
 export async function matchOpportunitiesService(params: MatchOpportunitiesParams): Promise<{ data: any[] | null; error: any }> {
     try {
+        // Note: Cannot use .select('course_id') here because it causes "ambiguous column" error
+        // The RPC function internally has multiple CTEs with course_id references
         const { data, error } = await supabase.rpc('match_opportunities', params);
         
         if (error) {
             console.error('Error fetching match opportunities:', error);
             return { data: null, error };
         }
-
-        return { data, error: null };
+        // Ensure data is always an array for the return type
+        const resultArray = Array.isArray(data) ? data : data ? [data] : [];
+        return { data: resultArray, error: null };
     } catch (e) {
         console.error("Exception fetching match opportunities:", e);
         return { data: null, error: e };
