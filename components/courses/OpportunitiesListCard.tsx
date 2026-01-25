@@ -47,16 +47,21 @@ const getTagStyle = (tag: string) => {
 
 export default function OpportunitiesListCard({ opportunities, highlightedOpportunityIds = [] }: OpportunitiesListCardProps) {
   const router = useRouter();
-  
+
   console.log('Opportunities Data in Component:', opportunities);
 
   const filteredOpportunities = opportunities.filter(opp => {
+    // Must be semester 1
+    if (opp.semester !== '1') return false;
+
+    // Cycle specific filters
     if (opp.opportunity_type === 'sisu') {
       return opp.year === 2026;
     }
     if (opp.opportunity_type === 'prouni') {
-      return opp.semester === '1';
+      return opp.year === 2025;
     }
+
     return true;
   });
 
@@ -80,36 +85,36 @@ export default function OpportunitiesListCard({ opportunities, highlightedOpport
   const renderTags = (tags: any) => {
     // Handle legacy format (string[]) or potential nulls
     if (!tags || tags.length === 0) return null;
-    
+
     // Normalize to array of arrays: if first element is string, wrap it.
     // If first element is array, use as is.
     let groups: string[][] = [];
     if (Array.isArray(tags[0])) {
-        groups = tags;
+      groups = tags;
     } else {
-        groups = [tags];
+      groups = [tags];
     }
 
     return (
-        <div className="flex flex-wrap items-center gap-y-1">
-            {groups.map((group, groupIndex) => (
-                <React.Fragment key={groupIndex}>
-                    {groupIndex > 0 && (
-                        <span className="text-[10px] font-bold text-slate-400 mx-1.5 uppercase tracking-wide">OU</span>
-                    )}
-                    <div className="flex flex-wrap gap-1">
-                        {group.map((tag: string) => {
-                             const style = getTagStyle(tag);
-                             return (
-                                 <span key={tag} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text} whitespace-nowrap`}>
-                                     {style.label}
-                                 </span>
-                             );
-                        })}
-                    </div>
-                </React.Fragment>
-            ))}
-        </div>
+      <div className="flex flex-wrap items-center gap-y-1">
+        {groups.map((group, groupIndex) => (
+          <React.Fragment key={groupIndex}>
+            {groupIndex > 0 && (
+              <span className="text-[10px] font-bold text-slate-400 mx-1.5 uppercase tracking-wide">OU</span>
+            )}
+            <div className="flex flex-wrap gap-1">
+              {group.map((tag: string) => {
+                const style = getTagStyle(tag);
+                return (
+                  <span key={tag} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text} whitespace-nowrap`}>
+                    {style.label}
+                  </span>
+                );
+              })}
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
     );
   };
 
@@ -118,7 +123,7 @@ export default function OpportunitiesListCard({ opportunities, highlightedOpport
       <div className="p-6 border-b border-slate-100">
         <h3 className="text-xl font-bold text-[#024F86]">Lista de Oportunidades</h3>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-slate-500 text-sm uppercase">
@@ -134,55 +139,54 @@ export default function OpportunitiesListCard({ opportunities, highlightedOpport
               const { icon: Icon, label } = getShiftDetails(opp.shift);
               const isHighlighted = highlightedOpportunityIds.includes(opp.id);
               return (
-              <tr key={opp.id} className={`transition-colors ${
-                isHighlighted 
-                  ? 'bg-amber-50 border-l-4 border-l-amber-400 animate-pulse' 
-                  : 'hover:bg-blue-50/30'
-              }`}>
-                <td className="px-6 py-4 text-slate-700 font-medium">
-                  <div className="relative group w-fit mx-auto">
-                    <Icon size={24} className="text-[#024F86]" />
-                    
-                    {/* Tooltip */}
-                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
+                <tr key={opp.id} className={`transition-colors ${isHighlighted
+                    ? 'bg-amber-50 border-l-4 border-l-amber-400 animate-pulse'
+                    : 'hover:bg-blue-50/30'
+                  }`}>
+                  <td className="px-6 py-4 text-slate-700 font-medium">
+                    <div className="relative group w-fit mx-auto">
+                      <Icon size={24} className="text-[#024F86]" />
+
+                      {/* Tooltip */}
+                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm">
                         {label}
                         {/* Arrow */}
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800/90"></div>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-slate-600">
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Check for tags (Sisu uses concurrency_tags, Prouni uses scholarship_tags) */}
-                        {(opp.concurrency_tags && opp.concurrency_tags.length > 0) || (opp.scholarship_tags && opp.scholarship_tags.length > 0) ? (
-                            renderTags(opp.concurrency_tags || opp.scholarship_tags)
-                        ) : (
-                             opp.concurrency_type || opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
-                        )}
+                      {/* Check for tags (Sisu uses concurrency_tags, Prouni uses scholarship_tags) */}
+                      {(opp.concurrency_tags && opp.concurrency_tags.length > 0) || (opp.scholarship_tags && opp.scholarship_tags.length > 0) ? (
+                        renderTags(opp.concurrency_tags || opp.scholarship_tags)
+                      ) : (
+                        opp.concurrency_type || opp.scholarship_type || (opp.opportunity_type === 'sisu' ? 'Vaga Sisu' : 'Vaga Regular')
+                      )}
 
-                        {/* Info Tooltip for full description */}
-                        {(opp.scholarship_type || opp.concurrency_type) && (
-                            <div className="relative group/info inline-flex items-center ml-1">
-                                <Info size={16} className="text-slate-400 cursor-help hover:text-[#024F86] transition-colors" />
-                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800/95 text-white text-xs rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
-                                    {opp.concurrency_type || opp.scholarship_type}
-                                    {/* Arrow */}
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800/95"></div>
-                                </div>
-                            </div>
-                        )}
+                      {/* Info Tooltip for full description */}
+                      {(opp.scholarship_type || opp.concurrency_type) && (
+                        <div className="relative group/info inline-flex items-center ml-1">
+                          <Info size={16} className="text-slate-400 cursor-help hover:text-[#024F86] transition-colors" />
+                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800/95 text-white text-xs rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 backdrop-blur-sm shadow-xl">
+                            {opp.concurrency_type || opp.scholarship_type}
+                            {/* Arrow */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800/95"></div>
+                          </div>
+                        </div>
+                      )}
 
-                        {opp.opportunitiessisuvacancies && opp.opportunitiessisuvacancies.vagas_ociosas_2025 > 0 && (
-                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-700 text-emerald-100 whitespace-nowrap ml-2">
-                                 Vagas Ociosas
-                             </span>
-                        )}
+                      {opp.opportunitiessisuvacancies && opp.opportunitiessisuvacancies.vagas_ociosas_2025 > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-700 text-emerald-100 whitespace-nowrap ml-2">
+                          Vagas Ociosas
+                        </span>
+                      )}
                     </div>
-                </td>
-                <td className="px-6 py-4 font-bold text-[#024F86] text-center">
-                   {typeof opp.cutoff_score === 'number' ? opp.cutoff_score.toFixed(2) : '-'}
-                </td>
-                {/* <td className="px-6 py-4 text-center">
+                  </td>
+                  <td className="px-6 py-4 font-bold text-[#024F86] text-center">
+                    {typeof opp.cutoff_score === 'number' ? opp.cutoff_score.toFixed(2) : '-'}
+                  </td>
+                  {/* <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => handleFindSimilar(opp.id)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#38B1E4] text-[#38B1E4] rounded-full hover:bg-[#38B1E4] hover:text-white transition-all text-sm font-semibold"
@@ -191,15 +195,16 @@ export default function OpportunitiesListCard({ opportunities, highlightedOpport
                     Procurar similar
                   </button>
                 </td> */}
-              </tr>
-            )})}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
       {filteredOpportunities.length === 0 && (
-         <div className="p-8 text-center text-slate-500">
-            Nenhuma oportunidade encontrada.
-         </div>
+        <div className="p-8 text-center text-slate-500">
+          Nenhuma oportunidade encontrada.
+        </div>
       )}
     </div>
   );

@@ -37,7 +37,7 @@ export default function ChatHeader({
 
   const getFunctionalityInfo = (type: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING') => {
       switch(type) {
-          case 'MATCH': return { title: 'Match de Oportunidades', subtitle: 'Encontre sua oportunidade ideal' };
+          case 'MATCH': return { title: 'Match do Prouni', subtitle: 'Encontre sua oportunidade ideal' };
           case 'PROUNI': return { title: 'Entendendo o Prouni', subtitle: 'Tire suas dúvidas sobre o programa' };
           case 'SISU': return { title: 'Entendendo o Sisu', subtitle: 'Tudo o que você precisa saber' };
           case 'ONBOARDING': return { title: 'Configurando Perfil', subtitle: 'Vamos nos conhecer melhor' };
@@ -84,7 +84,7 @@ export default function ChatHeader({
                                onClick={() => handleSelect('MATCH')}
                                className={`w-full text-left px-5 py-3 hover:bg-[#F0F4FA] transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0 ${selectedFunctionality === 'MATCH' ? 'bg-[#F0F4FA]' : ''}`}
                            >
-                               <span className={`text-sm font-bold ${selectedFunctionality === 'MATCH' ? 'text-[#024F86]' : 'text-gray-700'}`}>Match de Oportunidades</span>
+                               <span className={`text-sm font-bold ${selectedFunctionality === 'MATCH' ? 'text-[#024F86]' : 'text-gray-700'}`}>Match do Prouni</span>
                                <span className="text-gray-500 text-xs">Encontre sua oportunidade ideal</span>
                            </button>
                            <button 

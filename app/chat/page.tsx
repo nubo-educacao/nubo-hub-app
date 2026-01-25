@@ -196,10 +196,13 @@ function ChatPageContent() {
   };
 
   const handleOpportunitiesFound = (ids: string[]) => {
+      console.log('[handleOpportunitiesFound] Called with', ids.length, 'IDs');
       // Deduplicate IDs to prevent layout glitches (Search returns 1 row per opportunity, not per course)
       const uniqueIds = Array.from(new Set(ids));
+      console.log('[handleOpportunitiesFound] Unique IDs:', uniqueIds.length);
       setActiveCourseIds(uniqueIds);
       setDesktopMatchView('OPPORTUNITIES');
+      console.log('[handleOpportunitiesFound] Switched view to OPPORTUNITIES');
       
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
           setActiveTab('CONTENT');
