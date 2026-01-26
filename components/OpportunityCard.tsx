@@ -13,16 +13,18 @@ const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600'
 interface OpportunityCardProps {
   course: CourseDisplayData;
   highlightedOpportunityIds?: string[];
+  isCompact?: boolean;
 }
 
-export default function OpportunityCard({ course, highlightedOpportunityIds }: OpportunityCardProps) {
+export default function OpportunityCard({ course, highlightedOpportunityIds, isCompact }: OpportunityCardProps) {
   const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
 
   // Calculate Opportunity Count (Highlighted or Total)
   const matchingCount = highlightedOpportunityIds ? highlightedOpportunityIds.length : course.opportunities.length;
-  const countLabel = matchingCount === 1 ? '1 Oportunidade' : `${matchingCount} Oportunidades`;
+  const countLabelFull = matchingCount === 1 ? '1 Oportunidade' : `${matchingCount} Oportunidades`;
+  const countLabelSmall = matchingCount === 1 ? '1 Oport.' : `${matchingCount} Oports.`;
 
   // Construct URL with Highlight Param
   const getDetailsUrl = () => {
@@ -131,36 +133,45 @@ export default function OpportunityCard({ course, highlightedOpportunityIds }: O
     >
       {/* Header Section: Background & Location/Favorite */}
       <div className="relative h-[100px] w-full bg-[#C8EEFF]">
-        {/* Badge: Top Left */}
-        <div className="absolute top-4 left-4 z-30">
-             {uniqueTypes.filter(Boolean).map((type, index) => (
-                 <span key={`${type}-${index}`} className="text-[12px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#9747FF]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(151,71,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#B070FF]/50 uppercase">
-                    {type}
-                 </span>
-             ))}
-             {hasIdleVacancies && (
-                 <span className="text-[10px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#10B981]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(16,185,129,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#34D399]/50 uppercase ml-2">
-                     VAGAS OCIOSAS
-                 </span>
-             )}
-        </div>
+        {/* Header Tags & Actions */}
+        <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-center">
+            {/* Badges: Left */}
+            <div className="flex gap-2 items-center">
+                {uniqueTypes.filter(Boolean).map((type, index) => (
+                    <span key={`${type}-${index}`} className="text-[12px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#9747FF]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(151,71,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#B070FF]/50 uppercase">
+                        {type}
+                    </span>
+                ))}
+                {hasIdleVacancies && (
+                    <span className="text-[10px] font-bold px-3 py-1.5 rounded-full text-white whitespace-nowrap bg-[#10B981]/90 backdrop-blur-sm shadow-[0_3px_8px_rgba(16,185,129,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#34D399]/50 uppercase">
+                        VAGAS OCIOSAS
+                    </span>
+                )}
+            </div>
 
-        <div className="absolute top-4 right-4 z-20 flex flex-row gap-2 items-center">
-            <span className="bg-white/90 backdrop-blur-sm text-[#024F86] text-[10px] font-bold px-2 py-1.5 rounded-md shadow-sm border border-[#024F86]/10 uppercase tracking-wide">
-                {countLabel}
-            </span>
-            <button 
-            onClick={handleFavorite}
-            className="p-2 rounded-full transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
-            >
-            <Heart 
-                size={20} 
-                color={isFavorite ? "#ef4444" : "#cbd5e1"} 
-                fill={isFavorite ? "#ef4444" : "none"} 
-                strokeWidth={2.5}
-                className="transition-colors group-hover/btn:text-red-400"
-            />
-            </button>
+            {/* Actions: Right */}
+            <div className="flex flex-row gap-2 items-center">
+                <span className="bg-white/90 backdrop-blur-sm text-[#024F86] text-[10px] font-bold px-2 py-1.5 rounded-md shadow-sm border border-[#024F86]/10 uppercase tracking-wide">
+                    {isCompact ? countLabelSmall : (
+                        <>
+                            <span className="hidden min-[1365px]:inline">{countLabelFull}</span>
+                            <span className="min-[1365px]:hidden inline">{countLabelSmall}</span>
+                        </>
+                    )}
+                </span>
+                <button 
+                onClick={handleFavorite}
+                className="p-2 rounded-full transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
+                >
+                <Heart 
+                    size={20} 
+                    color={isFavorite ? "#ef4444" : "#cbd5e1"} 
+                    fill={isFavorite ? "#ef4444" : "none"} 
+                    strokeWidth={2.5}
+                    className="transition-colors group-hover/btn:text-red-400"
+                />
+                </button>
+            </div>
         </div>
 
          {/* Cloud Vector */}
@@ -206,8 +217,8 @@ export default function OpportunityCard({ course, highlightedOpportunityIds }: O
         <div className="flex justify-between items-center mt-auto h-[40px]">
             {/* Shifts Pill */}
             <div className="bg-[#FF9900]/90 backdrop-blur-sm shadow-[0_2px_6px_rgba(255,153,0,0.25),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-[#FFB84D]/50 rounded-[166px] px-[12px] py-[6px] flex items-center gap-3 h-fit transition-all hover:scale-105 hover:shadow-[0_4px_10px_rgba(255,153,0,0.35),inset_0_-2px_4px_rgba(0,0,0,0.1)]">
-                    {/* Desktop: All Shifts */}
-                    <div className="hidden md:flex items-center gap-3">
+                    {/* Desktop Large: All Shifts */}
+                    <div className={`${isCompact ? 'hidden' : 'hidden min-[1525px]:flex'} items-center gap-3`}>
                         {shiftsConfig.map((shift, index) => (
                             <div key={`${shift.id}-${index}`} className="flex items-center justify-center relative group/icon">
                                 <shift.icon 
@@ -227,8 +238,8 @@ export default function OpportunityCard({ course, highlightedOpportunityIds }: O
                         ))}
                     </div>
 
-                    {/* Mobile: Active Shifts Only (Max 2) */}
-                    <div className="flex md:hidden items-center gap-2">
+                    {/* Mobile/Tablet/Small PC: Active Shifts Only (Max 2) */}
+                    <div className={`${isCompact ? 'flex' : 'flex min-[1525px]:hidden'} items-center gap-2`}>
                         {activeOnlyShifts.length >= 3 ? (
                              <>
                                 {activeOnlyShifts.slice(0, 1).map((shift) => (
