@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Partner } from '../services/supabase/partners';
 import { toggleFavoriteService, getUserFavoritesService } from '../services/supabase/favorites';
+import { registerPartnerClick } from '../services/supabase/partners-click';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -109,16 +110,27 @@ export function PartnerCard({
     checkFavorite();
   }, [isAuthenticated, id]);
 
+
+
   // Handle pending action execution
   useEffect(() => {
-    if (isAuthenticated && pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === id) { 
-      // Perform the actual toggle since we just logged in to do it
-      toggleFavoriteService('partner', id).then(({ error }) => {
-        if (!error) {
-            setIsFavorite(true);
+    if (isAuthenticated) {
+        if (pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === id) { 
+          // Perform the actual toggle since we just logged in to do it
+          toggleFavoriteService('partner', id).then(({ error }) => {
+            if (!error) {
+                setIsFavorite(true);
+            }
+          });
+          clearPendingAction();
+        } else if (pendingAction?.type === 'partner_click' && pendingAction.payload.partnerId === id) {
+            // Register click and open link
+            registerPartnerClick(id);
+            if (pendingAction.payload.link) {
+                window.open(pendingAction.payload.link, '_blank', 'noopener,noreferrer');
+            }
+            clearPendingAction();
         }
-      });
-      clearPendingAction();
     }
   }, [isAuthenticated, pendingAction, id, clearPendingAction]);
 
@@ -141,10 +153,18 @@ export function PartnerCard({
     }
   };
 
-  const handleCardClick = () => {
-      if (link) {
-          window.open(link, '_blank', 'noopener,noreferrer');
+  const handleCardClick = async () => {
+      if (!link) return;
+
+      if (!isAuthenticated) {
+          setPendingAction({ type: 'partner_click', payload: { partnerId: id, link } });
+          openAuthModal();
+          return;
       }
+
+      // If authenticated, register click and open link
+      registerPartnerClick(id); // Fire and forget
+      window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   // Helper to resolve image src - use specific partner image if exists, else fallback

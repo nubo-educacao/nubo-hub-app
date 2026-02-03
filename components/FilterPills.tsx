@@ -8,17 +8,17 @@ interface FilterPillsProps {
 }
 
 export default function FilterPills({ 
-  selectedFilter = "Seleção Nubo", 
+  selectedFilter = "Oportunidades de parceiros", 
   onSelectFilter = () => {},
   children
 }: FilterPillsProps) {
   const filters = [
-    "Seleção Nubo",
+    "Oportunidades de parceiros",
+    // "Seleção Nubo",
     "SISU",
     "Prouni",
     "Ações afirmativas",
     "EAD",
-    "Oportunidades de parceiros"
   ];
 
   return (
