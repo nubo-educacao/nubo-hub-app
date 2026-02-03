@@ -8,6 +8,7 @@ import { CourseDisplayData } from '../types/opportunity';
 import { fetchCoursesWithOpportunities } from '../lib/services/opportunities';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Partner, getPartners } from '../services/supabase/partners';
+import PartnerModal from './PartnerModal';
 
 function OpportunityCatalogContent() {
   const router = useRouter();
@@ -17,9 +18,10 @@ function OpportunityCatalogContent() {
   const isFirstMount = useRef(true);
 
   // Initialize state from URL params
-  const [selectedFilter, setSelectedFilter] = useState(searchParams.get('filter') || 'Seleção Nubo');
+  const [selectedFilter, setSelectedFilter] = useState(searchParams.get('filter') || 'Oportunidades de parceiros');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'proximas');
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
 
   const [courses, setCourses] = useState<CourseDisplayData[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -56,7 +58,7 @@ function OpportunityCatalogContent() {
   const updateUrl = (newFilter: string, newSearch: string, newSort: string) => {
     const params = new URLSearchParams(searchParams.toString());
     
-    if (newFilter && newFilter !== 'Seleção Nubo') params.set('filter', newFilter);
+    if (newFilter && newFilter !== 'Oportunidades de parceiros') params.set('filter', newFilter);
     else params.delete('filter');
 
     if (newSearch) params.set('q', newSearch);
@@ -277,7 +279,10 @@ function OpportunityCatalogContent() {
             )}
           </div>
 
-          <button className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md text-lg">
+          <button 
+            onClick={() => setIsPartnerModalOpen(true)}
+            className="px-8 py-3 bg-[#024F86] text-white rounded-full hover:bg-[#023F6B] transition-colors font-bold shadow-md text-lg"
+          >
             Seja parceiro Nubo
           </button>
         </div>
@@ -314,14 +319,14 @@ function OpportunityCatalogContent() {
       }
 
       if (!loading && !error && courses.length === 0) {
-        if (selectedFilter === 'Seleção Nubo') {
-          return (
-            <div className="bg-white/50 border border-white/20 rounded-lg p-16 text-center min-h-[400px] flex flex-col items-center justify-center">
-              <h3 className="text-xl font-bold text-[#024F86] mb-2">Em breve</h3>
-              <p className="text-[#636E7C]">Estamos trabalhando para trazer mais oportunidades nesta categoria.</p>
-            </div>
-          );
-        }
+        /* if (selectedFilter === 'Seleção Nubo') {
+           return (
+             <div className="bg-white/50 border border-white/20 rounded-lg p-16 text-center min-h-[400px] flex flex-col items-center justify-center">
+               <h3 className="text-xl font-bold text-[#024F86] mb-2">Em breve</h3>
+               <p className="text-[#636E7C]">Estamos trabalhando para trazer mais oportunidades nesta categoria.</p>
+             </div>
+           );
+         } */
 
         return (
           <div className="bg-white/50 border border-white/20 rounded-lg p-12 text-center">
@@ -428,19 +433,21 @@ function OpportunityCatalogContent() {
                 )}
             </FilterPills>
 
-            {selectedFilter === 'Seleção Nubo' && (
-              <div className="mt-6 text-center px-4">
-                <p className="text-sm text-[#024F86] bg-[#024F86]/5 py-2 px-4 rounded-lg inline-block border border-[#024F86]/10">
-                  Curadoria do Nubo com base no SISU 2025, reunindo oportunidades cujo número de inscritos foi menor do que o  número de vagas
-                </p>
-              </div>
-            )}
+            {/* {selectedFilter === 'Seleção Nubo' && (
+               <div className="mt-6 text-center px-4">
+                 <p className="text-sm text-[#024F86] bg-[#024F86]/5 py-2 px-4 rounded-lg inline-block border border-[#024F86]/10">
+                   Curadoria do Nubo com base no SISU 2025, reunindo oportunidades cujo número de inscritos foi menor do que o  número de vagas
+                 </p>
+               </div>
+             )} */}
           </div>
 
           {renderContent()}
 
         </div>
       </div>
+
+      <PartnerModal isOpen={isPartnerModalOpen} onClose={() => setIsPartnerModalOpen(false)} />
     </section>
   );
 }
