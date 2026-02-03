@@ -16,6 +16,7 @@ interface User {
 export type PendingAction = 
   | { type: 'chat'; payload: { message: string } }
   | { type: 'favorite'; payload: { opportunityId: string } }
+  | { type: 'partner_click'; payload: { partnerId: string; link: string } }
   | { type: 'redirect'; payload: { url: string } }
   | null;
 
