@@ -9,6 +9,9 @@ import { fetchCoursesWithOpportunities } from '../lib/services/opportunities';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Partner, getPartners } from '../services/supabase/partners';
 import PartnerModal from './PartnerModal';
+import { ImportantDate } from '../types/calendar';
+import { getImportantDates } from '../lib/services/opportunities';
+import CalendarAccordion from './courses/CalendarAccordion';
 
 function OpportunityCatalogContent() {
   const router = useRouter();
@@ -35,6 +38,7 @@ function OpportunityCatalogContent() {
   const [userLocation, setUserLocation] = useState<{ city: string, state: string, lat?: number, long?: number } | null>(null);
   const [isLocationDenied, setIsLocationDenied] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [allDates, setAllDates] = useState<ImportantDate[]>([]);
 
   const ITEMS_PER_PAGE = 15;
 
@@ -167,6 +171,17 @@ function OpportunityCatalogContent() {
       if (sortBy === 'proximas') {
           getUserLocation();
       }
+
+      // Fetch all important dates
+      const loadDates = async () => {
+        try {
+          const dates = await getImportantDates(['general', 'sisu', 'prouni', 'partners']);
+          setAllDates(dates);
+        } catch (e) {
+          console.error("Error loading dates for catalog:", e);
+        }
+      };
+      loadDates();
   }, []);
 
   const handleSortChange = (value: string) => {
@@ -441,6 +456,21 @@ function OpportunityCatalogContent() {
                </div>
              )} */}
           </div>
+
+          {/* Calendar Accordion */}
+          {['Oportunidades de parceiros', 'SISU', 'Prouni'].includes(selectedFilter) && allDates.length > 0 && (
+            <div className="mb-8">
+               <CalendarAccordion 
+                  dates={allDates.filter(d => {
+                    const type = d.type.toLowerCase();
+                    if (selectedFilter === 'Oportunidades de parceiros') return type === 'general' || type === 'partners';
+                    if (selectedFilter === 'SISU') return type === 'general' || type === 'sisu';
+                    if (selectedFilter === 'Prouni') return type === 'general' || type === 'prouni';
+                    return false;
+                  })} 
+               />
+            </div>
+          )}
 
           {renderContent()}
 

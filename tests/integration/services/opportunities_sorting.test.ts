@@ -3,13 +3,14 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 
 vi.mock('@/lib/services/opportunities', () => ({
-  fetchOpportunities: vi.fn().mockResolvedValue({
+  fetchCoursesWithOpportunities: vi.fn().mockResolvedValue({
     data: [
-      { id: '2', opportunity_type: 'prouni', title: 'Prouni Opp', institution: 'Inst', location: 'Loc', type: 'Pública', modality: 'Presencial', scholarship_type: 'Integral', shift: 'Integral', course_name: 'Prouni Opp' },
-      { id: '1', opportunity_type: 'sisu', title: 'Sisu Opp', institution: 'Inst', location: 'Loc', type: 'Pública', modality: 'Presencial', scholarship_type: 'Integral', shift: 'Integral', course_name: 'Sisu Opp' },
-      { id: '3', opportunity_type: 'sisu', title: 'Sisu Opp 2', institution: 'Inst', location: 'Loc', type: 'Pública', modality: 'Presencial', scholarship_type: 'Integral', shift: 'Integral', course_name: 'Sisu Opp 2' }
+      { id: '2', title: 'Prouni Opp', institution: 'Inst', location: 'Loc', type: 'Pública', modality: 'Presencial', scholarship_type: 'Integral', shift: 'Integral', course_name: 'Prouni Opp', opportunities: [{ opportunity_type: 'prouni' }] },
+      { id: '1', title: 'Sisu Opp', institution: 'Inst', location: 'Loc', type: 'Pública', modality: 'Presencial', scholarship_type: 'Integral', shift: 'Integral', course_name: 'Sisu Opp', opportunities: [{ opportunity_type: 'sisu' }] },
+      { id: '3', title: 'Sisu Opp 2', institution: 'Inst', location: 'Loc', type: 'Pública', modality: 'Presencial', scholarship_type: 'Integral', shift: 'Integral', course_name: 'Sisu Opp 2', opportunities: [{ opportunity_type: 'sisu' }] }
     ],
-    error: null
+    error: null,
+    hasMore: false
   })
 }));
 
@@ -19,10 +20,10 @@ describe('Opportunities Service (Sorting)', () => {
   });
 
   it('should sort opportunities with "prouni" type first', async () => {
-    const { fetchOpportunities } = await import('@/lib/services/opportunities');
+    const { fetchCoursesWithOpportunities } = await import('@/lib/services/opportunities');
     
     // Fetch a reasonable number to increase chance of mixed types
-    const result = await fetchOpportunities(0, 50);
+    const result = await fetchCoursesWithOpportunities(0, 50);
     
     expect(result.error).toBeNull();
     
@@ -30,14 +31,14 @@ describe('Opportunities Service (Sorting)', () => {
       const opportunities = result.data;
       
       // Find index of first non-prouni opportunity (e.g. sisu)
-      const firstNonProuniIndex = opportunities.findIndex(o => o.opportunity_type !== 'prouni');
+      const firstNonProuniIndex = opportunities.findIndex((o: any) => o.opportunities[0]?.opportunity_type !== 'prouni');
       
       let foundProuni = false;
       let foundNonProuni = false;
       let violationFound = false;
       
       for (const opp of opportunities) {
-        const isProuni = opp.opportunity_type === 'prouni';
+        const isProuni = opp.opportunities[0]?.opportunity_type === 'prouni';
         
         if (isProuni) {
           foundProuni = true;

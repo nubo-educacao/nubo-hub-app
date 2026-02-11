@@ -51,11 +51,13 @@ export interface CourseDetail {
   };
 }
 
-export async function getImportantDates(type: string = 'general') {
+export async function getImportantDates(types: string[] | string = ['general']) {
+  const typesArray = Array.isArray(types) ? types : [types];
+  
   const { data, error } = await supabase
     .from('important_dates')
     .select('*')
-    .or(`type.eq.${type},type.eq.general`)
+    .in('type', typesArray)
     .order('start_date', { ascending: true });
 
   if (error) {
