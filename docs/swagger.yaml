@@ -2,13 +2,11 @@ openapi: 3.0.0
 info:
   title: Nubo Hub App Supabase API
   version: 1.0.0
-  description: >
-    Documentation of the Supabase tables, views, and RPCs used by the Nubo Hub Web App (nubo-hub-app).
-    These resources are consumed by the frontend (Next.js) via supabase-js.
+  description: |
+    Documentation of the Supabase tables, views, and RPCs used by the Nubo Hub Web App (nubo-hub-app). These resources are consumed by the frontend (Next.js) via supabase-js.
 servers:
   - url: https://yfgciamhzjvarwgzosto.supabase.co/rest/v1
     description: Supabase REST API Endpoint
-
 components:
   securitySchemes:
     apikey:
@@ -38,18 +36,18 @@ components:
           items:
             type: object
             properties:
-                id:
-                    type: string
-                    format: uuid
-                shift:
-                    type: string
-                scholarship_type:
-                    type: string
-                opportunity_type:
-                    type: string
-                cutoff_score:
-                    type: number
-                    format: float
+              id:
+                type: string
+                format: uuid
+              shift:
+                type: string
+              scholarship_type:
+                type: string
+              opportunity_type:
+                type: string
+              cutoff_score:
+                type: number
+                format: float
     OpportunityView:
       type: object
       description: Read-only view. Matches database.types.ts OpportunityRow + join fields
@@ -73,14 +71,14 @@ components:
         scholarship_type:
           type: string
         cutoff_score:
-            type: number
-            format: float
+          type: number
+          format: float
         opportunity_type:
           type: string
     RPCCoursesResponse:
-        type: array
-        items:
-            $ref: '#/components/schemas/CourseDisplayData'
+      type: array
+      items:
+        $ref: '#/components/schemas/CourseDisplayData'
     CourseDetail:
       type: object
       properties:
@@ -131,7 +129,7 @@ components:
                 external_code:
                   type: string
                 institutionsinfoemec:
-                  type: array # Usually 1:1 but supabase returns array for has_many if not single()
+                  type: array
                   items:
                     type: object
                     properties:
@@ -150,11 +148,11 @@ components:
                       creation_date:
                         type: string
                       ci:
-                         type: integer
+                        type: integer
                       ci_ead:
-                         type: integer
+                        type: integer
                       igc:
-                         type: integer
+                        type: integer
                 institutionsinfosisu:
                   type: array
                   items:
@@ -179,81 +177,69 @@ components:
         income:
           type: string
         dates:
-          type: object # jsonb
+          type: object
         link:
           type: string
         coverimage:
           type: string
-
 security:
   - apikey: []
   - bearerAuth: []
-
 paths:
   /rpc/get_courses_with_opportunities:
     post:
-      summary: Get Courses with Opportunities (Paged)
-      description: >
-        Main RPC used to list courses on the Explore page. 
-        Returns courses joined with their opportunities (grouped as JSON).
-        Used by `fetchCoursesWithOpportunities`.
+      summary: get_courses_with_opportunities
+      description: Calls the get_courses_with_opportunities RPC function
+      operationId: get_courses_with_opportunities
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              required: [page_number, page_size]
               properties:
                 page_number:
                   type: integer
-                  description: 0-indexed page number
                 page_size:
                   type: integer
-                  description: Number of items per page
                 search_query:
                   type: string
-                  nullable: true
                 category:
                   type: string
-                  nullable: true
-                  enum: [SISU, Prouni, EAD, 'Ações afirmativas']
                 sort_by:
                   type: string
-                  nullable: true
-                  enum: [proximas, melhores, maior_nota, menor_nota]
                 user_city:
                   type: string
-                  nullable: true
                 user_state:
                   type: string
-                  nullable: true
+                user_lat:
+                  type: number
+                user_long:
+                  type: number
       responses:
         '200':
-          description: List of courses
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RPCCoursesResponse'
-
+                type: string
   /opportunities_view:
     get:
       summary: Get Opportunities by Course IDs
-      description: >
-        Used by `fetchOpportunitiesByCourseIds`. 
-        Fetches detailed opportunity info for a specific list of courses.
+      description: |
+        Used by `fetchOpportunitiesByCourseIds`.  Fetches detailed opportunity info for a specific list of courses.
       parameters:
         - name: course_id
           in: query
           description: Filter by list of Course IDs (in)
           schema:
             type: string
-            example: "in.(uuid1,uuid2)"
+            example: in.(uuid1,uuid2)
         - name: select
           in: query
           description: Columns to select
           schema:
             type: string
-            default: "*"
+            default: '*'
       responses:
         '200':
           description: List of opportunities
@@ -263,14 +249,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OpportunityView'
-
   /courses:
     get:
       summary: Get Course Details
-      description: >
-        Fetches detailed information for a specific course, including nested relations:
-        opportunities, campus (with institution), and institution details (EMEC, SISU).
-        Used by `getCourseDetails`.
+      description: |
+        Fetches detailed information for a specific course, including nested relations: opportunities, campus (with institution), and institution details (EMEC, SISU). Used by `getCourseDetails`.
       parameters:
         - name: id
           in: query
@@ -288,99 +271,90 @@ paths:
         '200':
           description: Course details object
           content:
-             application/json:
-               schema:
-                 type: array
-                 items:
-                   $ref: '#/components/schemas/CourseDetail'
-
-
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseDetail'
   /rpc/get_partners:
-     post:
-       summary: Get All Partners
-       description: Returns all partners ordered by name.
-       responses:
-         '200':
-           description: List of partners
-           content:
-             application/json:
-               schema:
-                 type: array
-                 items:
-                   $ref: '#/components/schemas/Partner'
-
+    post:
+      summary: get_partners
+      description: Calls the get_partners RPC function
+      operationId: get_partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_sort_by:
+                  type: string
+                p_sort_order:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
   /rpc/get_user_favorites_details:
-     post:
-       summary: Get User Favorites Details
-       description: Returns details of courses and partners favorited by the current user.
-       responses:
-         '200':
-           description: Object containing lists of courses and partners
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   courses:
-                     type: array
-                     items:
-                       $ref: '#/components/schemas/CourseDisplayData'
-                   partners:
-                     type: array
-                     items:
-                       $ref: '#/components/schemas/Partner'
-
+    post:
+      summary: get_user_favorites_details
+      description: Calls the get_user_favorites_details RPC function
+      operationId: get_user_favorites_details
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
   /rpc/update_own_profile:
-     post:
-       summary: Update User Profile
-       description: Updates the user's profile and returns the updated record. Sets onboarding_completed to true if all fields are filled.
-       requestBody:
-         content:
-           application/json:
-             schema:
-               type: object
-               properties:
-                 p_full_name:
-                   type: string
-                   nullable: true
-                 p_age:
-                   type: integer
-                   nullable: true
-                 p_city:
-                   type: string
-                   nullable: true
-                 p_education:
-                   type: string
-                   nullable: true
-       responses:
-         '200':
-           description: Updated profile object
-           content:
-             application/json:
-               schema:
-                 type: object
-                 additionalProperties: true
-
+    post:
+      summary: update_own_profile
+      description: Calls the update_own_profile RPC function
+      operationId: update_own_profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_full_name:
+                  type: string
+                p_age:
+                  type: integer
+                p_city:
+                  type: string
+                p_education:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
   /rpc/get_own_profile:
-     post:
-       summary: Get Own Profile (Secure)
-       description: Returns the user's profile using a SECURITY DEFINER RPC.
-       responses:
-         '200':
-           description: Profile object or null
-           content:
-             application/json:
-               schema:
-                 type: object
-                 additionalProperties: true
-                 nullable: true
-
+    post:
+      summary: get_own_profile
+      description: Calls the get_own_profile RPC function
+      operationId: get_own_profile
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
   /auth/v1/otp:
     post:
       summary: Sign In with WhatsApp (OTP)
-      description: >
-        Initiates the login flow by sending an OTP via WhatsApp.
-        Native Supabase Auth endpoint documented here for reference.
+      description: |
+        Initiates the login flow by sending an OTP via WhatsApp. Native Supabase Auth endpoint documented here for reference.
       servers:
         - url: https://yfgciamhzjvarwgzosto.supabase.co
           description: Supabase Auth Server
@@ -389,47 +363,49 @@ paths:
           application/json:
             schema:
               type: object
-              required: [phone]
+              required:
+                - phone
               properties:
                 phone:
                   type: string
-                  example: "+5511999999999"
+                  example: '+5511999999999'
                 channel:
                   type: string
-                  default: "whatsapp"
+                  default: whatsapp
       responses:
         '200':
           description: OTP sent successfully
           content:
-             application/json:
-               schema: 
-                 type: object
-
+            application/json:
+              schema:
+                type: object
   /auth/v1/verify:
     post:
       summary: Verify OTP
-      description: >
-        Verifies the OTP sent to the user.
-        Native Supabase Auth endpoint documented here for reference.
+      description: |
+        Verifies the OTP sent to the user. Native Supabase Auth endpoint documented here for reference.
       servers:
         - url: https://yfgciamhzjvarwgzosto.supabase.co
           description: Supabase Auth Server
       requestBody:
         content:
-           application/json:
-             schema:
-               type: object
-               required: [phone, token, type]
-               properties:
-                 phone:
-                   type: string
-                   example: "+5511999999999"
-                 token:
-                   type: string
-                   example: "123456"
-                 type:
-                   type: string
-                   default: "sms"
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+                - token
+                - type
+              properties:
+                phone:
+                  type: string
+                  example: '+5511999999999'
+                token:
+                  type: string
+                  example: '123456'
+                type:
+                  type: string
+                  default: sms
       responses:
         '200':
           description: Session created
@@ -439,6 +415,2893 @@ paths:
                 type: object
                 properties:
                   session:
-                     type: object
+                    type: object
                   user:
-                     type: object
+                    type: object
+  /rpc/array_to_halfvec:
+    post:
+      summary: array_to_halfvec
+      description: Calls the array_to_halfvec RPC function
+      operationId: array_to_halfvec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/array_to_sparsevec:
+    post:
+      summary: array_to_sparsevec
+      description: Calls the array_to_sparsevec RPC function
+      operationId: array_to_sparsevec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: array
+                  items:
+                    type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/array_to_vector:
+    post:
+      summary: array_to_vector
+      description: Calls the array_to_vector RPC function
+      operationId: array_to_vector
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: array
+                  items:
+                    type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/binary_quantize:
+    post:
+      summary: binary_quantize
+      description: Calls the binary_quantize RPC function
+      operationId: binary_quantize
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/bulk_import_important_dates:
+    post:
+      summary: bulk_import_important_dates
+      description: Calls the bulk_import_important_dates RPC function
+      operationId: bulk_import_important_dates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_dates:
+                  type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/check_nubo_student_eligibility:
+    post:
+      summary: check_nubo_student_eligibility
+      description: Calls the check_nubo_student_eligibility RPC function
+      operationId: check_nubo_student_eligibility
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/clean_numeric_string:
+    post:
+      summary: clean_numeric_string
+      description: Calls the clean_numeric_string RPC function
+      operationId: clean_numeric_string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                val:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/clean_phone_number:
+    post:
+      summary: clean_phone_number
+      description: Calls the clean_phone_number RPC function
+      operationId: clean_phone_number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input_phone:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/cosine_distance:
+    post:
+      summary: cosine_distance
+      description: Calls the cosine_distance RPC function
+      operationId: cosine_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/cube:
+    post:
+      summary: cube
+      description: Calls the cube RPC function
+      operationId: cube
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/distance_chebyshev:
+    post:
+      summary: distance_chebyshev
+      description: Calls the distance_chebyshev RPC function
+      operationId: distance_chebyshev
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/distance_taxicab:
+    post:
+      summary: distance_taxicab
+      description: Calls the distance_taxicab RPC function
+      operationId: distance_taxicab
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/earth:
+    post:
+      summary: earth
+      description: Calls the earth RPC function
+      operationId: earth
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_backoffice_users:
+    post:
+      summary: get_backoffice_users
+      description: Calls the get_backoffice_users RPC function
+      operationId: get_backoffice_users
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_chat_analytics_summary:
+    post:
+      summary: get_chat_analytics_summary
+      description: Calls the get_chat_analytics_summary RPC function
+      operationId: get_chat_analytics_summary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_date_from:
+                  type: string
+                  format: date-time
+                p_date_to:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_influencer_affiliates:
+    post:
+      summary: get_influencer_affiliates
+      description: Calls the get_influencer_affiliates RPC function
+      operationId: get_influencer_affiliates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                influencer_code:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_influencer_dashboard_stats:
+    post:
+      summary: get_influencer_dashboard_stats
+      description: Calls the get_influencer_dashboard_stats RPC function
+      operationId: get_influencer_dashboard_stats
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_influencer_stats:
+    post:
+      summary: get_influencer_stats
+      description: Calls the get_influencer_stats RPC function
+      operationId: get_influencer_stats
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_sort_by:
+                  type: string
+                p_sort_order:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_sean_ellis_data:
+    post:
+      summary: get_sean_ellis_data
+      description: Calls the get_sean_ellis_data RPC function
+      operationId: get_sean_ellis_data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_page:
+                  type: integer
+                p_page_size:
+                  type: integer
+                p_filter_name:
+                  type: string
+                p_filter_city:
+                  type: string
+                p_filter_education:
+                  type: string
+                p_filter_is_nubo_student:
+                  type: boolean
+                p_filter_income_min:
+                  type: number
+                p_filter_income_max:
+                  type: number
+                p_filter_quota_types:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_sean_ellis_stats:
+    post:
+      summary: get_sean_ellis_stats
+      description: Calls the get_sean_ellis_stats RPC function
+      operationId: get_sean_ellis_stats
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_filter_name:
+                  type: string
+                p_filter_city:
+                  type: string
+                p_filter_education:
+                  type: string
+                p_filter_is_nubo_student:
+                  type: boolean
+                p_filter_income_min:
+                  type: number
+                p_filter_income_max:
+                  type: number
+                p_filter_quota_types:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_student_stats:
+    post:
+      summary: get_student_stats
+      description: Calls the get_student_stats RPC function
+      operationId: get_student_stats
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter_full_name:
+                  type: string
+                filter_city:
+                  type: string
+                filter_education:
+                  type: string
+                filter_is_nubo_student:
+                  type: boolean
+                filter_income_min:
+                  type: number
+                filter_income_max:
+                  type: number
+                filter_quota_types:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_students_paginated:
+    post:
+      summary: get_students_paginated
+      description: Calls the get_students_paginated RPC function
+      operationId: get_students_paginated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_page:
+                  type: integer
+                p_page_size:
+                  type: integer
+                p_filter_name:
+                  type: string
+                p_filter_city:
+                  type: string
+                p_filter_education:
+                  type: string
+                p_filter_is_nubo_student:
+                  type: boolean
+                p_filter_income_min:
+                  type: number
+                p_filter_income_max:
+                  type: number
+                p_filter_quota_types:
+                  type: array
+                  items:
+                    type: string
+                p_sort_by:
+                  type: string
+                p_sort_order:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_unique_course_names:
+    post:
+      summary: get_unique_course_names
+      description: Calls the get_unique_course_names RPC function
+      operationId: get_unique_course_names
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/get_user_favorites:
+    post:
+      summary: get_user_favorites
+      description: Calls the get_user_favorites RPC function
+      operationId: get_user_favorites
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec:
+    post:
+      summary: halfvec
+      description: Calls the halfvec RPC function
+      operationId: halfvec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_accum:
+    post:
+      summary: halfvec_accum
+      description: Calls the halfvec_accum RPC function
+      operationId: halfvec_accum
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_add:
+    post:
+      summary: halfvec_add
+      description: Calls the halfvec_add RPC function
+      operationId: halfvec_add
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_avg:
+    post:
+      summary: halfvec_avg
+      description: Calls the halfvec_avg RPC function
+      operationId: halfvec_avg
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_cmp:
+    post:
+      summary: halfvec_cmp
+      description: Calls the halfvec_cmp RPC function
+      operationId: halfvec_cmp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_combine:
+    post:
+      summary: halfvec_combine
+      description: Calls the halfvec_combine RPC function
+      operationId: halfvec_combine
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_concat:
+    post:
+      summary: halfvec_concat
+      description: Calls the halfvec_concat RPC function
+      operationId: halfvec_concat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_eq:
+    post:
+      summary: halfvec_eq
+      description: Calls the halfvec_eq RPC function
+      operationId: halfvec_eq
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_ge:
+    post:
+      summary: halfvec_ge
+      description: Calls the halfvec_ge RPC function
+      operationId: halfvec_ge
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_gt:
+    post:
+      summary: halfvec_gt
+      description: Calls the halfvec_gt RPC function
+      operationId: halfvec_gt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_in:
+    post:
+      summary: halfvec_in
+      description: Calls the halfvec_in RPC function
+      operationId: halfvec_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_l2_squared_distance:
+    post:
+      summary: halfvec_l2_squared_distance
+      description: Calls the halfvec_l2_squared_distance RPC function
+      operationId: halfvec_l2_squared_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_le:
+    post:
+      summary: halfvec_le
+      description: Calls the halfvec_le RPC function
+      operationId: halfvec_le
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_lt:
+    post:
+      summary: halfvec_lt
+      description: Calls the halfvec_lt RPC function
+      operationId: halfvec_lt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_mul:
+    post:
+      summary: halfvec_mul
+      description: Calls the halfvec_mul RPC function
+      operationId: halfvec_mul
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_ne:
+    post:
+      summary: halfvec_ne
+      description: Calls the halfvec_ne RPC function
+      operationId: halfvec_ne
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_negative_inner_product:
+    post:
+      summary: halfvec_negative_inner_product
+      description: Calls the halfvec_negative_inner_product RPC function
+      operationId: halfvec_negative_inner_product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_out:
+    post:
+      summary: halfvec_out
+      description: Calls the halfvec_out RPC function
+      operationId: halfvec_out
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_recv:
+    post:
+      summary: halfvec_recv
+      description: Calls the halfvec_recv RPC function
+      operationId: halfvec_recv
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+                arg_2:
+                  type: string
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_send:
+    post:
+      summary: halfvec_send
+      description: Calls the halfvec_send RPC function
+      operationId: halfvec_send
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_spherical_distance:
+    post:
+      summary: halfvec_spherical_distance
+      description: Calls the halfvec_spherical_distance RPC function
+      operationId: halfvec_spherical_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_sub:
+    post:
+      summary: halfvec_sub
+      description: Calls the halfvec_sub RPC function
+      operationId: halfvec_sub
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_to_float4:
+    post:
+      summary: halfvec_to_float4
+      description: Calls the halfvec_to_float4 RPC function
+      operationId: halfvec_to_float4
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_to_sparsevec:
+    post:
+      summary: halfvec_to_sparsevec
+      description: Calls the halfvec_to_sparsevec RPC function
+      operationId: halfvec_to_sparsevec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_to_vector:
+    post:
+      summary: halfvec_to_vector
+      description: Calls the halfvec_to_vector RPC function
+      operationId: halfvec_to_vector
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/halfvec_typmod_in:
+    post:
+      summary: halfvec_typmod_in
+      description: Calls the halfvec_typmod_in RPC function
+      operationId: halfvec_typmod_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/hamming_distance:
+    post:
+      summary: hamming_distance
+      description: Calls the hamming_distance RPC function
+      operationId: hamming_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/handle_updated_at:
+    post:
+      summary: handle_updated_at
+      description: Calls the handle_updated_at RPC function
+      operationId: handle_updated_at
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/has_dashboard_permission:
+    post:
+      summary: has_dashboard_permission
+      description: Calls the has_dashboard_permission RPC function
+      operationId: has_dashboard_permission
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/has_permission:
+    post:
+      summary: has_permission
+      description: Calls the has_permission RPC function
+      operationId: has_permission
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_permission:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/hnsw_bit_support:
+    post:
+      summary: hnsw_bit_support
+      description: Calls the hnsw_bit_support RPC function
+      operationId: hnsw_bit_support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/hnsw_halfvec_support:
+    post:
+      summary: hnsw_halfvec_support
+      description: Calls the hnsw_halfvec_support RPC function
+      operationId: hnsw_halfvec_support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/hnsw_sparsevec_support:
+    post:
+      summary: hnsw_sparsevec_support
+      description: Calls the hnsw_sparsevec_support RPC function
+      operationId: hnsw_sparsevec_support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/hnswhandler:
+    post:
+      summary: hnswhandler
+      description: Calls the hnswhandler RPC function
+      operationId: hnswhandler
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/import_nubo_students:
+    post:
+      summary: import_nubo_students
+      description: Calls the import_nubo_students RPC function
+      operationId: import_nubo_students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                students:
+                  type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/import_sean_ellis_data:
+    post:
+      summary: import_sean_ellis_data
+      description: Calls the import_sean_ellis_data RPC function
+      operationId: import_sean_ellis_data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/inner_product:
+    post:
+      summary: inner_product
+      description: Calls the inner_product RPC function
+      operationId: inner_product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/is_backoffice_admin:
+    post:
+      summary: is_backoffice_admin
+      description: Calls the is_backoffice_admin RPC function
+      operationId: is_backoffice_admin
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/ivfflat_bit_support:
+    post:
+      summary: ivfflat_bit_support
+      description: Calls the ivfflat_bit_support RPC function
+      operationId: ivfflat_bit_support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/ivfflat_halfvec_support:
+    post:
+      summary: ivfflat_halfvec_support
+      description: Calls the ivfflat_halfvec_support RPC function
+      operationId: ivfflat_halfvec_support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/ivfflathandler:
+    post:
+      summary: ivfflathandler
+      description: Calls the ivfflathandler RPC function
+      operationId: ivfflathandler
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/jaccard_distance:
+    post:
+      summary: jaccard_distance
+      description: Calls the jaccard_distance RPC function
+      operationId: jaccard_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/l1_distance:
+    post:
+      summary: l1_distance
+      description: Calls the l1_distance RPC function
+      operationId: l1_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/l2_distance:
+    post:
+      summary: l2_distance
+      description: Calls the l2_distance RPC function
+      operationId: l2_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/l2_norm:
+    post:
+      summary: l2_norm
+      description: Calls the l2_norm RPC function
+      operationId: l2_norm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/l2_normalize:
+    post:
+      summary: l2_normalize
+      description: Calls the l2_normalize RPC function
+      operationId: l2_normalize
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/manage_important_date:
+    post:
+      summary: manage_important_date
+      description: Calls the manage_important_date RPC function
+      operationId: manage_important_date
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_id:
+                  type: string
+                  format: uuid
+                p_title:
+                  type: string
+                p_description:
+                  type: string
+                p_start_date:
+                  type: string
+                  format: date-time
+                p_end_date:
+                  type: string
+                  format: date-time
+                p_type:
+                  type: string
+                p_delete:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/manage_partner:
+    post:
+      summary: manage_partner
+      description: Calls the manage_partner RPC function
+      operationId: manage_partner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_id:
+                  type: string
+                  format: uuid
+                p_name:
+                  type: string
+                p_description:
+                  type: string
+                p_location:
+                  type: string
+                p_type:
+                  type: string
+                p_income:
+                  type: string
+                p_dates:
+                  type: object
+                p_link:
+                  type: string
+                p_coverimage:
+                  type: string
+                p_delete:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/match_documents:
+    post:
+      summary: match_documents
+      description: Calls the match_documents RPC function
+      operationId: match_documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query_embedding:
+                  type: string
+                match_threshold:
+                  type: number
+                match_count:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/match_opportunities:
+    post:
+      summary: match_opportunities
+      description: Calls the match_opportunities RPC function
+      operationId: match_opportunities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_user_id:
+                  type: string
+                  format: uuid
+                course_interests:
+                  type: array
+                  items:
+                    type: string
+                income_per_capita:
+                  type: number
+                quota_types:
+                  type: array
+                  items:
+                    type: string
+                preferred_shifts:
+                  type: array
+                  items:
+                    type: string
+                program_preference:
+                  type: string
+                user_lat:
+                  type: number
+                user_long:
+                  type: number
+                city_names:
+                  type: array
+                  items:
+                    type: string
+                page_size:
+                  type: integer
+                page_number:
+                  type: integer
+                state_names:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/normalize_whatsapp:
+    post:
+      summary: normalize_whatsapp
+      description: Calls the normalize_whatsapp RPC function
+      operationId: normalize_whatsapp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/refresh_course_catalog:
+    post:
+      summary: refresh_course_catalog
+      description: Calls the refresh_course_catalog RPC function
+      operationId: refresh_course_catalog
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/safe_to_numeric:
+    post:
+      summary: safe_to_numeric
+      description: Calls the safe_to_numeric RPC function
+      operationId: safe_to_numeric
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                val:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sec_to_gc:
+    post:
+      summary: sec_to_gc
+      description: Calls the sec_to_gc RPC function
+      operationId: sec_to_gc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec:
+    post:
+      summary: sparsevec
+      description: Calls the sparsevec RPC function
+      operationId: sparsevec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_cmp:
+    post:
+      summary: sparsevec_cmp
+      description: Calls the sparsevec_cmp RPC function
+      operationId: sparsevec_cmp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_eq:
+    post:
+      summary: sparsevec_eq
+      description: Calls the sparsevec_eq RPC function
+      operationId: sparsevec_eq
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_ge:
+    post:
+      summary: sparsevec_ge
+      description: Calls the sparsevec_ge RPC function
+      operationId: sparsevec_ge
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_gt:
+    post:
+      summary: sparsevec_gt
+      description: Calls the sparsevec_gt RPC function
+      operationId: sparsevec_gt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_in:
+    post:
+      summary: sparsevec_in
+      description: Calls the sparsevec_in RPC function
+      operationId: sparsevec_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_l2_squared_distance:
+    post:
+      summary: sparsevec_l2_squared_distance
+      description: Calls the sparsevec_l2_squared_distance RPC function
+      operationId: sparsevec_l2_squared_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_le:
+    post:
+      summary: sparsevec_le
+      description: Calls the sparsevec_le RPC function
+      operationId: sparsevec_le
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_lt:
+    post:
+      summary: sparsevec_lt
+      description: Calls the sparsevec_lt RPC function
+      operationId: sparsevec_lt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_ne:
+    post:
+      summary: sparsevec_ne
+      description: Calls the sparsevec_ne RPC function
+      operationId: sparsevec_ne
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_negative_inner_product:
+    post:
+      summary: sparsevec_negative_inner_product
+      description: Calls the sparsevec_negative_inner_product RPC function
+      operationId: sparsevec_negative_inner_product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_out:
+    post:
+      summary: sparsevec_out
+      description: Calls the sparsevec_out RPC function
+      operationId: sparsevec_out
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_recv:
+    post:
+      summary: sparsevec_recv
+      description: Calls the sparsevec_recv RPC function
+      operationId: sparsevec_recv
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+                arg_2:
+                  type: string
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_send:
+    post:
+      summary: sparsevec_send
+      description: Calls the sparsevec_send RPC function
+      operationId: sparsevec_send
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_to_halfvec:
+    post:
+      summary: sparsevec_to_halfvec
+      description: Calls the sparsevec_to_halfvec RPC function
+      operationId: sparsevec_to_halfvec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_to_vector:
+    post:
+      summary: sparsevec_to_vector
+      description: Calls the sparsevec_to_vector RPC function
+      operationId: sparsevec_to_vector
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/sparsevec_typmod_in:
+    post:
+      summary: sparsevec_typmod_in
+      description: Calls the sparsevec_typmod_in RPC function
+      operationId: sparsevec_typmod_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/standardize_user_locations:
+    post:
+      summary: standardize_user_locations
+      description: Calls the standardize_user_locations RPC function
+      operationId: standardize_user_locations
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/subvector:
+    post:
+      summary: subvector
+      description: Calls the subvector RPC function
+      operationId: subvector
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/toggle_favorite:
+    post:
+      summary: toggle_favorite
+      description: Calls the toggle_favorite RPC function
+      operationId: toggle_favorite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_type:
+                  type: string
+                p_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/unaccent:
+    post:
+      summary: unaccent
+      description: Calls the unaccent RPC function
+      operationId: unaccent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/unaccent_init:
+    post:
+      summary: unaccent_init
+      description: Calls the unaccent_init RPC function
+      operationId: unaccent_init
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/unaccent_lexize:
+    post:
+      summary: unaccent_lexize
+      description: Calls the unaccent_lexize RPC function
+      operationId: unaccent_lexize
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: integer
+                arg_4:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/update_best_enem_score:
+    post:
+      summary: update_best_enem_score
+      description: Calls the update_best_enem_score RPC function
+      operationId: update_best_enem_score
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/update_updated_at_column:
+    post:
+      summary: update_updated_at_column
+      description: Calls the update_updated_at_column RPC function
+      operationId: update_updated_at_column
+      requestBody: null
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector:
+    post:
+      summary: vector
+      description: Calls the vector RPC function
+      operationId: vector
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_accum:
+    post:
+      summary: vector_accum
+      description: Calls the vector_accum RPC function
+      operationId: vector_accum
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_add:
+    post:
+      summary: vector_add
+      description: Calls the vector_add RPC function
+      operationId: vector_add
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_avg:
+    post:
+      summary: vector_avg
+      description: Calls the vector_avg RPC function
+      operationId: vector_avg
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_cmp:
+    post:
+      summary: vector_cmp
+      description: Calls the vector_cmp RPC function
+      operationId: vector_cmp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_combine:
+    post:
+      summary: vector_combine
+      description: Calls the vector_combine RPC function
+      operationId: vector_combine
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                double:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_concat:
+    post:
+      summary: vector_concat
+      description: Calls the vector_concat RPC function
+      operationId: vector_concat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_dims:
+    post:
+      summary: vector_dims
+      description: Calls the vector_dims RPC function
+      operationId: vector_dims
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_eq:
+    post:
+      summary: vector_eq
+      description: Calls the vector_eq RPC function
+      operationId: vector_eq
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_ge:
+    post:
+      summary: vector_ge
+      description: Calls the vector_ge RPC function
+      operationId: vector_ge
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_gt:
+    post:
+      summary: vector_gt
+      description: Calls the vector_gt RPC function
+      operationId: vector_gt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_in:
+    post:
+      summary: vector_in
+      description: Calls the vector_in RPC function
+      operationId: vector_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_l2_squared_distance:
+    post:
+      summary: vector_l2_squared_distance
+      description: Calls the vector_l2_squared_distance RPC function
+      operationId: vector_l2_squared_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_le:
+    post:
+      summary: vector_le
+      description: Calls the vector_le RPC function
+      operationId: vector_le
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_lt:
+    post:
+      summary: vector_lt
+      description: Calls the vector_lt RPC function
+      operationId: vector_lt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_mul:
+    post:
+      summary: vector_mul
+      description: Calls the vector_mul RPC function
+      operationId: vector_mul
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_ne:
+    post:
+      summary: vector_ne
+      description: Calls the vector_ne RPC function
+      operationId: vector_ne
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_negative_inner_product:
+    post:
+      summary: vector_negative_inner_product
+      description: Calls the vector_negative_inner_product RPC function
+      operationId: vector_negative_inner_product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_norm:
+    post:
+      summary: vector_norm
+      description: Calls the vector_norm RPC function
+      operationId: vector_norm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_out:
+    post:
+      summary: vector_out
+      description: Calls the vector_out RPC function
+      operationId: vector_out
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_recv:
+    post:
+      summary: vector_recv
+      description: Calls the vector_recv RPC function
+      operationId: vector_recv
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: integer
+                arg_2:
+                  type: string
+                arg_3:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_send:
+    post:
+      summary: vector_send
+      description: Calls the vector_send RPC function
+      operationId: vector_send
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_spherical_distance:
+    post:
+      summary: vector_spherical_distance
+      description: Calls the vector_spherical_distance RPC function
+      operationId: vector_spherical_distance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_sub:
+    post:
+      summary: vector_sub
+      description: Calls the vector_sub RPC function
+      operationId: vector_sub
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_to_float4:
+    post:
+      summary: vector_to_float4
+      description: Calls the vector_to_float4 RPC function
+      operationId: vector_to_float4
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_to_halfvec:
+    post:
+      summary: vector_to_halfvec
+      description: Calls the vector_to_halfvec RPC function
+      operationId: vector_to_halfvec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_to_sparsevec:
+    post:
+      summary: vector_to_sparsevec
+      description: Calls the vector_to_sparsevec RPC function
+      operationId: vector_to_sparsevec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: string
+                arg_2:
+                  type: integer
+                arg_3:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /rpc/vector_typmod_in:
+    post:
+      summary: vector_typmod_in
+      description: Calls the vector_typmod_in RPC function
+      operationId: vector_typmod_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arg_1:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
