@@ -27,10 +27,10 @@ interface PartnerCardProps {
   isFavorite?: boolean;
 }
 
-export function PartnerCard({ 
+export function PartnerCard({
   partner,
-  id = partner?.id || '1', 
-  name = partner?.name || 'Parceiro Nubo', 
+  id = partner?.id || '1',
+  name = partner?.name || 'Parceiro Nubo',
   description = partner?.description || 'Descrição não disponível.',
   location = partner?.location || 'Nacional',
   type = partner?.type || 'Bolsas de Estudo',
@@ -51,19 +51,19 @@ export function PartnerCard({
     }
 
     const toUtcDate = (dateStr: string) => {
-       const date = new Date(dateStr);
-       // Add the timezone offset to get the correct date in UTC-as-local representation
-       // Or simpler: treat the string as UTC and format it in UTC.
-       return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+      const date = new Date(dateStr);
+      // Add the timezone offset to get the correct date in UTC-as-local representation
+      // Or simpler: treat the string as UTC and format it in UTC.
+      return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
     };
 
     // Better approach: Let's just treat the YYYY-MM-DD as UTC and ask for UTC formatting
     const formatDate = (dateStr: string) => {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return '';
-        // "UTC" timezone ensures 2026-02-03T00:00:00.000Z stays 03 in output
-        return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
+      // "UTC" timezone ensures 2026-02-03T00:00:00.000Z stays 03 in output
+      return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
     };
 
     const firstDate = dates[0];
@@ -115,56 +115,61 @@ export function PartnerCard({
   // Handle pending action execution
   useEffect(() => {
     if (isAuthenticated) {
-        if (pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === id) { 
-          // Perform the actual toggle since we just logged in to do it
-          toggleFavoriteService('partner', id).then(({ error }) => {
-            if (!error) {
-                setIsFavorite(true);
-            }
-          });
-          clearPendingAction();
-        } else if (pendingAction?.type === 'partner_click' && pendingAction.payload.partnerId === id) {
-            // Register click and open link
-            registerPartnerClick(id);
-            if (pendingAction.payload.link) {
-                window.open(pendingAction.payload.link, '_blank', 'noopener,noreferrer');
-            }
-            clearPendingAction();
+      if (pendingAction?.type === 'favorite' && pendingAction.payload.opportunityId === id) {
+        // Perform the actual toggle since we just logged in to do it
+        toggleFavoriteService('partner', id).then(({ error }) => {
+          if (!error) {
+            setIsFavorite(true);
+          }
+        });
+        clearPendingAction();
+      } else if (pendingAction?.type === 'partner_click' && pendingAction.payload.partnerId === id) {
+        // Register click and open link
+        registerPartnerClick(id);
+        if (pendingAction.payload.link) {
+          router.push(pendingAction.payload.link);
         }
+        clearPendingAction();
+      } else if (pendingAction?.type === 'start_workflow') {
+        // The redirection is handled by AuthContext or we are already going to /chat.
+        // We can register the click here if we want, but let's just clear it in /chat.
+      }
     }
-  }, [isAuthenticated, pendingAction, id, clearPendingAction]);
+  }, [isAuthenticated, pendingAction, id, clearPendingAction, router]);
 
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-        setPendingAction({ type: 'favorite', payload: { opportunityId: id } }); 
-        openAuthModal();
-        return;
+      setPendingAction({ type: 'favorite', payload: { opportunityId: id } });
+      openAuthModal();
+      return;
     }
-    
+
     // Optimistic Update
     const previousState = isFavorite;
     setIsFavorite(!isFavorite);
 
     const { error } = await toggleFavoriteService('partner', id);
     if (error) {
-        console.error('Error toggling favorite:', error);
-        setIsFavorite(previousState); // Revert
+      console.error('Error toggling favorite:', error);
+      setIsFavorite(previousState); // Revert
     }
   };
 
   const handleCardClick = async () => {
-      if (!link) return;
+    // Fire and forget click registration
+    registerPartnerClick(id);
 
-      if (!isAuthenticated) {
-          setPendingAction({ type: 'partner_click', payload: { partnerId: id, link } });
-          openAuthModal();
-          return;
-      }
+    // Set pending action for the chat page to consume
+    setPendingAction({ type: 'start_workflow', payload: { workflow: 'passport_workflow' } });
 
-      // If authenticated, register click and open link
-      registerPartnerClick(id); // Fire and forget
-      window.open(link, '_blank', 'noopener,noreferrer');
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+
+    // If authenticated, go to chat
+    router.push('/chat');
   };
 
   // Helper to resolve image src - use specific partner image if exists, else fallback
@@ -175,55 +180,71 @@ export function PartnerCard({
   const imageSrc = coverimage || "/assets/parceiro-mock-cover.png";
 
   return (
-    <div 
-        onClick={handleCardClick}
-        className={`group relative w-full h-auto min-h-[500px] rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-[#FF9900] flex flex-col cursor-pointer ${montserrat.className}`}
+    <div
+      onClick={handleCardClick}
+      className={`group relative w-full h-auto min-h-[500px] rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-[#FF9900] flex flex-col cursor-pointer ${montserrat.className}`}
     >
       {/* Top Section with Background and Cover */}
       <div className="relative h-[200px] w-full bg-gray-100">
-         {/* Cover Image Background Fallback */}
-         <div className="absolute inset-0 bg-gradient-to-b from-[#4FB7E8] to-[#2892C8]"></div>
+        {/* Cover Image Background Fallback */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#4FB7E8] to-[#2892C8]"></div>
 
-         {/* Actual Cover Image */}
-         <Image 
-           src={imageSrc} 
-           alt={`Capa ${name}`}
-           fill
-           className="object-cover"
-           // Add onError handler in real app to fallback if image fails
-         />
-        
-         {/* Heart Button Top Right */}
-         <button 
-           onClick={toggleFavorite}
-           className="absolute top-4 right-4 p-2 rounded-full z-20 transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
-         >
-            <Heart 
-              size={20} 
-              color={isFavorite ? "#ef4444" : "#cbd5e1"} 
-              fill={isFavorite ? "#ef4444" : "none"} 
-              strokeWidth={2.5}
-              className="transition-colors group-hover/btn:text-red-400"
-            />
-         </button>
+        {/* Actual Cover Image */}
+        <Image
+          src={imageSrc}
+          alt={`Capa ${name}`}
+          fill
+          className="object-cover"
+        // Add onError handler in real app to fallback if image fails
+        />
 
-         {/* Cloud Vector at the bottom of the image section */}
-         <div className="absolute bottom-[-1px] left-0 w-full h-[50px] z-10 pointer-events-none">
-            <Image 
-              src="/assets/background-parceiro.svg" 
-              alt="Cloud Border" 
-              fill 
-              className="object-cover object-top" 
-            />
-         </div>
+        {/* Heart Button Top Right */}
+        <button
+          onClick={toggleFavorite}
+          className="absolute top-4 right-4 p-2 rounded-full z-20 transition-transform hover:scale-110 active:scale-95 bg-white shadow-sm group/btn"
+        >
+          <Heart
+            size={20}
+            color={isFavorite ? "#ef4444" : "#cbd5e1"}
+            fill={isFavorite ? "#ef4444" : "none"}
+            strokeWidth={2.5}
+            className="transition-colors group-hover/btn:text-red-400"
+          />
+        </button>
+
+        {/* Cloud Vector at the bottom of the image section */}
+        <div className="absolute bottom-[-1px] left-0 w-full h-[50px] z-10 pointer-events-none">
+          <Image
+            src="/assets/background-parceiro.svg"
+            alt="Cloud Border"
+            fill
+            className="object-cover object-top"
+          />
+        </div>
       </div>
 
       {/* Content Section */}
       <div className="relative z-10 px-6 pb-6 pt-0 flex flex-col flex-grow bg-white">
-        {/* Partner Name */}
-        <h3 className="text-[18px] font-bold text-[#3A424E] mb-2 text-center md:text-left line-clamp-2 min-h-[56px] flex items-center justify-center md:justify-start">
-          {name}
-        </h3>
+        {/* Partner Name and Site Link */}
+        <div className="flex flex-col items-center justify-center md:items-start md:justify-start min-h-[56px] mb-2 mt-2">
+          <h3 className="text-[18px] font-bold text-[#3A424E] text-center md:text-left line-clamp-2">
+            {name}
+          </h3>
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.stopPropagation();
+                registerPartnerClick(id);
+              }}
+              className="text-[13px] text-[#38B1E4] hover:text-[#2da0d1] hover:underline mt-1 transition-colors"
+            >
+              Ver site
+            </a>
+          )}
+        </div>
 
         {/* Description */}
         <p className="text-[14px] text-[#636E7C] mb-4 text-center md:text-left leading-relaxed line-clamp-3">
@@ -237,26 +258,25 @@ export function PartnerCard({
             <span className="truncate">{location}</span>
           </div>
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
-             <GraduationCap size={16} className="text-[#FF9900] flex-shrink-0" />
-             <span className="truncate">{type}</span>
+            <GraduationCap size={16} className="text-[#FF9900] flex-shrink-0" />
+            <span className="truncate">{type}</span>
           </div>
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
-             <DollarSign size={16} className="text-[#9747FF] flex-shrink-0" />
-             <span className="truncate">{income}</span>
+            <DollarSign size={16} className="text-[#9747FF] flex-shrink-0" />
+            <span className="truncate">{income}</span>
           </div>
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
-             <Calendar size={16} className="text-[#FF4D4D] flex-shrink-0" />
-             <span className="truncate">{dateDisplay}</span>
+            <Calendar size={16} className="text-[#FF4D4D] flex-shrink-0" />
+            <span className="truncate">{dateDisplay}</span>
           </div>
         </div>
 
         {/* Footer Link */}
         <div className="mt-auto flex justify-end items-center pt-4 border-t border-gray-100/50">
-          <button 
-            className="text-[14px] font-medium text-[#38B1E4] hover:text-[#2da0d1] flex items-center gap-1 transition-colors group"
+          <button
+            className="text-[14px] font-bold text-white bg-[#024F86] hover:bg-[#023F6B] px-4 py-2 rounded-full flex items-center gap-1 transition-colors shadow-sm"
           >
-            Ver link
-            <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+            Inscreva-se
           </button>
         </div>
       </div>
