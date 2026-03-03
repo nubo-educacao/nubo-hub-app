@@ -22,8 +22,6 @@ interface InputFieldProps {
   type?: string;
   icon: React.ElementType;
   placeholder?: string;
-  isEditing: boolean;
-  displayValue: React.ReactNode;
   maxLength?: number;
   className?: string;
   suffix?: React.ReactNode;
@@ -31,32 +29,26 @@ interface InputFieldProps {
   onBlur?: () => void;
 }
 
-const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, isEditing, displayValue, maxLength, className, suffix, onFocus, onBlur }: InputFieldProps) => (
+const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, maxLength, className, suffix, onFocus, onBlur }: InputFieldProps) => (
   <div className={`flex flex-col gap-1.5 ${className || ''}`}>
     <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
       <Icon size={14} />
       {label}
     </label>
-    {isEditing ? (
-      <div className="relative flex items-center">
-        <input
-          type={type}
-          name={name}
-          value={value || ''}
-          onChange={onChange}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full"
-        />
-        {suffix}
-      </div>
-    ) : (
-      <div className="text-[#3A424E] font-medium px-1">
-        {displayValue || <span className="text-gray-400 italic">Não informado</span>}
-      </div>
-    )}
+    <div className="relative flex items-center">
+      <input
+        type={type}
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full"
+      />
+      {suffix}
+    </div>
   </div>
 );
 
@@ -87,7 +79,6 @@ async function lookupCEP(cep: string): Promise<ViaCEPResponse | null> {
 
 export default function UserDataSection({ profile, onProfileUpdate, onOnboardingComplete, onFormDirty }: UserDataSectionProps) {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
@@ -108,12 +99,16 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
 
   useEffect(() => {
     if (profile) {
+      let formattedZip = profile.zip_code || '';
+      if (formattedZip.length === 8 && !formattedZip.includes('-')) {
+        formattedZip = formattedZip.slice(0, 5) + '-' + formattedZip.slice(5, 8);
+      }
       setFormData({
         full_name: profile.full_name || '',
         age: profile.age || null,
         city: profile.city || '',
         state: profile.state || '',
-        zip_code: profile.zip_code || '',
+        zip_code: formattedZip,
         street: profile.street || '',
         street_number: profile.street_number || '',
         complement: profile.complement || '',
@@ -121,6 +116,20 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
       });
     }
   }, [profile]);
+
+  const cleanZip = (zip?: string | null) => (zip || '').replace(/\D/g, '');
+
+  const hasChanges = profile ? (
+    (formData.full_name || '') !== (profile.full_name || '') ||
+    String(formData.age || '') !== String(profile.age || '') ||
+    (formData.city || '') !== (profile.city || '') ||
+    (formData.state || '') !== (profile.state || '') ||
+    cleanZip(formData.zip_code) !== cleanZip(profile.zip_code) ||
+    (formData.street || '') !== (profile.street || '') ||
+    (formData.street_number || '') !== (profile.street_number || '') ||
+    (formData.complement || '') !== (profile.complement || '') ||
+    (formData.education || '') !== (profile.education || '')
+  ) : Object.keys(formData).length > 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -185,7 +194,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
 
     if (data) {
       onProfileUpdate(data);
-      setIsEditing(false);
 
       // Check if all required fields are present to trigger completion
       if (data.full_name && data.age && data.city && data.education && data.zip_code) {
@@ -203,25 +211,22 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
     <div className={`bg-white/30 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl p-6 md:p-8 ${montserrat.className}`}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#024F86]">Dados do Usuário</h2>
-        <button
-          onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-          disabled={loading}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all ${isEditing
-            ? 'bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md'
-            : 'bg-white/50 text-[#38B1E4] hover:bg-white border border-[#38B1E4]/30'
-            } disabled:opacity-50`}
-        >
-          {loading ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : isEditing ? (
-            <>
-              <Save size={16} />
-              Salvar
-            </>
-          ) : (
-            'Editar'
-          )}
-        </button>
+        {hasChanges && (
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md disabled:opacity-50"
+          >
+            {loading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <>
+                <Save size={16} />
+                Salvar
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -232,8 +237,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           onChange={handleChange}
           icon={User}
           placeholder="Seu nome completo"
-          isEditing={isEditing}
-          displayValue={formData.full_name}
           onFocus={() => setFocusedField('full_name')}
           onBlur={() => setFocusedField(null)}
         />
@@ -245,8 +248,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           type="number"
           icon={Calendar}
           placeholder="Sua idade"
-          isEditing={isEditing}
-          displayValue={formData.age}
           onFocus={() => setFocusedField('age')}
           onBlur={() => setFocusedField(null)}
         />
@@ -266,43 +267,37 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
               <MapPin size={14} />
               CEP
             </label>
-            {isEditing ? (
-              <div className="relative">
-                <input
-                  type="text"
-                  name="zip_code"
-                  value={formData.zip_code || ''}
-                  onChange={handleCEPChange}
-                  placeholder="00000-000"
-                  maxLength={9}
-                  onFocus={() => setFocusedField('zip_code')}
-                  onBlur={() => setFocusedField(null)}
-                  className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full pr-10"
-                />
-                {cepLoading && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <Loader2 size={16} className="animate-spin text-[#38B1E4]" />
-                  </div>
-                )}
-                {!cepLoading && isEditing && (
-                  <button
-                    type="button"
-                    onClick={() => handleCEPLookup(formData.zip_code || '')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#38B1E4] hover:text-[#2a9ac9] transition-colors"
-                    title="Buscar CEP"
-                  >
-                    <Search size={16} />
-                  </button>
-                )}
-                {cepError && (
-                  <p className="text-red-500 text-xs mt-1">{cepError}</p>
-                )}
-              </div>
-            ) : (
-              <div className="text-[#3A424E] font-medium px-1">
-                {formData.zip_code || <span className="text-gray-400 italic">Não informado</span>}
-              </div>
-            )}
+            <div className="relative">
+              <input
+                type="text"
+                name="zip_code"
+                value={formData.zip_code || ''}
+                onChange={handleCEPChange}
+                placeholder="00000-000"
+                maxLength={9}
+                onFocus={() => setFocusedField('zip_code')}
+                onBlur={() => setFocusedField(null)}
+                className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full pr-10"
+              />
+              {cepLoading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 size={16} className="animate-spin text-[#38B1E4]" />
+                </div>
+              )}
+              {!cepLoading && (
+                <button
+                  type="button"
+                  onClick={() => handleCEPLookup(formData.zip_code || '')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#38B1E4] hover:text-[#2a9ac9] transition-colors"
+                  title="Buscar CEP"
+                >
+                  <Search size={16} />
+                </button>
+              )}
+              {cepError && (
+                <p className="text-red-500 text-xs mt-1">{cepError}</p>
+              )}
+            </div>
           </div>
 
           {/* State */}
@@ -313,8 +308,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             onChange={handleChange}
             icon={Building}
             placeholder="UF"
-            isEditing={isEditing}
-            displayValue={formData.state}
             maxLength={2}
             onFocus={() => setFocusedField('state')}
             onBlur={() => setFocusedField(null)}
@@ -328,8 +321,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             onChange={handleChange}
             icon={MapPin}
             placeholder="Sua cidade"
-            isEditing={isEditing}
-            displayValue={formData.city}
             onFocus={() => setFocusedField('city')}
             onBlur={() => setFocusedField(null)}
           />
@@ -344,8 +335,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             onChange={handleChange}
             icon={Home}
             placeholder="Nome da rua"
-            isEditing={isEditing}
-            displayValue={formData.street}
             className="md:col-span-1"
             onFocus={() => setFocusedField('street')}
             onBlur={() => setFocusedField(null)}
@@ -359,8 +348,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             onChange={handleChange}
             icon={Hash}
             placeholder="Nº"
-            isEditing={isEditing}
-            displayValue={formData.street_number}
             onFocus={() => setFocusedField('street_number')}
             onBlur={() => setFocusedField(null)}
           />
@@ -373,8 +360,6 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             onChange={handleChange}
             icon={Building}
             placeholder="Apto, Bloco, etc."
-            isEditing={isEditing}
-            displayValue={formData.complement}
             onFocus={() => setFocusedField('complement')}
             onBlur={() => setFocusedField(null)}
           />
@@ -389,26 +374,20 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
               <GraduationCap size={14} />
               Escolaridade
             </label>
-            {isEditing ? (
-              <select
-                name="education"
-                value={formData.education || ''}
-                onChange={handleChange}
-                onFocus={() => setFocusedField('education')}
-                onBlur={() => setFocusedField(null)}
-                className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
-              >
-                <option value="">Selecione...</option>
-                <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
-                <option value="Ensino Médio Completo">Ensino Médio Completo</option>
-                <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
-                <option value="Ensino Superior Completo">Ensino Superior Completo</option>
-              </select>
-            ) : (
-              <div className="text-[#3A424E] font-medium px-1">
-                {formData.education || <span className="text-gray-400 italic">Não informado</span>}
-              </div>
-            )}
+            <select
+              name="education"
+              value={formData.education || ''}
+              onChange={handleChange}
+              onFocus={() => setFocusedField('education')}
+              onBlur={() => setFocusedField(null)}
+              className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
+            >
+              <option value="">Selecione...</option>
+              <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
+              <option value="Ensino Médio Completo">Ensino Médio Completo</option>
+              <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
+              <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+            </select>
           </div>
         </div>
       </div>
