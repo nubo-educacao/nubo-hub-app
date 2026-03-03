@@ -12,6 +12,8 @@ export interface UserProfile {
   complement: string | null;
   education: string | null;
   onboarding_completed: boolean;
+  passport_phase: string | null;
+  relationship?: string | null;
 }
 
 export interface UpdateProfileParams {
@@ -24,6 +26,12 @@ export interface UpdateProfileParams {
   street_number?: string | null;
   complement?: string | null;
   education?: string | null;
+  passport_phase?: string | null;
+  relationship?: string | null;
+  isdependent?: boolean;
+  parent_user_id?: string | null;
+  current_dependent_id?: string | null;
+  target_user_id?: string | null;
 }
 
 export async function getUserProfileService(): Promise<{ data: UserProfile | null; error: any }> {
@@ -33,14 +41,21 @@ export async function getUserProfileService(): Promise<{ data: UserProfile | nul
     const { data, error } = await supabase.rpc('get_own_profile');
 
     if (error) {
-      console.error('Error fetching profile (RPC):', error);
+      console.error('[getUserProfileService] Error fetching profile (RPC):', error);
       return { data: null, error };
     }
 
-    console.log("[getUserProfileService] RPC Data:", data);
+    // Guard: RPC can return null if profile doesn't exist and auto-create failed
+    if (!data) {
+      console.warn('[getUserProfileService] ⚠️ RPC returned null — profile not found. User may need profile creation.');
+      return { data: null, error: null };
+    }
+
+    console.log('[getUserProfileService] RPC Data:', data);
+    const isNewlyCreated = data?.passport_phase === 'INTRO' && !data?.full_name;
+    console.log(`[getUserProfileService] Profile ${isNewlyCreated ? '🆕 NEWLY CREATED (auto-created by DB)' : '📋 EXISTING'}. passport_phase=${data?.passport_phase}, onboarding_completed=${data?.onboarding_completed}, id=${data?.id}`);
 
     // Polyfill/Fallback: If onboarding_completed is missing or false, check fields.
-    // This ensures functionality even if RPC/DB is slightly out of sync.
     const computedCompleted = data.onboarding_completed || (
       !!data.full_name &&
       !!data.city &&
@@ -71,6 +86,12 @@ export async function updateUserProfileService(params: UpdateProfileParams): Pro
     p_street: params.street,
     p_street_number: params.street_number,
     p_complement: params.complement,
+    p_passport_phase: params.passport_phase,
+    p_relationship: params.relationship,
+    p_isdependent: params.isdependent,
+    p_parent_user_id: params.parent_user_id,
+    p_current_dependent_id: params.current_dependent_id,
+    p_target_user_id: params.target_user_id,
   });
 
   if (error) {

@@ -11,6 +11,7 @@ interface UserDataSectionProps {
   profile: UserProfile | null;
   onProfileUpdate: (updatedProfile: UserProfile) => void;
   onOnboardingComplete?: () => void;
+  onFormDirty?: (state: any) => void;
 }
 
 interface InputFieldProps {
@@ -26,9 +27,11 @@ interface InputFieldProps {
   maxLength?: number;
   className?: string;
   suffix?: React.ReactNode;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
-const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, isEditing, displayValue, maxLength, className, suffix }: InputFieldProps) => (
+const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, isEditing, displayValue, maxLength, className, suffix, onFocus, onBlur }: InputFieldProps) => (
   <div className={`flex flex-col gap-1.5 ${className || ''}`}>
     <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
       <Icon size={14} />
@@ -43,6 +46,8 @@ const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, p
           onChange={onChange}
           placeholder={placeholder}
           maxLength={maxLength}
+          onFocus={onFocus}
+          onBlur={onBlur}
           className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full"
         />
         {suffix}
@@ -80,12 +85,26 @@ async function lookupCEP(cep: string): Promise<ViaCEPResponse | null> {
   }
 }
 
-export default function UserDataSection({ profile, onProfileUpdate, onOnboardingComplete }: UserDataSectionProps) {
+export default function UserDataSection({ profile, onProfileUpdate, onOnboardingComplete, onFormDirty }: UserDataSectionProps) {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  // Sync state with parent (debounce 500ms)
+  useEffect(() => {
+    if (onFormDirty) {
+      const timer = setTimeout(() => {
+        onFormDirty({
+          data: formData,
+          focused_field: focusedField
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [formData, focusedField, onFormDirty]);
 
   useEffect(() => {
     if (profile) {
@@ -188,8 +207,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           onClick={() => isEditing ? handleSave() : setIsEditing(true)}
           disabled={loading}
           className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all ${isEditing
-              ? 'bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md'
-              : 'bg-white/50 text-[#38B1E4] hover:bg-white border border-[#38B1E4]/30'
+            ? 'bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md'
+            : 'bg-white/50 text-[#38B1E4] hover:bg-white border border-[#38B1E4]/30'
             } disabled:opacity-50`}
         >
           {loading ? (
@@ -215,6 +234,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           placeholder="Seu nome completo"
           isEditing={isEditing}
           displayValue={formData.full_name}
+          onFocus={() => setFocusedField('full_name')}
+          onBlur={() => setFocusedField(null)}
         />
         <InputField
           label="Idade"
@@ -226,6 +247,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           placeholder="Sua idade"
           isEditing={isEditing}
           displayValue={formData.age}
+          onFocus={() => setFocusedField('age')}
+          onBlur={() => setFocusedField(null)}
         />
       </div>
 
@@ -252,6 +275,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                   onChange={handleCEPChange}
                   placeholder="00000-000"
                   maxLength={9}
+                  onFocus={() => setFocusedField('zip_code')}
+                  onBlur={() => setFocusedField(null)}
                   className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full pr-10"
                 />
                 {cepLoading && (
@@ -291,6 +316,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             isEditing={isEditing}
             displayValue={formData.state}
             maxLength={2}
+            onFocus={() => setFocusedField('state')}
+            onBlur={() => setFocusedField(null)}
           />
 
           {/* City */}
@@ -303,6 +330,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             placeholder="Sua cidade"
             isEditing={isEditing}
             displayValue={formData.city}
+            onFocus={() => setFocusedField('city')}
+            onBlur={() => setFocusedField(null)}
           />
         </div>
 
@@ -318,6 +347,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             isEditing={isEditing}
             displayValue={formData.street}
             className="md:col-span-1"
+            onFocus={() => setFocusedField('street')}
+            onBlur={() => setFocusedField(null)}
           />
 
           {/* Number */}
@@ -330,6 +361,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             placeholder="Nº"
             isEditing={isEditing}
             displayValue={formData.street_number}
+            onFocus={() => setFocusedField('street_number')}
+            onBlur={() => setFocusedField(null)}
           />
 
           {/* Complement */}
@@ -342,6 +375,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             placeholder="Apto, Bloco, etc."
             isEditing={isEditing}
             displayValue={formData.complement}
+            onFocus={() => setFocusedField('complement')}
+            onBlur={() => setFocusedField(null)}
           />
         </div>
       </div>
@@ -359,6 +394,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 name="education"
                 value={formData.education || ''}
                 onChange={handleChange}
+                onFocus={() => setFocusedField('education')}
+                onBlur={() => setFocusedField(null)}
                 className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
               >
                 <option value="">Selecione...</option>

@@ -13,11 +13,12 @@ interface User {
   avatar: string;
 }
 
-export type PendingAction = 
+export type PendingAction =
   | { type: 'chat'; payload: { message: string } }
   | { type: 'favorite'; payload: { opportunityId: string } }
   | { type: 'partner_click'; payload: { partnerId: string; link: string } }
   | { type: 'redirect'; payload: { url: string } }
+  | { type: 'start_workflow'; payload: { workflow: string } }
   | null;
 
 interface AuthContextType {
@@ -135,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       type: 'sms', // Supabase uses 'sms' type for phone verification even if channel is whatsapp
     });
-    
+
     if (data.session) {
       // Check for referral code
       const ref = localStorage.getItem('nubo_ref');
@@ -164,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .from('user_profiles')
               .insert({ id: userId, referral_source: ref });
           }
-          
+
           // Clear referral code after processing
           localStorage.removeItem('nubo_ref');
         } catch (err) {
@@ -177,13 +178,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push(pendingAction.payload.url);
         setPendingAction(null);
         setIsAuthModalOpen(false);
+      } else if (pendingAction?.type === 'start_workflow') {
+        // Redirect to chat, let chat page handle the workflow logic
+        router.push('/chat');
+        setIsAuthModalOpen(false); // Close here so it transitions smoothly
       } else if (pendingAction?.type === 'chat') {
         // Don't close modal for chat action, let the chat page/component handle it
       } else {
         setIsAuthModalOpen(false);
       }
     }
-    
+
     return { data, error };
   };
 
