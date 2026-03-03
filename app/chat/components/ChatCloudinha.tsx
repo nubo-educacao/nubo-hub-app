@@ -103,7 +103,9 @@ const GROUP_LABEL_MAP: Record<string, string> = {
     'match_iterative': 'Consultando Agente de Match',
     'onboarding_workflow': 'Iniciando Onboarding',
     'onboarding_agent': 'Agente de Onboarding',
-    'guardrails_check': 'Analisando Contexto'
+    'guardrails_check': 'Analisando Contexto',
+    'reasoning_agent': 'Analisando Intenção',
+    'response_agent': 'Formulando Resposta'
 };
 
 const getRouterLabel = (args?: any, output?: string) => {

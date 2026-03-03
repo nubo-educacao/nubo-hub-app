@@ -22,39 +22,31 @@ interface InputFieldProps {
     type?: string;
     icon: React.ElementType;
     placeholder?: string;
-    isEditing: boolean;
-    displayValue: React.ReactNode;
     maxLength?: number;
     className?: string;
     onFocus?: () => void;
     onBlur?: () => void;
 }
 
-const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, isEditing, displayValue, maxLength, className, onFocus, onBlur }: InputFieldProps) => (
+const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, maxLength, className, onFocus, onBlur }: InputFieldProps) => (
     <div className={`flex flex-col gap-1.5 ${className || ''}`}>
         <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
             <Icon size={14} />
             {label}
         </label>
-        {isEditing ? (
-            <div className="relative flex items-center">
-                <input
-                    type={type}
-                    name={name}
-                    value={value || ''}
-                    onChange={onChange}
-                    placeholder={placeholder}
-                    maxLength={maxLength}
-                    onFocus={onFocus}
-                    onBlur={onBlur}
-                    className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full"
-                />
-            </div>
-        ) : (
-            <div className="text-[#3A424E] font-medium px-1">
-                {displayValue || <span className="text-gray-400 italic">Não informado</span>}
-            </div>
-        )}
+        <div className="relative flex items-center">
+            <input
+                type={type}
+                name={name}
+                value={value || ''}
+                onChange={onChange}
+                placeholder={placeholder}
+                maxLength={maxLength}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full"
+            />
+        </div>
     </div>
 );
 
@@ -68,8 +60,8 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
         education: '',
         relationship: ''
     });
+    const [originalData, setOriginalData] = useState<Partial<UserProfile> | null>(null);
 
-    const [isEditing, setIsEditing] = useState(true);
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -108,13 +100,15 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                     .single();
 
                 if (dependentProfile) {
-                    setFormData({
+                    const loadedData = {
                         full_name: dependentProfile.full_name || '',
                         age: dependentProfile.age || null,
                         city: dependentProfile.city || '',
                         education: dependentProfile.education || '',
                         relationship: dependentProfile.relationship || ''
-                    });
+                    };
+                    setFormData(loadedData);
+                    setOriginalData(loadedData);
                 }
             }
         };
@@ -126,6 +120,14 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    const hasChanges = originalData ? (
+        (formData.full_name || '') !== (originalData.full_name || '') ||
+        String(formData.age || '') !== String(originalData.age || '') ||
+        (formData.city || '') !== (originalData.city || '') ||
+        (formData.education || '') !== (originalData.education || '') ||
+        (formData.relationship || '') !== (originalData.relationship || '')
+    ) : Object.keys(formData).length > 0;
 
     const handleSave = async () => {
         if (!dependentId) return;
@@ -141,6 +143,13 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
         });
 
         if (data) {
+            setOriginalData({
+                full_name: data.full_name || '',
+                age: data.age || null,
+                city: data.city || '',
+                education: data.education || '',
+                relationship: data.relationship || ''
+            });
             // Check if all required fields are present to trigger completion
             if (data.full_name && data.age && data.city && data.education && data.relationship) {
                 if (onDependentOnboardingComplete) {
@@ -162,20 +171,22 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                         Preencha os dados da pessoa que você deseja ajudar a encontrar uma oportunidade educacional.
                     </p>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md disabled:opacity-50"
-                >
-                    {loading ? (
-                        <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                        <>
-                            <Save size={16} />
-                            Salvar
-                        </>
-                    )}
-                </button>
+                {hasChanges && (
+                    <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md disabled:opacity-50"
+                    >
+                        {loading ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            <>
+                                <Save size={16} />
+                                Salvar
+                            </>
+                        )}
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -186,8 +197,6 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                     onChange={handleChange}
                     icon={User}
                     placeholder="Nome do dependente"
-                    isEditing={isEditing}
-                    displayValue={formData.full_name}
                     onFocus={() => setFocusedField('full_name')}
                     onBlur={() => setFocusedField(null)}
                 />
@@ -199,8 +208,6 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                     type="number"
                     icon={Calendar}
                     placeholder="Idade do dependente"
-                    isEditing={isEditing}
-                    displayValue={formData.age}
                     onFocus={() => setFocusedField('age')}
                     onBlur={() => setFocusedField(null)}
                 />
@@ -212,28 +219,22 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                         <Users size={14} />
                         Grau de Parentesco
                     </label>
-                    {isEditing ? (
-                        <select
-                            name="relationship"
-                            value={formData.relationship || ''}
-                            onChange={handleChange}
-                            onFocus={() => setFocusedField('relationship')}
-                            onBlur={() => setFocusedField(null)}
-                            className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
-                        >
-                            <option value="">Selecione...</option>
-                            <option value="Filho(a)">Filho(a)</option>
-                            <option value="Irmão/Irmã">Irmão/Irmã</option>
-                            <option value="Sobrinho(a)">Sobrinho(a)</option>
-                            <option value="Neto(a)">Neto(a)</option>
-                            <option value="Primo(a)">Primo(a)</option>
-                            <option value="Outro">Outro</option>
-                        </select>
-                    ) : (
-                        <div className="text-[#3A424E] font-medium px-1">
-                            {formData.relationship || <span className="text-gray-400 italic">Não informado</span>}
-                        </div>
-                    )}
+                    <select
+                        name="relationship"
+                        value={formData.relationship || ''}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('relationship')}
+                        onBlur={() => setFocusedField(null)}
+                        className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
+                    >
+                        <option value="">Selecione...</option>
+                        <option value="Filho(a)">Filho(a)</option>
+                        <option value="Irmão/Irmã">Irmão/Irmã</option>
+                        <option value="Sobrinho(a)">Sobrinho(a)</option>
+                        <option value="Neto(a)">Neto(a)</option>
+                        <option value="Primo(a)">Primo(a)</option>
+                        <option value="Outro">Outro</option>
+                    </select>
                 </div>
 
                 <InputField
@@ -243,8 +244,6 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                     onChange={handleChange}
                     icon={MapPin}
                     placeholder="Cidade onde mora"
-                    isEditing={isEditing}
-                    displayValue={formData.city}
                     onFocus={() => setFocusedField('city')}
                     onBlur={() => setFocusedField(null)}
                 />
@@ -256,26 +255,20 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                         <GraduationCap size={14} />
                         Escolaridade
                     </label>
-                    {isEditing ? (
-                        <select
-                            name="education"
-                            value={formData.education || ''}
-                            onChange={handleChange}
-                            onFocus={() => setFocusedField('education')}
-                            onBlur={() => setFocusedField(null)}
-                            className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
-                        >
-                            <option value="">Selecione...</option>
-                            <option value="Ensino Fundamental Incompleto">Ensino Fundamental Incompleto</option>
-                            <option value="Ensino Fundamental Completo">Ensino Fundamental Completo</option>
-                            <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
-                            <option value="Ensino Médio Completo">Ensino Médio Completo</option>
-                        </select>
-                    ) : (
-                        <div className="text-[#3A424E] font-medium px-1">
-                            {formData.education || <span className="text-gray-400 italic">Não informado</span>}
-                        </div>
-                    )}
+                    <select
+                        name="education"
+                        value={formData.education || ''}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('education')}
+                        onBlur={() => setFocusedField(null)}
+                        className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
+                    >
+                        <option value="">Selecione...</option>
+                        <option value="Ensino Fundamental Incompleto">Ensino Fundamental Incompleto</option>
+                        <option value="Ensino Fundamental Completo">Ensino Fundamental Completo</option>
+                        <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
+                        <option value="Ensino Médio Completo">Ensino Médio Completo</option>
+                    </select>
                 </div>
             </div>
         </div>
