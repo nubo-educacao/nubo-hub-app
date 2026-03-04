@@ -615,6 +615,14 @@ export default function ChatCloudinha({
                                         }
 
 
+                                        // --- SPECIAL HANDLING: startStudentApplication (Phase Sync to EVALUATE) ---
+                                        if (['startStudentApplicationTool', 'startStudentApplication'].includes(event.tool)) {
+                                            console.log("[ChatCloudinha] startStudentApplicationTool detected. Triggering profile refresh for phase sync.");
+                                            if (onProfileUpdated) {
+                                                setTimeout(() => onProfileUpdated(), 500);
+                                            }
+                                        }
+
                                         // --- SPECIAL HANDLING: Update Student Profile (Onboarding Check & Auto-Search via "Deterministic Flow") ---
                                         if (['updateStudentProfileTool', 'updateStudentProfile', 'processDependentChoiceTool'].includes(event.tool)) {
                                             try {
@@ -892,9 +900,9 @@ export default function ChatCloudinha({
     return (
         <div className="flex flex-col h-full bg-transparent">
             {/* Header */}
-            <div className="h-[97px] flex items-center px-6 border-b border-white/20 flex-shrink-0 bg-white/10 backdrop-blur-sm">
+            <div className="h-16 md:h-[97px] flex items-center px-6 border-b border-gray-100 flex-shrink-0 bg-white md:bg-white/10 md:backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full relative overflow-hidden shadow-sm border border-white/20 bg-white">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full relative overflow-hidden shadow-sm border border-white/20 bg-white">
                         <Image
                             src="/assets/cloudinha.png"
                             alt="Cloudinha"
@@ -905,25 +913,20 @@ export default function ChatCloudinha({
                         />
                     </div>
                     <div className="flex flex-col">
-                        <h2 className="text-[16px] font-bold text-[#024F86] leading-[24px]">Cloudinha</h2>
-                        <p className="text-[14px] text-[#636E7C] leading-[20px]">
-                            Em desenvolvimento
-                        </p>
+                        <h2 className="text-[14px] md:text-[16px] font-bold text-[#024F86] leading-tight md:leading-[24px]">Cloudinha</h2>
+                        <div className="flex items-center gap-1.5">
+                            <p className="text-[12px] md:text-[14px] text-[#636E7C] leading-tight md:leading-[20px]">
+                                Em desenvolvimento
+                            </p>
+                            {passportPhase === 'INTRO' && (
+                                <Loader2 size={12} className="text-[#024F86] animate-spin" />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile Switch - Integrated into Flow (Only shows if props provided) */}
-            {activeTab && onTabSwitch && (
-                <div className="md:hidden flex-none p-4 pb-0 flex justify-center w-full z-30">
-                    <MobileTabSwitch
-                        activeTab={activeTab}
-                        onTabSwitch={onTabSwitch}
-                        isPending={isPending || false}
-                        pendingTarget={pendingTarget || null}
-                    />
-                </div>
-            )}
+
 
 
             {/* Messages Area */}

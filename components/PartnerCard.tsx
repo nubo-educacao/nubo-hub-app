@@ -25,6 +25,11 @@ interface PartnerCardProps {
   link?: string;
   coverimage?: string;
   isFavorite?: boolean;
+  matchScore?: {
+    total: number;
+    met: number;
+  };
+  onApply?: (partnerId: string, partnerName: string) => void;
 }
 
 export function PartnerCard({
@@ -38,7 +43,9 @@ export function PartnerCard({
   dates = partner?.dates,
   link = partner?.link || undefined,
   coverimage = partner?.coverimage || undefined,
-  isFavorite: initialFavorite = false // Logic regarding favorite state from partner object to be added if exists in schema
+  isFavorite: initialFavorite = false,
+  matchScore,
+  onApply
 }: PartnerCardProps) {
   const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
@@ -161,7 +168,13 @@ export function PartnerCard({
     registerPartnerClick(id);
 
     // Set pending action for the chat page to consume
-    setPendingAction({ type: 'start_workflow', payload: { workflow: 'passport_workflow' } });
+    setPendingAction({
+      type: 'start_workflow',
+      payload: {
+        workflow: 'passport_workflow',
+        message: `Tenho interesse em me aplicar na ${name}`
+      }
+    });
 
     if (!isAuthenticated) {
       openAuthModal();
@@ -198,6 +211,25 @@ export function PartnerCard({
         // Add onError handler in real app to fallback if image fails
         />
 
+        {/* Match Score Tag Top Left */}
+        {matchScore && (() => {
+          const pct = matchScore.total > 0 ? (matchScore.met / matchScore.total) * 100 : 0;
+          const dotColor = pct >= 90 ? 'bg-emerald-500' : pct > 30 ? 'bg-yellow-500' : 'bg-red-500';
+          const textColor = pct >= 90 ? 'text-emerald-700' : pct > 30 ? 'text-yellow-700' : 'text-red-700';
+          const bgColor = 'bg-white/60';
+          const borderColor = 'border-white/30';
+          return (
+            <div className="absolute top-4 left-4 z-20">
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full backdrop-blur-md border ${bgColor} ${borderColor} shadow-sm`}>
+                <span className={`flex h-2 w-2 rounded-full ${dotColor}`}></span>
+                <span className="text-[11px] md:text-[12px] font-bold text-gray-800 whitespace-nowrap">
+                  {matchScore.met}/{matchScore.total} Critérios Atendidos
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Heart Button Top Right */}
         <button
           onClick={toggleFavorite}
@@ -224,10 +256,10 @@ export function PartnerCard({
       </div>
 
       {/* Content Section */}
-      <div className="relative z-10 px-6 pb-6 pt-0 flex flex-col flex-grow bg-white">
+      <div className="relative z-10 px-4 pb-5 pt-0 flex flex-col flex-grow bg-white">
         {/* Partner Name and Site Link */}
         <div className="flex flex-col items-center justify-center md:items-start md:justify-start min-h-[56px] mb-2 mt-2">
-          <h3 className="text-[18px] font-bold text-[#3A424E] text-center md:text-left line-clamp-2">
+          <h3 className="text-[16px] md:text-[18px] font-bold text-[#3A424E] text-center md:text-left line-clamp-2 leading-tight">
             {name}
           </h3>
           {link && (
@@ -246,7 +278,6 @@ export function PartnerCard({
           )}
         </div>
 
-        {/* Description */}
         <p className="text-[14px] text-[#636E7C] mb-4 text-center md:text-left leading-relaxed line-clamp-3">
           {description}
         </p>
@@ -274,6 +305,14 @@ export function PartnerCard({
         {/* Footer Link */}
         <div className="mt-auto flex justify-end items-center pt-4 border-t border-gray-100/50">
           <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onApply) {
+                onApply(id, name);
+              } else {
+                handleCardClick();
+              }
+            }}
             className="text-[14px] font-bold text-white bg-[#024F86] hover:bg-[#023F6B] px-4 py-2 rounded-full flex items-center gap-1 transition-colors shadow-sm"
           >
             Inscreva-se

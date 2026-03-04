@@ -48,7 +48,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock useAuth
-vi.mock('../../../context/AuthContext', () => ({ 
+vi.mock('../../../context/AuthContext', () => ({
   useAuth: () => ({
     isAuthenticated: false,
     openAuthModal: vi.fn(),
@@ -64,34 +64,34 @@ vi.mock('../../../lib/supabaseClient', () => ({
 }));
 
 describe('PartnerCard', () => {
-    const mockPartner: Partner = {
-        id: '123',
-        name: 'Test Partner',
-        description: 'Test Description',
-        location: 'Test Location',
-        type: 'Test Type',
-        income: 'Test Income',
-        dates: null,
-        link: 'http://test.com',
-        coverimage: '/test-image.jpg'
-    };
+  const mockPartner: Partner = {
+    id: '123',
+    name: 'Test Partner',
+    description: 'Test Description',
+    location: 'Test Location',
+    type: 'Test Type',
+    income: 'Test Income',
+    dates: null,
+    link: 'http://test.com',
+    coverimage: '/test-image.jpg'
+  };
 
-    it('renders partner information correctly', () => {
-        render(<PartnerCard partner={mockPartner} />);
-        
-        expect(screen.getByText('Test Partner')).toBeInTheDocument();
-        expect(screen.getByText('Test Description')).toBeInTheDocument();
-        expect(screen.getByText('Test Location')).toBeInTheDocument();
-        expect(screen.getByText('Ver link')).toBeInTheDocument();
-        
-        // Image check
-        const img = screen.getByAltText('Capa Test Partner');
-        expect(img).toHaveAttribute('src', '/test-image.jpg');
-    });
+  it('renders partner information correctly', () => {
+    render(<PartnerCard partner={mockPartner} />);
 
-    it('uses fallback values when no partner provided', () => {
-        render(<PartnerCard />);
-        expect(screen.getByText('Parceiro Nubo')).toBeInTheDocument();
-        expect(screen.getByText('Ver link')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Test Partner')).toBeInTheDocument();
+    expect(screen.getByText('Test Description')).toBeInTheDocument();
+    expect(screen.getByText('Test Location')).toBeInTheDocument();
+    expect(screen.getByText('Inscreva-se')).toBeInTheDocument();
+
+    // Image check
+    const img = screen.getByAltText('Capa Test Partner');
+    expect(img).toHaveAttribute('src', '/test-image.jpg');
+  });
+
+  it('uses fallback values when no partner provided', () => {
+    render(<PartnerCard />);
+    expect(screen.getByText('Parceiro Nubo')).toBeInTheDocument();
+    expect(screen.getByText('Inscreva-se')).toBeInTheDocument();
+  });
 });

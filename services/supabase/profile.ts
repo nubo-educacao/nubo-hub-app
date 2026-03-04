@@ -1,5 +1,14 @@
 import { supabase } from '@/lib/supabaseClient';
 
+export type PassportPhase =
+  | 'INTRO'
+  | 'ONBOARDING'
+  | 'ASK_DEPENDENT'
+  | 'DEPENDENT_ONBOARDING'
+  | 'PROGRAM_MATCH'
+  | 'EVALUATE'
+  | 'CONCLUDED';
+
 export interface UserProfile {
   id: string;
   full_name: string | null;
@@ -11,8 +20,9 @@ export interface UserProfile {
   street_number: string | null;
   complement: string | null;
   education: string | null;
+  education_year: string | null;
   onboarding_completed: boolean;
-  passport_phase: string | null;
+  passport_phase: PassportPhase | null;
   relationship?: string | null;
 }
 
@@ -26,7 +36,8 @@ export interface UpdateProfileParams {
   street_number?: string | null;
   complement?: string | null;
   education?: string | null;
-  passport_phase?: string | null;
+  education_year?: string | null;
+  passport_phase?: PassportPhase | null;
   relationship?: string | null;
   isdependent?: boolean;
   parent_user_id?: string | null;
@@ -56,12 +67,14 @@ export async function getUserProfileService(): Promise<{ data: UserProfile | nul
     console.log(`[getUserProfileService] Profile ${isNewlyCreated ? '🆕 NEWLY CREATED (auto-created by DB)' : '📋 EXISTING'}. passport_phase=${data?.passport_phase}, onboarding_completed=${data?.onboarding_completed}, id=${data?.id}`);
 
     // Polyfill/Fallback: If onboarding_completed is missing or false, check fields.
+    const requiresYear = data.education === 'Ensino fundamental' || data.education === 'Ensino médio incompleto';
     const computedCompleted = data.onboarding_completed || (
       !!data.full_name &&
       !!data.city &&
       !!data.education &&
       !!data.zip_code &&
-      data.age !== null && data.age !== undefined
+      data.age !== null && data.age !== undefined &&
+      (!requiresYear || !!data.education_year)
     );
 
     return {
@@ -92,6 +105,7 @@ export async function updateUserProfileService(params: UpdateProfileParams): Pro
     p_parent_user_id: params.parent_user_id,
     p_current_dependent_id: params.current_dependent_id,
     p_target_user_id: params.target_user_id,
+    p_education_year: params.education_year,
   });
 
   if (error) {

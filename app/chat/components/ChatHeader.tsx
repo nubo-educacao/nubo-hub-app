@@ -52,7 +52,7 @@ export default function ChatHeader({
     };
 
     return (
-        <div className="w-full h-20 md:h-24 px-4 md:px-8 flex items-center justify-between border-b border-white/20 bg-white/20 backdrop-blur-sm z-20 relative">
+        <div className="w-full h-16 md:h-24 px-4 md:px-8 flex items-center justify-between border-b border-gray-100 bg-white md:bg-white/20 md:backdrop-blur-sm z-20 relative">
             {/* Left - Functionality Select (Icon + Text + Arrow) */}
             <div className="flex items-center gap-3 md:gap-4 z-10">
                 {/* Home Icon - Navigate to Home */}
@@ -83,8 +83,8 @@ export default function ChatHeader({
                         <button
                             onClick={() => onDesktopMatchViewChange('OPPORTUNITIES')}
                             className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 text-sm font-bold ${desktopMatchView === 'OPPORTUNITIES'
-                                    ? 'bg-[#024F86] text-white shadow-sm'
-                                    : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
+                                ? 'bg-[#024F86] text-white shadow-sm'
+                                : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
                                 }`}
                         >
                             <Sparkles size={14} />
@@ -93,8 +93,8 @@ export default function ChatHeader({
                         <button
                             onClick={() => onDesktopMatchViewChange('PREFERENCES')}
                             className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 text-sm font-bold ${desktopMatchView === 'PREFERENCES'
-                                    ? 'bg-[#024F86] text-white shadow-sm'
-                                    : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
+                                ? 'bg-[#024F86] text-white shadow-sm'
+                                : 'text-[#024F86]/70 hover:bg-[#024F86]/5'
                                 }`}
                         >
                             <Settings size={14} />
