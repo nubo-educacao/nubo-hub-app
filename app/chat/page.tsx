@@ -8,14 +8,18 @@ import OpportunityCarousel from './components/OpportunityCarousel';
 import MatchPlaceholder from './components/MatchPlaceholder';
 import MatchWizard from './components/MatchWizard';
 import ChatHeader from './components/ChatHeader';
+import PassportWorkflowHeader from './components/PassportWorkflowHeader';
 import AuthModal from '@/components/AuthModal';
-import { Layout } from 'lucide-react';
+import { Layout, Loader2 } from 'lucide-react';
 import CloudBackground from '@/components/CloudBackground';
 import UserDataSection from '@/components/profile/UserDataSection';
 import DependentDataSection from '@/components/profile/DependentDataSection';
 import PartnerForm from '@/components/profile/PartnerForm';
+import ProgramMatchSection from '@/components/profile/ProgramMatchSection';
 import UserPreferencesSection from '@/components/profile/UserPreferencesSection';
 import MobileTabSwitch from './components/MobileTabSwitch';
+import SuccessTransitionView from './components/SuccessTransitionView';
+import ApplicationsDrawer from './components/ApplicationsDrawer';
 import { getUserProfileService, updateUserProfileService, UserProfile } from '@/services/supabase/profile';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -43,6 +47,10 @@ function ChatPageContent() {
 
     // Global form state for Context-Awareness
     const [uiFormState, setUiFormState] = useState<any>(null);
+
+    // Applications drawer & selected application
+    const [showApplicationsDrawer, setShowApplicationsDrawer] = useState(false);
+    const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
 
     const handleTabSwitch = (tab: 'CHAT' | 'CONTENT') => {
         if (activeTab === tab) return;
@@ -72,6 +80,7 @@ function ChatPageContent() {
             clearPendingAction();
         } else if (pendingAction?.type === 'start_workflow') {
             const workflow = pendingAction.payload.workflow;
+            const customMessage = (pendingAction.payload as any).message || ' ';
             supabase.auth.getUser().then(({ data: { user } }) => {
                 if (user) {
                     supabase.from('user_profiles')
@@ -79,7 +88,7 @@ function ChatPageContent() {
                         .eq('id', user.id)
                         .then((res) => {
                             if (res.error) console.error("Error setting workflow:", res.error);
-                            setInitialMessage(' '); // Space character to trigger agent without visible text in UI if possible, or just a generic trigger
+                            setInitialMessage(customMessage);
                             clearPendingAction();
                         });
                 }
@@ -153,30 +162,65 @@ function ChatPageContent() {
             };
 
             init();
+
+            // F. Subscribe to Realtime Updates on Profile
+            const profileSubscription = supabase
+                .channel('public:user_profiles:page')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'user_profiles',
+                        filter: `id=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        console.log('[ChatPage] Realtime profile update received:', payload.new);
+                        setProfile(payload.new as any);
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(profileSubscription);
+            };
         }
     }, [user]);
 
-    // Phase-based functionality sync
+    const prevPhaseRef = React.useRef<string | null>(null);
+
+    // Phase-based functionality sync & Auto Tab Switch on mobile
     useEffect(() => {
         if (profile?.passport_phase) {
-            const forceOnboarding = ['DEPENDENT_ONBOARDING', 'EVALUATE', 'INTRO', 'ASK_DEPENDENT', 'PROGRAM_MATCH', 'CONCLUDED'].includes(profile.passport_phase);
-            if (forceOnboarding && selectedFunctionality !== 'ONBOARDING') {
-                console.log(`[ChatPage] passport_phase is '${profile.passport_phase}', forcing ONBOARDING view`);
+            const phase = profile.passport_phase;
+            const uiActivePhases = ['ONBOARDING', 'DEPENDENT_ONBOARDING', 'EVALUATE', 'PROGRAM_MATCH'];
+            const needsOnboardingView = [...uiActivePhases, 'INTRO', 'ASK_DEPENDENT', 'CONCLUDED'].includes(phase);
+
+            // 1. Sync functionality view
+            if (needsOnboardingView && selectedFunctionality !== 'ONBOARDING') {
+                console.log(`[ChatPage] passport_phase is '${phase}', forcing ONBOARDING view`);
                 setSelectedFunctionality('ONBOARDING');
-                // Ensure mobile moves to the content tab so the user sees the form
+            }
+
+            // 2. Auto-switch tab on mobile when entering a UI-heavy phase
+            const phaseChanged = prevPhaseRef.current !== phase;
+            if (phaseChanged && uiActivePhases.includes(phase)) {
                 if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    console.log(`[ChatPage] Auto-switching to CONTENT tab for phase: ${phase}`);
                     setActiveTab('CONTENT');
                 }
             }
+
+            prevPhaseRef.current = phase;
         }
     }, [profile?.passport_phase, selectedFunctionality]);
 
     // Phase INTRO Auto-Transition
     useEffect(() => {
         if (profile?.passport_phase === 'INTRO' && user) {
-            console.log(`[ChatPage] INTRO phase detected for user ${user.id}. Starting 5s timer for auto-transition to ONBOARDING...`);
+            console.log(`[ChatPage] INTRO phase detected for user ${user.id}. Starting 15s timer for auto-transition to ONBOARDING...`);
             const timer = setTimeout(async () => {
-                console.log(`[ChatPage] 5s timer fired. Transitioning INTRO → ONBOARDING for user ${user.id}...`);
+                console.log(`[ChatPage] 15s timer fired. Transitioning INTRO → ONBOARDING for user ${user.id}...`);
                 const { error, data } = await supabase
                     .from('user_profiles')
                     .update({ passport_phase: 'ONBOARDING' })
@@ -189,7 +233,7 @@ function ChatPageContent() {
                 } else {
                     console.error('[ChatPage] ❌ Failed to transition from INTRO to ONBOARDING:', error);
                 }
-            }, 5000);
+            }, 15000);
             return () => clearTimeout(timer);
         }
     }, [profile?.passport_phase, user]);
@@ -218,20 +262,38 @@ function ChatPageContent() {
     // Re-write handleUIOnboardingComplete to refresh profile and advance phase
     const handleUIOnboardingComplete = () => {
         if (user) {
+            // A transição no banco foi feita pelo componente (UserDataSection ou DependentDataSection)
+            // Aqui fazemos apenas o refresh do estado e disparamos o gatilho da Cloudinha
             if (profile?.passport_phase === 'ONBOARDING') {
-                console.log('[ChatPage] UI Onboarding complete. Advancing phase to ASK_DEPENDENT.');
-                updateUserProfileService({ passport_phase: 'ASK_DEPENDENT' }).then(() => {
-                    getUserProfileService().then(({ data }) => {
-                        if (data) setProfile(data);
-                    });
-                });
+                console.log('[ChatPage] UI Onboarding complete. Triggering Cloudinha message.');
                 setPostWizardTrigger("Pronto, preenchi os dados.");
             } else {
                 console.log('[ChatPage] UI profile edit complete. Refreshing profile, staying on Passaporte.');
-                getUserProfileService().then(({ data }) => {
-                    if (data) setProfile(data);
-                });
             }
+
+            getUserProfileService().then(({ data }) => {
+                if (data) setProfile(data);
+            });
+        }
+    };
+
+    const handlePhaseBack = async (previousPhase: any) => {
+        if (!user) return;
+        console.log(`[ChatPage] User requested to go back to phase: ${previousPhase}`);
+
+        const { data, error } = await updateUserProfileService({
+            passport_phase: previousPhase
+        });
+
+        if (data) {
+            setProfile(data);
+            // On mobile, ensure we stay on the CONTENT tab if we moved to a UI phase
+            const uiActivePhases = ['ONBOARDING', 'DEPENDENT_ONBOARDING', 'EVALUATE', 'PROGRAM_MATCH'];
+            if (uiActivePhases.includes(previousPhase) && typeof window !== 'undefined' && window.innerWidth < 768) {
+                setActiveTab('CONTENT');
+            }
+        } else if (error) {
+            console.error('[ChatPage] Error updating phase via service:', error);
         }
     };
 
@@ -266,8 +328,8 @@ function ChatPageContent() {
             {/* Main Content Grid - z-10 */}
             <div className="relative z-10 flex flex-col md:grid md:grid-cols-4 h-full w-full">
 
-                {/* Mobile Tab Navigation */}
-                <div className={`md:hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 w-max transition-all duration-300 ${activeTab === 'CHAT' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                {/* Mobile Top Navigation Tabs */}
+                <div className="md:hidden flex-none w-full z-40">
                     <MobileTabSwitch
                         activeTab={activeTab}
                         onTabSwitch={handleTabSwitch}
@@ -309,8 +371,8 @@ function ChatPageContent() {
                                     if (prefs?.workflow_data) {
                                         const wf = prefs.workflow_data as any;
                                         if (Array.isArray(wf.last_course_ids) && wf.last_course_ids.length > 0) {
-                                            console.log("[ChatPage] Found saved course IDs:", wf.last_course_ids.length);
-                                            handleOpportunitiesFound(wf.last_course_ids);
+                                            setActiveCourseIds(wf.last_course_ids);
+                                            setDesktopMatchView('OPPORTUNITIES');
                                         }
                                         if (wf.last_opportunity_map) {
                                             setMatchedOppsMap(wf.last_opportunity_map);
@@ -318,8 +380,8 @@ function ChatPageContent() {
                                             console.log("[ChatPage] No course IDs in workflow_data.");
                                         }
                                     }
-                                } catch (err) {
-                                    console.error("[ChatPage] Unexpected error in onProfileUpdated:", err);
+                                } catch (e) {
+                                    console.error("[ChatPage] Error in onProfileUpdated logic:", e);
                                 }
                             }
                         }}
@@ -330,7 +392,7 @@ function ChatPageContent() {
                         isPending={isPending}
                         pendingTarget={pendingTarget}
 
-                        inputDisabled={showMatchWizard}
+                        inputDisabled={showMatchWizard && selectedFunctionality === 'MATCH'}
                         onWizardRequest={() => {
                             setWizardChecked(true);
                             setShowMatchWizard(true);
@@ -346,32 +408,39 @@ function ChatPageContent() {
 
                 {/* Right Side - Content Panel */}
                 <div className={`
-            ${activeTab === 'CONTENT' ? 'flex' : 'hidden'}
-            md:flex col-span-3 flex-col relative overflow-hidden h-full
-          `}>
-                    <div className="flex flex-col h-full p-4 md:p-6 pb-4 md:pb-6 gap-4">
-                        <div className="flex-1 bg-white/40 backdrop-blur-md rounded-[32px] border border-white/40 shadow-xl overflow-hidden flex flex-col relative">
+                    ${activeTab === 'CONTENT' ? 'flex' : 'hidden'}
+                    md:flex col-span-3 flex-col relative overflow-hidden h-full
+                `}>
+                    <div className="flex flex-col h-full p-0 md:p-6 md:pb-6 gap-0 md:gap-4 relative">
+                        {/* Header Wrapper */}
+                        <div className="relative z-20 bg-transparent flex flex-col">
+                            <ChatHeader
+                                selectedFunctionality={selectedFunctionality}
+                                onSelectFunctionality={setSelectedFunctionality}
+                                desktopMatchView={desktopMatchView}
+                                onDesktopMatchViewChange={setDesktopMatchView}
+                            />
+                        </div>
 
-                            <div className="relative z-20 bg-white/30 backdrop-blur-xl border-b border-white/20 flex flex-col">
-                                <ChatHeader
-                                    selectedFunctionality={selectedFunctionality}
-                                    onSelectFunctionality={setSelectedFunctionality}
-                                    desktopMatchView={desktopMatchView}
-                                    onDesktopMatchViewChange={setDesktopMatchView}
+                        {/* Content Box */}
+                        <div className="flex-1 bg-white/40 backdrop-blur-md md:rounded-[32px] md:border border-white/40 md:shadow-xl overflow-hidden flex flex-col relative">
+                            {profile?.passport_phase && selectedFunctionality === 'ONBOARDING' && (
+                                <PassportWorkflowHeader
+                                    currentPhase={profile.passport_phase as any}
+                                    onBack={handlePhaseBack}
+                                    showViewFormsButton={['PROGRAM_MATCH', 'EVALUATE'].includes(profile.passport_phase)}
+                                    onViewForms={() => setShowApplicationsDrawer(true)}
                                 />
-                            </div>
+                            )}
 
-                            <div className="flex-1 relative z-10 p-4 md:p-8 flex flex-col overflow-hidden">
-
+                            <div className="flex-1 relative z-10 p-4 md:p-8 flex flex-col overflow-y-auto">
                                 {/* MATCH Workflow */}
                                 {selectedFunctionality === 'MATCH' && (
                                     <div className="w-full h-full flex flex-col">
                                         {showMatchWizard && wizardChecked ? (
                                             <MatchWizard onComplete={() => {
                                                 setShowMatchWizard(false);
-                                                // TRIGGER: Send hidden message to agent
                                                 setPostWizardTrigger("Acabei de preencher meus dados (Nota e Renda). Por favor verifique oportunidades com base nisso e me dê um resumo.");
-
                                                 if (user) {
                                                     supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle()
                                                         .then(({ data }) => setPreferences(data));
@@ -389,7 +458,7 @@ function ChatPageContent() {
                                                 )
                                             ) : (
                                                 <div className="w-full h-full overflow-y-auto">
-                                                    <div className="min-h-full flex flex-col justify-center p-4 md:p-8">
+                                                    <div className="min-h-full flex flex-col justify-center p-0 md:p-8">
                                                         <UserPreferencesSection
                                                             preferences={preferences}
                                                             onUpdate={(updated) => setPreferences(updated)}
@@ -421,8 +490,8 @@ function ChatPageContent() {
                                 )}
 
                                 {selectedFunctionality === 'ONBOARDING' && (
-                                    <div className="w-full h-full overflow-y-auto flex items-center justify-center p-4">
-                                        <div className="w-full max-w-3xl">
+                                    <div className={`w-full h-full overflow-y-auto flex flex-col ${profile?.passport_phase === 'PROGRAM_MATCH' ? 'pt-4' : 'items-center md:justify-center p-0 md:p-4'}`}>
+                                        <div className={`w-full h-full ${profile?.passport_phase === 'PROGRAM_MATCH' ? '' : 'max-w-3xl'}`}>
                                             {!profile || !profile.passport_phase ? (
                                                 <div className="flex flex-col items-center justify-center p-8 bg-white/50 backdrop-blur-sm rounded-3xl border border-white">
                                                     <div className="w-32 h-32 bg-[#024F86]/10 rounded-full flex flex-col items-center justify-center mb-4 text-[#024F86]/60 font-medium text-center p-2">
@@ -432,26 +501,78 @@ function ChatPageContent() {
                                                 </div>
                                             ) : profile.passport_phase === 'DEPENDENT_ONBOARDING' ? (
                                                 <DependentDataSection
+                                                    key={`dependent-form-${profile.passport_phase}`}
                                                     onDependentOnboardingComplete={handleUIOnboardingComplete}
                                                     onFormDirty={setUiFormState}
+                                                    onTriggerChatMessage={(msg) => {
+                                                        setPostWizardTrigger(msg);
+                                                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                                            setActiveTab('CHAT');
+                                                        }
+                                                    }}
                                                 />
                                             ) : profile.passport_phase === 'EVALUATE' ? (
                                                 <PartnerForm
-                                                    onComplete={() => console.log('PartnerForm Concluído simulado')}
+                                                    key={`partner-form-${profile.passport_phase}-${selectedApplicationId || 'latest'}`}
+                                                    applicationId={selectedApplicationId || undefined}
+                                                    onComplete={() => {
+                                                        console.log('[ChatPage] PartnerForm completed. Refreshing profile.');
+                                                        setSelectedApplicationId(null);
+                                                        getUserProfileService().then(({ data }) => {
+                                                            if (data) setProfile(data);
+                                                        });
+                                                    }}
                                                     onFormDirty={setUiFormState}
+                                                    onTriggerChatMessage={(msg) => {
+                                                        setPostWizardTrigger(msg);
+                                                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                                            setActiveTab('CHAT');
+                                                        }
+                                                    }}
                                                 />
-                                            ) : ['INTRO', 'ASK_DEPENDENT', 'PROGRAM_MATCH', 'CONCLUDED'].includes(profile.passport_phase) ? (
-                                                <div className="flex flex-col items-center justify-center p-8 bg-white/50 backdrop-blur-sm rounded-3xl border border-white">
-                                                    <div className="w-32 h-32 bg-[#024F86]/10 rounded-full flex flex-col items-center justify-center mb-4 text-[#024F86]/60 font-medium text-center p-2">
-                                                        [Imagem da Cloudinha]
-                                                    </div>
+                                            ) : profile.passport_phase === 'PROGRAM_MATCH' ? (
+                                                <ProgramMatchSection
+                                                    key={`program-match-${profile.passport_phase}`}
+                                                    onTriggerChatMessage={(msg) => {
+                                                        setPostWizardTrigger(msg);
+                                                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                                            setActiveTab('CHAT');
+                                                        }
+                                                    }}
+                                                />
+                                            ) : profile.passport_phase === 'INTRO' ? (
+                                                <div className="flex flex-col items-center justify-center p-8 bg-white/50 backdrop-blur-sm rounded-3xl border border-white h-[60vh] md:h-full mt-8 md:mt-0">
+                                                    <Loader2 size={48} className="text-[#024F86] animate-spin mb-4" />
+                                                    <h3 className="text-xl font-bold text-[#024F86] mb-2 text-center">Preparando o seu Passaporte...</h3>
+                                                    <p className="text-sm text-[#024F86]/70 text-center max-w-sm">
+                                                        A Cloudinha está separando as melhores perguntas para encontrar as oportunidades ideais para você.
+                                                    </p>
                                                 </div>
+                                            ) : ['ASK_DEPENDENT', 'CONCLUDED'].includes(profile.passport_phase) ? (
+                                                <SuccessTransitionView
+                                                    title="Dados Confirmados!"
+                                                    subtitle="Seu perfil foi atualizado com sucesso"
+                                                    description="A Cloudinha liberou os próximos passos no Chat ao lado. Dê uma olhadinha lá para continuar!"
+                                                    buttonText="Ir para o Chat"
+                                                    onButtonClick={() => {
+                                                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                                            setActiveTab('CHAT');
+                                                        }
+                                                    }}
+                                                />
                                             ) : (
                                                 <UserDataSection
+                                                    key={`user-form-${profile.passport_phase}`}
                                                     profile={profile}
                                                     onProfileUpdate={setProfile}
                                                     onOnboardingComplete={handleUIOnboardingComplete}
                                                     onFormDirty={setUiFormState}
+                                                    onTriggerChatMessage={(msg) => {
+                                                        setPostWizardTrigger(msg);
+                                                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                                            setActiveTab('CHAT');
+                                                        }
+                                                    }}
                                                 />
                                             )}
                                         </div>
@@ -461,9 +582,24 @@ function ChatPageContent() {
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <AuthModal />
+                <AuthModal />
+
+                {/* Applications Drawer */}
+                <ApplicationsDrawer
+                    isOpen={showApplicationsDrawer}
+                    onClose={() => setShowApplicationsDrawer(false)}
+                    onSelectApplication={async (appId) => {
+                        setShowApplicationsDrawer(false);
+                        setSelectedApplicationId(appId);
+                        // Ensure we're in EVALUATE phase to show the PartnerForm
+                        if (profile?.passport_phase !== 'EVALUATE') {
+                            const { data } = await updateUserProfileService({ passport_phase: 'EVALUATE' });
+                            if (data) setProfile(data);
+                        }
+                    }}
+                />
+            </div>
         </div>
     );
 }

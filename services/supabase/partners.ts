@@ -13,12 +13,17 @@ export interface Partner {
 }
 
 export async function getPartners() {
-  const { data, error } = await supabase.rpc('get_partners');
-  
+  const { data, error } = await supabase.rpc('get_partners', { p_sort_by: 'name', p_sort_order: 'asc' });
+
   if (error) {
-    console.error('Error fetching partners:', error);
+    console.error('Error fetching partners:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
     return [];
   }
-  
+
   return (data as Partner[]) || [];
 }

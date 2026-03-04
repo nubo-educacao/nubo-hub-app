@@ -18,7 +18,7 @@ export type PendingAction =
   | { type: 'favorite'; payload: { opportunityId: string } }
   | { type: 'partner_click'; payload: { partnerId: string; link: string } }
   | { type: 'redirect'; payload: { url: string } }
-  | { type: 'start_workflow'; payload: { workflow: string } }
+  | { type: 'start_workflow'; payload: { workflow: string; message?: string } }
   | null;
 
 interface AuthContextType {

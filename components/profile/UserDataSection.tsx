@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, updateUserProfileService } from '@/services/supabase/profile';
 import { Montserrat } from 'next/font/google';
-import { User, MapPin, GraduationCap, Calendar, Save, Loader2, Search, Home, Hash, Building } from 'lucide-react';
+import { User, MapPin, GraduationCap, Calendar, Save, Loader2, Search, Home, Hash, Building, AlertCircle } from 'lucide-react';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -12,6 +12,7 @@ interface UserDataSectionProps {
   onProfileUpdate: (updatedProfile: UserProfile) => void;
   onOnboardingComplete?: () => void;
   onFormDirty?: (state: any) => void;
+  onTriggerChatMessage?: (message: string) => void;
 }
 
 interface InputFieldProps {
@@ -27,15 +28,17 @@ interface InputFieldProps {
   suffix?: React.ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
+  error?: boolean;
 }
 
-const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, maxLength, className, suffix, onFocus, onBlur }: InputFieldProps) => (
+const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, maxLength, className, suffix, onFocus, onBlur, error }: InputFieldProps) => (
   <div className={`flex flex-col gap-1.5 ${className || ''}`}>
-    <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
+    <label className={`text-sm font-semibold flex items-center gap-2 ${error ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
       <Icon size={14} />
       {label}
+      {error && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
     </label>
-    <div className="relative flex items-center">
+    <div className="relative flex items-center group">
       <input
         type={type}
         name={name}
@@ -45,7 +48,11 @@ const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, p
         maxLength={maxLength}
         onFocus={onFocus}
         onBlur={onBlur}
-        className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full"
+        className={`bg-white/50 border focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full
+          ${error
+            ? 'border-red-400 hover:border-red-500 bg-red-50/10'
+            : 'border-white/40 group-hover:border-white/60'
+          }`}
       />
       {suffix}
     </div>
@@ -77,12 +84,21 @@ async function lookupCEP(cep: string): Promise<ViaCEPResponse | null> {
   }
 }
 
-export default function UserDataSection({ profile, onProfileUpdate, onOnboardingComplete, onFormDirty }: UserDataSectionProps) {
+export default function UserDataSection({ profile, onProfileUpdate, onOnboardingComplete, onFormDirty, onTriggerChatMessage }: UserDataSectionProps) {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  const toTitleCase = (str: string) => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   // Sync state with parent (debounce 500ms)
   useEffect(() => {
@@ -113,6 +129,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
         street_number: profile.street_number || '',
         complement: profile.complement || '',
         education: profile.education || '',
+        education_year: profile.education_year || '',
       });
     }
   }, [profile]);
@@ -128,12 +145,17 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
     (formData.street || '') !== (profile.street || '') ||
     (formData.street_number || '') !== (profile.street_number || '') ||
     (formData.complement || '') !== (profile.complement || '') ||
-    (formData.education || '') !== (profile.education || '')
+    (formData.education || '') !== (profile.education || '') ||
+    (formData.education_year || '') !== (profile.education_year || '')
   ) : Object.keys(formData).length > 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: false }));
+    }
   };
 
   const handleCEPLookup = useCallback(async (cepValue: string) => {
@@ -178,55 +200,125 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
     }
   };
 
+  const validateForm = (): { errors: Record<string, boolean>; descriptions: string[] } => {
+    const newErrors: Record<string, boolean> = {};
+    const descriptions: string[] = [];
+
+    // Name: At least 2 words
+    const nameParts = (formData.full_name || '').trim().split(/\s+/);
+    if (!formData.full_name || nameParts.length < 2) {
+      newErrors.full_name = true;
+      descriptions.push('Nome incompleto (precisa ter nome e sobrenome)');
+    }
+
+    // Age: 6 to 100
+    const age = Number(formData.age);
+    if (!formData.age || age < 6 || age > 100) {
+      newErrors.age = true;
+      if (!formData.age) {
+        descriptions.push('Idade não informada');
+      } else {
+        descriptions.push(`Idade inválida (${formData.age}). Precisa ser entre 6 e 100 anos`);
+      }
+    }
+
+    // Address
+    const missingAddress: string[] = [];
+    if (!formData.zip_code || formData.zip_code.replace(/\D/g, '').length < 8) { newErrors.zip_code = true; missingAddress.push('CEP'); }
+    if (!formData.state) { newErrors.state = true; missingAddress.push('Estado'); }
+    if (!formData.city) { newErrors.city = true; missingAddress.push('Cidade'); }
+    if (!formData.street) { newErrors.street = true; missingAddress.push('Rua'); }
+    if (!formData.street_number) { newErrors.street_number = true; missingAddress.push('Número'); }
+
+    if (missingAddress.length > 0) {
+      descriptions.push(`Endereço incompleto (faltando: ${missingAddress.join(', ')})`);
+    }
+
+    // Education
+    if (!formData.education) {
+      newErrors.education = true;
+      descriptions.push('Escolaridade não selecionada');
+    }
+    const requiresYear = formData.education === 'Ensino fundamental' || formData.education === 'Ensino médio incompleto';
+    if (requiresYear && !formData.education_year) {
+      newErrors.education_year = true;
+      descriptions.push('Ano escolar não selecionado');
+    }
+
+    setErrors(newErrors);
+    return { errors: newErrors, descriptions };
+  };
+
   const handleSave = async () => {
+    const { errors: newErrors, descriptions } = validateForm();
+
     setLoading(true);
-    const { data, error } = await updateUserProfileService({
-      full_name: formData.full_name,
-      age: formData.age ? Number(formData.age) : null,
-      city: formData.city,
-      state: formData.state,
-      zip_code: (formData.zip_code || '').replace(/\D/g, '') || null,
-      street: formData.street,
-      street_number: formData.street_number,
-      complement: formData.complement,
-      education: formData.education,
-    });
+
+    const formattedName = toTitleCase((formData.full_name || '').trim());
+
+    // Prepare updates object with only valid fields
+    const updates: any = {};
+    if (!newErrors.full_name) updates.full_name = formattedName;
+    if (!newErrors.age) updates.age = formData.age ? Number(formData.age) : null;
+    if (!newErrors.city) updates.city = formData.city;
+    if (!newErrors.state) updates.state = formData.state;
+    if (!newErrors.zip_code) updates.zip_code = (formData.zip_code || '').replace(/\D/g, '') || null;
+    if (!newErrors.street) updates.street = formData.street;
+    if (!newErrors.street_number) updates.street_number = formData.street_number;
+
+    // Complement is optional and not validated for errors
+    updates.complement = formData.complement;
+
+    if (!newErrors.education) updates.education = formData.education;
+    if (!newErrors.education_year) updates.education_year = formData.education_year;
+
+    const hasValidationErrors = Object.keys(newErrors).length > 0;
+
+    // Transição de fase controlada pelo frontend num único request para evitar race conditions
+    if (!hasValidationErrors && profile?.passport_phase === 'ONBOARDING') {
+      updates.onboarding_completed = true;
+      updates.passport_phase = 'ASK_DEPENDENT';
+    }
+
+    const { data, error } = await updateUserProfileService(updates);
+    console.log('[handleSave] updates:', updates);
+    console.log('[handleSave] newErrors:', newErrors);
+    console.log('[handleSave] descriptions:', descriptions);
+    console.log('[handleSave] supabase response:', { data, error });
 
     if (data) {
       onProfileUpdate(data);
 
-      // Check if all required fields are present to trigger completion
-      if (data.full_name && data.age && data.city && data.education && data.zip_code) {
-        if (onOnboardingComplete) {
-          onOnboardingComplete();
+      // Update local state for formatted name if it was valid
+      if (updates.full_name) {
+        setFormData(prev => ({ ...prev, full_name: updates.full_name }));
+      }
+
+      if (!hasValidationErrors) {
+        // Check if all required fields are present to trigger completion
+        if (data.full_name && data.age && data.city && data.education && data.zip_code) {
+          if (onOnboardingComplete) {
+            onOnboardingComplete();
+          }
         }
       }
     } else {
       console.error(error);
     }
+
+    // Always notify Cloudinha if there are validation errors, even if partial save failed/returned no data
+    if (hasValidationErrors && onTriggerChatMessage) {
+      const message = `Tentei salvar meu formulário mas alguns campos estão com problema: ${descriptions.join(', ')}. O que preciso corrigir?`;
+      onTriggerChatMessage(message);
+    }
+
     setLoading(false);
   };
 
   return (
-    <div className={`bg-white/30 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl p-6 md:p-8 ${montserrat.className}`}>
+    <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 ${montserrat.className}`}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#024F86]">Dados do Usuário</h2>
-        {hasChanges && (
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <>
-                <Save size={16} />
-                Salvar
-              </>
-            )}
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -239,6 +331,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           placeholder="Seu nome completo"
           onFocus={() => setFocusedField('full_name')}
           onBlur={() => setFocusedField(null)}
+          error={errors.full_name}
         />
         <InputField
           label="Idade"
@@ -250,6 +343,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           placeholder="Sua idade"
           onFocus={() => setFocusedField('age')}
           onBlur={() => setFocusedField(null)}
+          error={errors.age}
         />
       </div>
 
@@ -263,11 +357,12 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* CEP */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
+            <label className={`text-sm font-semibold flex items-center gap-2 ${errors.zip_code ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
               <MapPin size={14} />
               CEP
+              {errors.zip_code && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
             </label>
-            <div className="relative">
+            <div className="relative group">
               <input
                 type="text"
                 name="zip_code"
@@ -277,7 +372,11 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 maxLength={9}
                 onFocus={() => setFocusedField('zip_code')}
                 onBlur={() => setFocusedField(null)}
-                className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full pr-10"
+                className={`bg-white/50 border focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all placeholder:text-gray-400 w-full pr-10
+                  ${errors.zip_code
+                    ? 'border-red-400 hover:border-red-500 bg-red-50/10'
+                    : 'border-white/40 group-hover:border-white/60'
+                  }`}
               />
               {cepLoading && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -311,6 +410,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             maxLength={2}
             onFocus={() => setFocusedField('state')}
             onBlur={() => setFocusedField(null)}
+            error={errors.state}
           />
 
           {/* City */}
@@ -323,6 +423,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             placeholder="Sua cidade"
             onFocus={() => setFocusedField('city')}
             onBlur={() => setFocusedField(null)}
+            error={errors.city}
           />
         </div>
 
@@ -338,6 +439,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             className="md:col-span-1"
             onFocus={() => setFocusedField('street')}
             onBlur={() => setFocusedField(null)}
+            error={errors.street}
           />
 
           {/* Number */}
@@ -350,6 +452,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             placeholder="Nº"
             onFocus={() => setFocusedField('street_number')}
             onBlur={() => setFocusedField(null)}
+            error={errors.street_number}
           />
 
           {/* Complement */}
@@ -370,27 +473,97 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
       <div className="mt-6 pt-6 border-t border-white/20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
+            <label className={`text-sm font-semibold flex items-center gap-2 ${errors.education ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
               <GraduationCap size={14} />
               Escolaridade
+              {errors.education && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
             </label>
             <select
               name="education"
               value={formData.education || ''}
-              onChange={handleChange}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  education: val,
+                  // Reset year if education doesn't require it
+                  education_year: (val === 'Ensino fundamental' || val === 'Ensino médio incompleto')
+                    ? prev.education_year
+                    : ''
+                }));
+              }}
               onFocus={() => setFocusedField('education')}
               onBlur={() => setFocusedField(null)}
-              className="bg-white/50 border border-white/40 focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all"
+              className={`bg-white/50 border focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all w-full h-[42px]
+                ${errors.education
+                  ? 'border-red-400 hover:border-red-500 bg-red-50/10'
+                  : 'border-white/40 hover:border-white/60'
+                }`}
             >
               <option value="">Selecione...</option>
-              <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
-              <option value="Ensino Médio Completo">Ensino Médio Completo</option>
-              <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
-              <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+              <option value="Ensino fundamental">Ensino fundamental</option>
+              <option value="Ensino médio incompleto">Ensino médio incompleto</option>
+              <option value="Ensino médio completo">Ensino médio completo</option>
+              <option value="Superior Incompleto">Superior Incompleto</option>
+              <option value="Superior Completo">Superior Completo</option>
+              <option value="Pós-graduação">Pós-graduação</option>
             </select>
           </div>
+
+          {/* Conditional Year Field */}
+          {(formData.education === 'Ensino fundamental' || formData.education === 'Ensino médio incompleto') && (
+            <div className="flex flex-col gap-1.5">
+              <label className={`text-sm font-semibold flex items-center gap-2 ${errors.education_year ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
+                <Calendar size={14} />
+                Ano
+                {errors.education_year && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
+              </label>
+              <select
+                name="education_year"
+                value={formData.education_year || ''}
+                onChange={handleChange}
+                onFocus={() => setFocusedField('education_year')}
+                onBlur={() => setFocusedField(null)}
+                className={`bg-white/50 border focus:border-[#38B1E4] rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all w-full h-[42px]
+                  ${errors.education_year
+                    ? 'border-red-400 hover:border-red-500 bg-red-50/10'
+                    : 'border-white/40 hover:border-white/60'
+                  }`}
+              >
+                <option value="">Selecione o ano...</option>
+                {formData.education === 'Ensino fundamental' ? (
+                  Array.from({ length: 9 }, (_, i) => (
+                    <option key={i + 1} value={`${i + 1}º ano`}>{i + 1}º ano</option>
+                  ))
+                ) : (
+                  Array.from({ length: 3 }, (_, i) => (
+                    <option key={i + 1} value={`${i + 1}º ano`}>{i + 1}º ano</option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
         </div>
       </div>
+
+      {hasChanges && (
+        <div className="mt-8 flex justify-end border-t border-white/20 pt-6">
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="flex items-center gap-2 px-8 py-3 rounded-full font-bold transition-all bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:scale-100"
+          >
+            {loading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <>
+                <Save size={20} />
+                Salvar Alterações
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

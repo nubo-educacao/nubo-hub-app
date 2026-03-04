@@ -78,7 +78,7 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
   const MAX_CHARS = 2000;
 
   // Determine if input is blocked by phase
-  const isPhaseBlocked = passportPhase === 'INTRO' || passportPhase === 'PROGRAM_MATCH';
+  const isPhaseBlocked = passportPhase === 'INTRO';
   const effectiveDisabled = disabled || isPhaseBlocked;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
