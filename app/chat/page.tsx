@@ -403,6 +403,7 @@ function ChatPageContent() {
                         onTriggerMessageSent={() => setPostWizardTrigger(null)}
                         uiFormState={uiFormState}
                         passportPhase={profile?.passport_phase}
+                        selectedFunctionality={selectedFunctionality}
                     />
                 </div>
 
