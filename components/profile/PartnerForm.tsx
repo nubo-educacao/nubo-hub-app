@@ -18,6 +18,8 @@ interface PartnerStep {
     partner_id: string;
     step_name: string;
     sort_order: number;
+    introduction?: string | null;
+    secret_step?: boolean;
 }
 
 interface PartnerFormField {
@@ -205,17 +207,18 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // ─── Derived Data ────────────────────────────────────────────────────────
 
-    const currentStep = steps[currentStepIndex] || null;
+    const visibleSteps = useMemo(() => steps.filter(s => !s.secret_step), [steps]);
+    const currentStep = visibleSteps[currentStepIndex] || null;
 
     const currentFields = useMemo(() => {
         if (!currentStep) {
-            // If no steps, show all fields
-            return fields;
+            // If no visible steps, show all fields that are not in a step (orphans) or all if none
+            return fields.filter(f => !f.step_id || !steps.find(s => s.id === f.step_id));
         }
         return fields.filter(f => f.step_id === currentStep.id);
-    }, [fields, currentStep]);
+    }, [fields, currentStep, steps]);
 
-    const isLastStep = currentStepIndex >= steps.length - 1;
+    const isLastStep = currentStepIndex >= visibleSteps.length - 1;
 
     // ─── Validation ──────────────────────────────────────────────────────────
 
@@ -607,7 +610,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // ─── Form Screen ─────────────────────────────────────────────────────────
 
-    const totalSteps = steps.length;
+    const totalSteps = visibleSteps.length;
     const progress = totalSteps > 0 ? ((currentStepIndex + 1) / totalSteps) * 100 : 100;
 
     return (
@@ -652,6 +655,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                         transition={{ duration: 0.2 }}
                         className="space-y-5"
                     >
+                        {currentStep?.introduction && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-4 rounded-xl bg-[#024F86]/5 border border-[#024F86]/10 text-sm text-[#024F86] mb-2"
+                            >
+                                {currentStep.introduction}
+                            </motion.div>
+                        )}
+
                         {currentFields.length === 0 ? (
                             <div className="text-center py-8 text-[#3A424E]/60 text-sm">
                                 Nenhum campo nesta etapa.
@@ -694,6 +707,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     )}
                 </button>
             </div>
-        </div>
+        </div >
     );
 }
