@@ -21,20 +21,27 @@ export default function SearchSection() {
     };
 
     return (
-        <section className="relative w-full py-20 overflow-hidden">
+        <section className="relative w-full py-20 px-4 overflow-hidden">
             <motion.div
                 className="container mx-auto flex flex-col items-center text-center z-10 space-y-6"
                 variants={container}
                 initial="hidden"
                 animate="show"
             >
-                {/* New Subheader */}
-                <motion.p
-                    className="text-xl md:text-2xl text-sky-700 font-medium font-lora mb-2"
-                    variants={item}
-                >
-                    Fale com a Cloudinha
-                </motion.p>
+                <div className="space-y-4 max-w-3xl px-4">
+                    <motion.h2
+                        className="text-4xl md:text-5xl lg:text-6xl font-bold text-sky-900 tracking-tight"
+                        variants={item}
+                    >
+                        Fale com a <span className="text-sky-600">Cloudinha</span>
+                    </motion.h2>
+                    <motion.p
+                        className="text-xl md:text-2xl text-sky-700 font-medium font-lora"
+                        variants={item}
+                    >
+                        Descubra as melhores oportunidades para você
+                    </motion.p>
+                </div>
 
                 {/* Chat Component */}
                 <motion.div variants={item} className="w-full flex justify-center">

@@ -2,7 +2,7 @@
 
 import React, { useState, KeyboardEvent, useEffect, useRef, useTransition } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Send, Loader2, X } from 'lucide-react';
+import { Send, Loader2, X, ArrowRight } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
@@ -11,12 +11,14 @@ interface ChatInputProps {
   passportPhase?: string | null;
   uiFormState?: any;
   onProfileUpdated?: () => void;
+  onViewPanel?: () => void;
+  showViewPanel?: boolean;
 }
 
 import { PHRASES } from '@/components/ConversationStarters';
 import { updateUserProfileService } from '@/services/supabase/profile';
 
-export default function ChatInput({ onSendMessage, isLoading, disabled, passportPhase, uiFormState, onProfileUpdated }: ChatInputProps) {
+export default function ChatInput({ onSendMessage, isLoading, disabled, passportPhase, uiFormState, onProfileUpdated, onViewPanel, showViewPanel }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [showStarters, setShowStarters] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -132,6 +134,22 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
             className="flex-1 py-4 px-6 bg-[#38B1E4] hover:bg-[#2a9acb] text-white rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
             Para outra pessoa
+          </button>
+        </div>
+      )}
+
+      {/* View Panel Button (Mobile Only) */}
+      {showViewPanel && !isLoading && (
+        <div className="w-full flex justify-center md:hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <button
+            onClick={() => {
+              console.log('[ChatInput] onViewPanel called');
+              onViewPanel?.();
+            }}
+            className="w-full py-4 px-6 bg-[#38B1E4]/80 backdrop-blur-md hover:bg-[#38B1E4] text-white border border-white/20 rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 ring-1 ring-white/10"
+          >
+            <span>Ver painel</span>
+            <ArrowRight size={20} strokeWidth={2.5} />
           </button>
         </div>
       )}

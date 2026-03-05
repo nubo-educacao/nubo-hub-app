@@ -6,12 +6,17 @@ import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export const PHRASES = [
+  "O que são programas educacionais?",
+  "Quais oportunidades existem para meu perfil?",
+  "Quem pode participar desses programas?",
+  "Como funciona o processo de inscrição?",
+  "O que é o Passaporte de Elegibilidade?",
   "Como a Cloudinha funciona?",
-  "Me ajude a encontrar a oportunidade ideal...",
-  "Como funciona o processo do SISU?",
-  "Tenho direito a bolsas do Prouni?",
-  "Em quais faculdades eu tenho mais chance com a minha nota?",
-  "Quais cursos existem perto de onde eu moro?"
+  // "Me ajude a encontrar a oportunidade ideal...",
+  // "Como funciona o processo do SISU?",
+  // "Tenho direito a bolsas do Prouni?",
+  // "Em quais faculdades eu tenho mais chance com a minha nota?",
+  // "Quais cursos existem perto de onde eu moro?"
 ];
 
 export default function ConversationStarters() {

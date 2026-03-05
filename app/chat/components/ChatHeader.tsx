@@ -40,7 +40,7 @@ export default function ChatHeader({
             case 'MATCH': return { title: 'Match do Prouni', subtitle: 'Encontre sua oportunidade ideal' };
             case 'PROUNI': return { title: 'Entendendo o Prouni', subtitle: 'Tire suas dúvidas sobre o programa' };
             case 'SISU': return { title: 'Entendendo o Sisu', subtitle: 'Tudo o que você precisa saber' };
-            case 'ONBOARDING': return { title: 'Passaporte de Eligibilidade', subtitle: 'O programa ideal pra você' };
+            case 'ONBOARDING': return { title: 'Passaporte de Elegibilidade', subtitle: 'O programa ideal pra você' };
         }
     };
 

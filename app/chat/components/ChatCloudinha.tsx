@@ -20,7 +20,9 @@ import {
     Search,
     Calendar,
     User,
-    Shield
+    Shield,
+    Layout,
+    ArrowRight
 } from 'lucide-react';
 
 export interface ThinkingItem {
@@ -159,7 +161,8 @@ export default function ChatCloudinha({
     triggerMessage,
     onTriggerMessageSent,
     uiFormState,
-    passportPhase
+    passportPhase,
+    selectedFunctionality
 }: {
     initialMessage?: string;
     onInitialMessageSent?: () => void;
@@ -182,6 +185,7 @@ export default function ChatCloudinha({
     // Context-Awareness
     uiFormState?: any;
     passportPhase?: string | null;
+    selectedFunctionality?: 'MATCH' | 'PROUNI' | 'SISU' | 'ONBOARDING';
 }) {
     const { user, isAuthenticated, session } = useAuth();
 
@@ -1064,6 +1068,16 @@ export default function ChatCloudinha({
                         isLoading={isTyping}
                         disabled={isTyping || inputDisabled}
                         passportPhase={passportPhase}
+                        onViewPanel={() => {
+                            console.log('[ChatCloudinha] Ver painel clicked, switching to CONTENT');
+                            onTabSwitch?.('CONTENT');
+                        }}
+                        showViewPanel={
+                            activeTab === 'CHAT' && 
+                            selectedFunctionality === 'ONBOARDING' && 
+                            !!passportPhase && 
+                            ['ONBOARDING', 'DEPENDENT_ONBOARDING', 'EVALUATE', 'PROGRAM_MATCH'].includes(passportPhase)
+                        }
                     />
                 </div>
             </div>
