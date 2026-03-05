@@ -233,7 +233,7 @@ function ChatPageContent() {
                 } else {
                     console.error('[ChatPage] ❌ Failed to transition from INTRO to ONBOARDING:', error);
                 }
-            }, 15000);
+            }, 8000);
             return () => clearTimeout(timer);
         }
     }, [profile?.passport_phase, user]);

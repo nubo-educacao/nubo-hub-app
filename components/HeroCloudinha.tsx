@@ -32,13 +32,13 @@ export default function HeroCloudinha() {
             className="text-4xl md:text-5xl lg:text-7xl font-bold text-sky-900 tracking-tight"
             variants={item}
           >
-            Transforme seu potencial em <span className="text-sky-600">oportunidades reais</span>
+            Encontre <span className="text-sky-600">oportunidades educacionais</span> feitas para você
           </motion.h1>
           <motion.p
             className="text-xl md:text-2xl text-sky-700 font-medium font-lora"
             variants={item}
           >
-            A Cloudinha conecta você às melhores instituições de ensino e vagas
+            A Cloudinha conecta estudantes a bolsas, programas e apoio educacional
           </motion.p>
         </div>
       </motion.div>
