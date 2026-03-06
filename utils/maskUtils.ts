@@ -2,10 +2,13 @@
  * Utility for applying and validating input masks in Partner Forms.
  */
 
-export const applyMask = (value: string, maskType: string): string => {
+export const applyMask = (value: string, maskType: string | null): string => {
+    if (!maskType || !value) return value;
+    
+    const type = maskType.toLowerCase();
     const cleanValue = value.replace(/\D/g, '');
 
-    switch (maskType) {
+    switch (type) {
         case 'cpf':
             return cleanValue
                 .replace(/(\d{3})(\d)/, '$1.$2')
@@ -58,19 +61,20 @@ export const applyMask = (value: string, maskType: string): string => {
     }
 };
 
-export const validateMask = (value: string, maskType: string): { isValid: boolean; error?: string } => {
-    if (!value) return { isValid: true };
+export const validateMask = (value: string, maskType: string | null): { isValid: boolean; error?: string } => {
+    if (!value || !maskType) return { isValid: true };
 
+    const type = maskType.toLowerCase();
     const clean = value.replace(/\D/g, '');
 
-    switch (maskType) {
+    switch (type) {
         case 'cpf':
             if (clean.length !== 11) return { isValid: false, error: 'CPF deve ter 11 dígitos' };
             return { isValid: validateCPF(clean), error: 'CPF inválido' };
 
         case 'cnpj':
             if (clean.length !== 14) return { isValid: false, error: 'CNPJ deve ter 14 dígitos' };
-            return { isValid: true }; // Basic length check for now
+            return { isValid: validateCNPJ(clean), error: 'CNPJ inválido' };
 
         case 'phone':
             if (clean.length < 10 || clean.length > 11) return { isValid: false, error: 'Telefone inválido' };
@@ -111,4 +115,99 @@ const validateCPF = (cpf: string): boolean => {
     if (remainder === 10 || remainder === 11) remainder = 0;
     if (remainder !== parseInt(cpf.substring(10, 11))) return false;
     return true;
+};
+
+const validateCNPJ = (cnpj: string): boolean => {
+    if (/^(\d)\1+$/.test(cnpj)) return false;
+    let length = cnpj.length - 2;
+    let numbers = cnpj.substring(0, length);
+    const digits = cnpj.substring(length);
+    let sum = 0;
+    let pos = length - 7;
+    for (let i = length; i >= 1; i--) {
+        sum += parseInt(numbers.charAt(length - i)) * pos--;
+        if (pos < 2) pos = 9;
+    }
+    let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(0))) return false;
+    length = length + 1;
+    numbers = cnpj.substring(0, length);
+    sum = 0;
+    pos = length - 7;
+    for (let i = length; i >= 1; i--) {
+        sum += parseInt(numbers.charAt(length - i)) * pos--;
+        if (pos < 2) pos = 9;
+    }
+    result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(1))) return false;
+    return true;
+};
+
+export const getPlaceholder = (maskType: string | null, dataType: string): string => {
+    if (!maskType) {
+        if (dataType === 'number') return 'Digite um número...';
+        return 'Digite sua resposta...';
+    }
+
+    const type = maskType.toLowerCase();
+    
+    if (type === 'textarea') return 'Digite até 500 caracteres';
+    
+    switch (type) {
+        case 'cpf':
+            return '999.999.999-99';
+        case 'cnpj':
+            return '99.999.999/9999-99';
+        case 'phone':
+            return '(99) 99999-9999';
+        case 'cep':
+            return '99999-999';
+        case 'date':
+            return 'DD/MM/AAAA';
+        case 'brl':
+            return 'R$ 0,00';
+        case 'email':
+            return 'exemplo@email.com';
+        default:
+            if (dataType === 'number') return 'Digite um número...';
+            return 'Digite sua resposta...';
+    }
+};
+
+export const getMaxLength = (maskType: string | null): number | undefined => {
+    if (!maskType) return undefined;
+
+    const type = maskType.toLowerCase();
+
+    switch (type) {
+        case 'cpf':
+            return 14; // 000.000.000-00
+        case 'cnpj':
+            return 18; // 00.000.000/0000-00
+        case 'phone':
+            return 15; // (00) 00000-0000
+        case 'cep':
+            return 9; // 00000-000
+        case 'date':
+            return 10; // 00/00/0000
+        case 'textarea':
+            return 500;
+        case 'email':
+            return 255;
+        default:
+            return undefined;
+    }
+};
+
+export const getComponentType = (maskType: string | null, dataType: string): 'input' | 'textarea' | 'date' | 'select' | 'checkbox' => {
+    if (dataType === 'select' || dataType === 'multiselect') return 'select';
+    if (dataType === 'boolean') return 'checkbox';
+    
+    if (!maskType) return 'input';
+    
+    const type = maskType.toLowerCase();
+    if (type === 'textarea') return 'textarea';
+    if (type === 'date') return 'date';
+    
+    return 'input';
 };

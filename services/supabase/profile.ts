@@ -23,7 +23,10 @@ export interface UserProfile {
   education_year: string | null;
   onboarding_completed: boolean;
   passport_phase: PassportPhase | null;
+  furthest_passport_phase: PassportPhase | null;
   relationship?: string | null;
+  active_application_target_id?: string | null;
+  current_dependent_id?: string | null;
 }
 
 export interface UpdateProfileParams {
