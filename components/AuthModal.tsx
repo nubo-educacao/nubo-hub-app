@@ -36,10 +36,10 @@ export default function AuthModal() {
   const formatPhone = (value: string) => {
     // Remove non-digits
     const numbers = value.replace(/\D/g, '');
-    
+
     // Limit to 11 digits (DDD + 9 digits)
     const limited = numbers.slice(0, 11);
-    
+
     // Apply mask: (XX) XXXXX-XXXX
     if (limited.length <= 2) return limited;
     if (limited.length <= 7) return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
@@ -74,17 +74,17 @@ export default function AuthModal() {
         // Demo Mode: Direct Login
         const { error } = await signInWithDemo(formattedPhone);
         if (error) throw error;
-        
+
         // If we have a pending chat action, keep loading (spinner) until redirect happens
         if (pendingAction?.type === 'chat') {
-           // Do nothing, keep spinner. The ChatBox component will handle redirect.
-           // The modal will be closed by the destination page (ChatPage)
+          // Do nothing, keep spinner. The ChatBox component will handle redirect.
+          // The modal will be closed by the destination page (ChatPage)
         } else if (pendingAction?.type === 'redirect') {
-            router.push(pendingAction.payload.url);
-            setPendingAction(null);
-            closeAuthModal();
+          router.push(pendingAction.payload.url);
+          setPendingAction(null);
+          closeAuthModal();
         } else {
-           closeAuthModal();
+          closeAuthModal();
         }
       } else {
         // Production Mode: WhatsApp OTP
@@ -117,12 +117,12 @@ export default function AuthModal() {
     try {
       const { error } = await verifyOtp(formattedPhone, otp);
       if (error) throw error;
-      
+
       // If we have a pending chat action, keep loading (spinner) until redirect happens
       if (pendingAction?.type === 'chat') {
-          // Do nothing, keep spinner.
+        // Do nothing, keep spinner.
       } else {
-          // AuthContext usually handles this
+        // AuthContext usually handles this
       }
     } catch (err: any) {
       console.error(err);
@@ -134,7 +134,7 @@ export default function AuthModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
         onClick={closeAuthModal}
       />
@@ -142,7 +142,7 @@ export default function AuthModal() {
       {/* Modal Card */}
       <div className="relative w-full max-w-[342px] bg-white rounded-[16px] shadow-2xl p-6 transform transition-all duration-300 scale-100 animate-in fade-in zoom-in-95">
         {/* Close Button */}
-        <button 
+        <button
           onClick={closeAuthModal}
           className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition-colors"
         >
@@ -155,8 +155,8 @@ export default function AuthModal() {
             {step === 'PHONE' ? 'Entre no Nubo' : 'Verifique seu número'}
           </h2>
           <p className="font-montserrat font-medium text-[14px] leading-[17.5px] text-[#707A7E] text-center w-[270px]">
-            {step === 'PHONE' 
-              ? 'Entre sem senha. Rápido e seguro.' 
+            {step === 'PHONE'
+              ? 'Entre sem senha. Rápido e seguro.'
               : `Enviamos um código para ${phone}`
             }
           </p>
@@ -184,23 +184,23 @@ export default function AuthModal() {
                     focus-within:ring-1 focus-within:ring-[#38B1E4]
                     transition-all
                   `}>
-                     {/* Brazil Flag and Prefix */}
-                     <div className="flex items-center gap-2 shrink-0">
-                        <div className="relative w-6 h-6 overflow-hidden rounded-full border border-neutral-100">
-                          <Image 
-                            src="/assets/brasil.png" 
-                            alt="Brasil" 
-                            fill 
-                            className="object-cover"
-                          />
-                        </div>
-                        <span className="font-montserrat font-medium text-[16px] text-[#3A424E]">+55</span>
-                     </div>
+                    {/* Brazil Flag and Prefix */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="relative w-6 h-6 overflow-hidden rounded-full border border-neutral-100">
+                        <Image
+                          src="/assets/brasil.png"
+                          alt="Brasil"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="font-montserrat font-medium text-[16px] text-[#3A424E]">+55</span>
+                    </div>
 
-                     <div className="h-4 w-[1px] bg-neutral-200 mx-1"></div>
+                    <div className="h-4 w-[1px] bg-neutral-200 mx-1"></div>
 
-                     {/* Input Field */}
-                     <input
+                    {/* Input Field */}
+                    <input
                       type="tel"
                       value={phone}
                       onChange={handlePhoneChange}
@@ -213,18 +213,18 @@ export default function AuthModal() {
 
               {/* Terms Checkbox - Custom Style */}
               <div className="flex items-start gap-2 px-1">
-                 <div className="relative flex items-center pt-1">
-                    <input
-                      id="terms"
-                      type="checkbox"
-                      checked={acceptedTerms}
-                      onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-[#38B1E4] bg-white transition-all checked:bg-[#38B1E4] checked:border-[#38B1E4]"
-                    />
-                    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ml-[0.5px] mt-[2px] opacity-0 peer-checked:opacity-100 transition-opacity">
-                      <Check size={14} className="text-white" strokeWidth={3} />
-                    </div>
-                 </div>
+                <div className="relative flex items-center pt-1">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-[#38B1E4] bg-white transition-all checked:bg-[#38B1E4] checked:border-[#38B1E4]"
+                  />
+                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ml-[0.5px] mt-[2px] opacity-0 peer-checked:opacity-100 transition-opacity">
+                    <Check size={14} className="text-white" strokeWidth={3} />
+                  </div>
+                </div>
                 <label htmlFor="terms" className="text-[11px] font-montserrat font-medium text-[#707A7E] leading-tight select-none cursor-pointer">
                   Li e concordo com os <a href="/assets/termos-de-uso.pdf" target="_blank" rel="noopener noreferrer" className="text-[#38B1E4] hover:underline">Termos de Uso</a> e <a href="/assets/politica-de-privacidade.pdf" target="_blank" rel="noopener noreferrer" className="text-[#38B1E4] hover:underline">Política de Privacidade</a>.
                 </label>
@@ -237,7 +237,7 @@ export default function AuthModal() {
               )}
 
               {/* Action Button - Figma Style */}
-              <button 
+              <button
                 onClick={handleSendCode}
                 disabled={isLoading || !phone || !acceptedTerms}
                 className="
@@ -253,9 +253,9 @@ export default function AuthModal() {
                   <Loader2 className="animate-spin text-[#38B1E4]" size={20} />
                 ) : (
                   <div className="relative w-[20px] h-[20px]">
-                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.472 14.382C17.119 14.205 15.385 13.351 15.061 13.234C14.736 13.117 14.5 13.058 14.264 13.411C14.029 13.765 13.351 14.56 13.145 14.795C12.939 15.03 12.732 15.059 12.379 14.882C12.0284 14.7061 10.8932 14.3339 9.549 13.135C8.497 12.197 7.786 11.039 7.58 10.686C7.374 10.332 7.558 10.141 7.734 9.966C7.893 9.808 8.087 9.559 8.264 9.353C8.441 9.147 8.5 8.999 8.618 8.764C8.736 8.529 8.677 8.323 8.588 8.146C8.5 7.97 7.793 6.234 7.5 5.528C7.214 4.841 6.925 4.934 6.703 4.924C6.496 4.914 6.26 4.905 6.024 4.905C5.789 4.905 5.405 4.993 5.081 5.346C4.757 5.7 3.843 6.554 3.843 8.291C3.843 10.028 5.11 11.706 5.287 11.942C5.464 12.177 7.784 15.753 11.455 17.34C13.626 18.279 14.484 18.106 15.192 18.041C16.142 17.954 17.653 17.148 17.969 16.259C18.286 15.369 18.286 14.606 18.196 14.453C18.109 14.301 17.873 14.205 17.472 14.382ZM12.076 21.849C10.273 21.849 8.591 21.373 7.126 20.534L6.812 20.347L3 21.347L4.053 17.653L3.845 17.323C2.909 15.834 2.414 14.076 2.414 12.271C2.414 6.958 6.744 2.636 12.08 2.636C14.662 2.637 17.086 3.642 18.911 5.464C20.735 7.286 21.739 9.709 21.739 12.274C21.739 17.585 17.408 21.849 12.076 21.849Z" fill="#38B1E4"/>
-                     </svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17.472 14.382C17.119 14.205 15.385 13.351 15.061 13.234C14.736 13.117 14.5 13.058 14.264 13.411C14.029 13.765 13.351 14.56 13.145 14.795C12.939 15.03 12.732 15.059 12.379 14.882C12.0284 14.7061 10.8932 14.3339 9.549 13.135C8.497 12.197 7.786 11.039 7.58 10.686C7.374 10.332 7.558 10.141 7.734 9.966C7.893 9.808 8.087 9.559 8.264 9.353C8.441 9.147 8.5 8.999 8.618 8.764C8.736 8.529 8.677 8.323 8.588 8.146C8.5 7.97 7.793 6.234 7.5 5.528C7.214 4.841 6.925 4.934 6.703 4.924C6.496 4.914 6.26 4.905 6.024 4.905C5.789 4.905 5.405 4.993 5.081 5.346C4.757 5.7 3.843 6.554 3.843 8.291C3.843 10.028 5.11 11.706 5.287 11.942C5.464 12.177 7.784 15.753 11.455 17.34C13.626 18.279 14.484 18.106 15.192 18.041C16.142 17.954 17.653 17.148 17.969 16.259C18.286 15.369 18.286 14.606 18.196 14.453C18.109 14.301 17.873 14.205 17.472 14.382ZM12.076 21.849C10.273 21.849 8.591 21.373 7.126 20.534L6.812 20.347L3 21.347L4.053 17.653L3.845 17.323C2.909 15.834 2.414 14.076 2.414 12.271C2.414 6.958 6.744 2.636 12.08 2.636C14.662 2.637 17.086 3.642 18.911 5.464C20.735 7.286 21.739 9.709 21.739 12.274C21.739 17.585 17.408 21.849 12.076 21.849Z" fill="#38B1E4" />
+                    </svg>
                   </div>
                 )}
                 <span className="font-montserrat font-semibold text-[14px] text-[#38B1E4]">
@@ -291,7 +291,7 @@ export default function AuthModal() {
               )}
 
               {/* Verify Button */}
-              <button 
+              <button
                 onClick={handleVerifyCode}
                 disabled={isLoading || otp.length !== 6}
                 className="
@@ -313,7 +313,7 @@ export default function AuthModal() {
                 </span>
               </button>
 
-              <button 
+              <button
                 onClick={() => setStep('PHONE')}
                 className="w-full text-[#707A7E] hover:text-[#38B1E4] text-[12px] font-montserrat font-medium transition-colors"
               >

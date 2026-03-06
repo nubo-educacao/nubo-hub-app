@@ -6,12 +6,12 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json();
+    const { message, ui_form_state } = await request.json();
     const authHeader = request.headers.get('Authorization');
-    
+
     // We can still do lightweight auth checks here or getting User ID if needed for logging
     // But for streaming performance, we forward quickly.
-    
+
     // Initialize Supabase Client (Optional here if agent handles persistence)
     // Kept for user ID extraction
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     console.log('[NextAPI] Supabase client initialized. Checking user...');
     const { data: { user } } = await supabase.auth.getUser();
     console.log(`[NextAPI] Supabase auth check done. User ID: ${user?.id || 'null'}`);
-    
+
     const webhookUrl = process.env.AGENT_URL;
 
     if (!webhookUrl) {
@@ -39,7 +39,8 @@ export async function POST(request: Request) {
 
     const payload = {
       chatInput: message,
-      userId: user?.id || null, 
+      userId: user?.id || null,
+      ui_form_state: ui_form_state || null,
     };
 
     console.log(`[NextAPI] Attempting to fetch from: ${webhookUrl}`);
@@ -52,14 +53,14 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[NextAPI] Agent responded with error! Status: ${response.status}`);
-        console.error(`[NextAPI] Agent error body: ${errorText}`);
-        return NextResponse.json({ 
-            error: 'Agent Error', 
-            status: response.status,
-            details: errorText.substring(0, 100) 
-        }, { status: response.status });
+      const errorText = await response.text();
+      console.error(`[NextAPI] Agent responded with error! Status: ${response.status}`);
+      console.error(`[NextAPI] Agent error body: ${errorText}`);
+      return NextResponse.json({
+        error: 'Agent Error',
+        status: response.status,
+        details: errorText.substring(0, 100)
+      }, { status: response.status });
     }
 
     console.log('[NextAPI] Connection successful, starting stream...');
@@ -69,11 +70,11 @@ export async function POST(request: Request) {
     const stream = response.body;
 
     return new Response(stream, {
-        headers: {
-            'Content-Type': 'application/x-ndjson',
-            'Transfer-Encoding': 'chunked'
-        },
-        status: 200
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Transfer-Encoding': 'chunked'
+      },
+      status: 200
     });
 
   } catch (error) {

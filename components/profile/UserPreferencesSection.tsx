@@ -14,22 +14,22 @@ import { CourseAutocomplete } from '@/components/ui/CourseAutocomplete';
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
 interface UserPreferencesSectionProps {
-  preferences: UserPreferences | null;
-  onUpdate: (updated: UserPreferences) => void;
-  onMatchFound?: (courseIds: string[]) => void;
+    preferences: UserPreferences | null;
+    onUpdate: (updated: UserPreferences) => void;
+    onMatchFound?: (courseIds: string[]) => void;
 }
 
 interface InputFieldProps {
-  label: string;
-  name: string;
-  value: string | number | string[] | null;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  type?: string;
-  icon: React.ElementType;
-  placeholder?: string;
-  isEditing: boolean;
-  displayValue?: React.ReactNode;
-  options?: { label: string; value: string }[];
+    label: string;
+    name: string;
+    value: string | number | string[] | null;
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+    type?: string;
+    icon: React.ElementType;
+    placeholder?: string;
+    isEditing: boolean;
+    displayValue?: React.ReactNode;
+    options?: { label: string; value: string }[];
 }
 
 // Helper to display array as comma separated string or pills
@@ -145,15 +145,15 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
 
     useEffect(() => {
         if (useCalculator && isEditing) {
-             const count = parseInt(familyCount) || 0;
-             const incomes = memberIncomes.map(i => parseFloat(i.replace(',', '.'))).filter(n => !isNaN(n)).reduce((a, b) => a + b, 0);
-             const benefits = parseFloat(socialBenefits.replace(',', '.')) || 0;
-             const alim = parseFloat(alimony.replace(',', '.')) || 0;
-             
-             const totalIncome = incomes + benefits + alim;
-             const perCapita = count > 0 ? totalIncome / count : 0;
-             
-             setFormData(prev => ({ ...prev, family_income_per_capita: perCapita }));
+            const count = parseInt(familyCount) || 0;
+            const incomes = memberIncomes.map(i => parseFloat(i.replace(',', '.'))).filter(n => !isNaN(n)).reduce((a, b) => a + b, 0);
+            const benefits = parseFloat(socialBenefits.replace(',', '.')) || 0;
+            const alim = parseFloat(alimony.replace(',', '.')) || 0;
+
+            const totalIncome = incomes + benefits + alim;
+            const perCapita = count > 0 ? totalIncome / count : 0;
+
+            setFormData(prev => ({ ...prev, family_income_per_capita: perCapita }));
         }
     }, [familyCount, memberIncomes, socialBenefits, alimony, useCalculator, isEditing]);
 
@@ -224,10 +224,10 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
 
     const handleMatch = async () => {
         setLoading(true);
-        
+
         // Ensure we save current preferences first? Or just use what is in formData usually?
         // Let's use formData to be immediate.
-        
+
         // Get current user ID for the RPC call
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -244,7 +244,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
             quota_types: formData.quota_types && formData.quota_types.length > 0 ? formData.quota_types : null,
             preferred_shifts: formData.preferred_shifts && formData.preferred_shifts.length > 0 ? formData.preferred_shifts : null,
             program_preference: formData.program_preference || null,
-            user_lat: null, 
+            user_lat: null,
             user_long: null,
             city_names: formData.location_preference ? [formData.location_preference] : null,
             state_names: formData.state_preference ? [formData.state_preference] : null,
@@ -269,21 +269,21 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
         } else if (data) {
             console.log('Match Results:', data);
             console.log('Match Results type:', typeof data, Array.isArray(data));
-            
+
             // Extract IDs
             const ids = data.map((item: any) => item.course_id || item.id).filter(Boolean);
             console.log('Extracted IDs:', ids.length, ids);
             console.log('onMatchFound defined:', !!onMatchFound);
-            
+
             if (ids.length > 0) {
-               if (onMatchFound) {
-                   console.log('Calling onMatchFound with', ids.length, 'IDs');
-                   onMatchFound(ids);
-               } else {
-                   // If not in chat page, redirect to chat with match trigger
-                   console.log('onMatchFound not defined - redirecting to chat');
-                   router.push('/chat');
-               }
+                if (onMatchFound) {
+                    console.log('Calling onMatchFound with', ids.length, 'IDs');
+                    onMatchFound(ids);
+                } else {
+                    // If not in chat page, redirect to chat with match trigger
+                    console.log('onMatchFound not defined - redirecting to chat');
+                    router.push('/chat');
+                }
             } else {
                 console.log('No IDs extracted from results');
                 alert('Nenhum curso encontrado com esses critérios. Tente flexibilizar seus filtros.');
@@ -292,12 +292,12 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
     };
 
     return (
-        <div className={`bg-white/30 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl p-6 md:p-8 ${montserrat.className}`}>
+        <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 ${montserrat.className}`}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                     <div className="p-2 bg-[#E0F2FE] rounded-lg text-[#024F86]">
+                    <div className="p-2 bg-[#E0F2FE] rounded-lg text-[#024F86]">
                         <Settings size={24} />
-                     </div>
+                    </div>
                     <div>
                         <h2 className="text-xl font-bold text-[#024F86]">Preferências de Busca</h2>
                         <p className="text-sm text-[#636E7C]">Personalize seus critérios para o algortimo de match.</p>
@@ -311,18 +311,17 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                         disabled={loading}
                         className="flex-1 md:flex-none px-4 py-2 bg-[#1BBBCD] text-white hover:bg-[#158fa0] rounded-full font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                       {loading ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />} 
-                       Gerar Match
+                        {loading ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />}
+                        Gerar Match
                     </button>
 
                     <button
                         onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                         disabled={loading}
-                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${
-                            isEditing 
-                            ? 'bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md' 
-                            : 'bg-white/50 text-[#38B1E4] hover:bg-white border border-[#38B1E4]/30'
-                        } disabled:opacity-50`}
+                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${isEditing
+                                ? 'bg-[#38B1E4] text-white hover:bg-[#2a9ac9] shadow-md'
+                                : 'bg-white/50 text-[#38B1E4] hover:bg-white border border-[#38B1E4]/30'
+                            } disabled:opacity-50`}
                     >
                         {loading ? (
                             <Loader2 size={16} className="animate-spin" />
@@ -342,7 +341,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* Course Interest - Autocomplete */}
                 <CourseAutocomplete
                     label="Cursos de Interesse"
@@ -351,8 +350,8 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                     isEditing={isEditing}
                 />
 
-                 {/* Enem Score */}
-                 <InputField
+                {/* Enem Score */}
+                <InputField
                     label="Nota do ENEM"
                     name="enem_score"
                     value={formData.enem_score || ''}
@@ -404,22 +403,22 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                         <Briefcase size={14} />
                         Turnos de Preferência
                     </label>
-                     {isEditing ? (
-                        <MultiSelect 
+                    {isEditing ? (
+                        <MultiSelect
                             options={SHIFTS_OPTIONS}
                             selected={formData.preferred_shifts || []}
                             onChange={(vals) => handleMultiSelectChange('preferred_shifts', vals)}
                             placeholder="Selecione turnos..."
                         />
-                     ) : (
+                    ) : (
                         <ArrayDisplay items={formData.preferred_shifts} />
-                     )}
+                    )}
                 </div>
 
 
 
-                 {/* Location Preference - City Autocomplete */}
-                 <CityAutocomplete
+                {/* Location Preference - City Autocomplete */}
+                <CityAutocomplete
                     label="Cidade de Preferência"
                     value={formData.location_preference || ''}
                     stateValue={formData.state_preference || ''}
@@ -439,10 +438,10 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                         }
                     }}
                     isEditing={isEditing}
-                 />
+                />
 
-                 {/* State Preference */}
-                 <InputField
+                {/* State Preference */}
+                <InputField
                     label="Estado"
                     name="state_preference"
                     value={formData.state_preference || ''}
@@ -453,38 +452,35 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                     displayValue={formData.state_preference}
                 />
 
-                 {/* Quota Types - Custom Selector */}
-                 <div className="flex flex-col gap-1.5 w-full md:col-span-2">
+                {/* Quota Types - Custom Selector */}
+                <div className="flex flex-col gap-1.5 w-full md:col-span-2">
                     <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2">
                         <Users size={14} />
                         Modalidades de Cota
                     </label>
-                     {isEditing ? (
+                    {isEditing ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar border rounded-lg p-2 border-white/40 bg-white/30">
                             {QUOTA_OPTIONS.map((opt) => (
                                 <button
                                     key={opt.id}
                                     onClick={() => toggleQuota(opt.id)}
-                                    className={`relative flex items-center p-3 rounded-xl border transition-all text-left group ${
-                                        (formData.quota_types || []).includes(opt.id)
-                                        ? 'border-[#024F86] bg-[#E0F2FE]'
-                                        : 'border-white/60 bg-white/40 hover:border-[#024F86]/30'
-                                    }`}
+                                    className={`relative flex items-center p-3 rounded-xl border transition-all text-left group ${(formData.quota_types || []).includes(opt.id)
+                                            ? 'border-[#024F86] bg-[#E0F2FE]'
+                                            : 'border-white/60 bg-white/40 hover:border-[#024F86]/30'
+                                        }`}
                                 >
                                     <div className="flex items-center w-full min-w-0">
-                                        <div className={`shrink-0 w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${
-                                            (formData.quota_types || []).includes(opt.id) ? 'border-[#024F86] bg-[#024F86]' : 'border-gray-300'
-                                        }`}>
+                                        <div className={`shrink-0 w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${(formData.quota_types || []).includes(opt.id) ? 'border-[#024F86] bg-[#024F86]' : 'border-gray-300'
+                                            }`}>
                                             {(formData.quota_types || []).includes(opt.id) && <Check size={12} className="text-white" />}
                                         </div>
                                         <div className="flex flex-col min-w-0 flex-1">
-                                             <span className={`text-xs font-medium leading-tight truncate ${
-                                                (formData.quota_types || []).includes(opt.id) ? 'text-[#024F86]' : 'text-gray-600'
-                                            }`}>
+                                            <span className={`text-xs font-medium leading-tight truncate ${(formData.quota_types || []).includes(opt.id) ? 'text-[#024F86]' : 'text-gray-600'
+                                                }`}>
                                                 {opt.label}
                                             </span>
                                         </div>
-                                        
+
                                         {opt.description && (
                                             <div className="group/tooltip relative ml-auto shrink-0 pl-2">
                                                 <Info size={14} className="text-gray-400 hover:text-[#024F86] cursor-help" />
@@ -498,8 +494,8 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                                 </button>
                             ))}
                         </div>
-                     ) : (
-                         // Transform IDs back to Labels for display
+                    ) : (
+                        // Transform IDs back to Labels for display
                         <div className="flex flex-wrap gap-1">
                             {formData.quota_types && formData.quota_types.length > 0 ? (
                                 formData.quota_types.map((qId, idx) => {
@@ -514,22 +510,22 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                                 <span className="text-gray-400 italic">Não informado</span>
                             )}
                         </div>
-                     )}
+                    )}
                 </div>
 
-                 {/* Family Income - Advanced Calculator */}
-                 <div className="flex flex-col gap-1.5 w-full md:col-span-2 bg-[#F8FAFC] p-4 rounded-xl border border-gray-100">
-                     <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2 mb-2">
+                {/* Family Income - Advanced Calculator */}
+                <div className="flex flex-col gap-1.5 w-full md:col-span-2 bg-[#F8FAFC] p-4 rounded-xl border border-gray-100">
+                    <label className="text-sm font-semibold text-[#1BBBCD] flex items-center gap-2 mb-2">
                         <DollarSign size={14} />
                         Renda Familiar
-                     </label>
-                     
-                     <div className="flex flex-col gap-4">
+                    </label>
+
+                    <div className="flex flex-col gap-4">
                         <div className="flex justify-between items-center">
                             <div className="text-[#3A424E]">
                                 <span className="text-sm font-medium">Renda Per Capita Atual:</span>
                                 <span className="ml-2 text-lg font-bold text-[#024F86]">
-                                    {formData.family_income_per_capita 
+                                    {formData.family_income_per_capita
                                         ? formatCurrency(formData.family_income_per_capita)
                                         : 'Não informado'}
                                 </span>
@@ -540,7 +536,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                                 )}
                             </div>
                             {isEditing && !useCalculator && (
-                                <button 
+                                <button
                                     onClick={() => setUseCalculator(true)}
                                     className="text-xs bg-[#E0F2FE] text-[#024F86] px-3 py-1.5 rounded-lg font-medium hover:bg-[#d0ebfd] transition-colors flex items-center gap-1"
                                 >
@@ -604,8 +600,8 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                                         </div>
                                     </div>
                                 )}
-                                
-                                <button 
+
+                                <button
                                     onClick={() => setUseCalculator(false)}
                                     className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
                                 >
@@ -614,7 +610,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                                 </button>
                             </div>
                         )}
-                        
+
                         {isEditing && !useCalculator && (
                             <InputField
                                 label="Editar Valor Manualmente"
@@ -627,8 +623,8 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                                 isEditing={true}
                             />
                         )}
-                     </div>
-                 </div>
+                    </div>
+                </div>
 
             </div>
 
