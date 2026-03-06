@@ -4,11 +4,11 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
 import { Montserrat } from 'next/font/google';
-import { Loader2, FileText, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, AlertCircle } from 'lucide-react';
+import { Loader2, FileText, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, AlertCircle, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { evaluateJsonLogic } from '@/utils/jsonLogic';
 import { updateUserProfileService } from '@/services/supabase/profile';
-import { applyMask, validateMask } from '@/utils/maskUtils';
+import { applyMask, validateMask, getPlaceholder, getMaxLength, getComponentType } from '@/utils/maskUtils';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -21,6 +21,9 @@ interface PartnerStep {
     sort_order: number;
     introduction?: string | null;
     secret_step?: boolean;
+    is_iterable?: boolean;
+    repeat_limit?: number | null;
+    conditional_rule?: Record<string, unknown> | null;
 }
 
 interface PartnerFormField {
@@ -34,6 +37,7 @@ interface PartnerFormField {
     mapping_source: string | null;
     is_criterion: boolean;
     criterion_rule: Record<string, unknown> | null;
+    conditional_rule: Record<string, unknown> | null;
     sort_order: number;
     optional: boolean;
     maskking: string | null;
@@ -74,11 +78,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     const [partnerName, setPartnerName] = useState('');
 
     // Form state
-    const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [answers, setAnswers] = useState<Record<string, any>>({});
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
+    const [currentIteration, setCurrentIteration] = useState(0);
     const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
     const [saving, setSaving] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
     // Review state (after last step)
     const [showReview, setShowReview] = useState(false);
@@ -189,6 +195,28 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 }
 
                 setAnswers(existingAnswers);
+                
+                // 6. Hardened Re-hydration: Local storage takes precedence if it has more data
+                if (applicationId) {
+                    const storageKey = `nubo_form_draft_${applicationId}`;
+                    const savedDraft = localStorage.getItem(storageKey);
+                    if (savedDraft) {
+                        try {
+                            const parsed = JSON.parse(savedDraft);
+                            const draftCount = Object.keys(parsed).length;
+                            const dbCount = Object.keys(existingAnswers).length;
+                            
+                            // Only override if draft is potentially newer/more complete
+                            if (draftCount >= dbCount) {
+                                setAnswers(prev => ({ ...prev, ...parsed }));
+                                console.log(`[PartnerForm] Draft restored (Precedence) for ${applicationId}`);
+                            }
+                        } catch (e) {
+                            console.error("[PartnerForm] Failed to parse draft", e);
+                        }
+                    }
+                }
+
                 setLoading(false);
             } catch (e) {
                 console.error('[PartnerForm] Error loading data:', e);
@@ -200,6 +228,53 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         fetchData();
     }, [user, applicationId]);
 
+    // ─── Local Storage Persistence ──────────────────────────────────────────
+
+    // Update localStorage whenever answers change
+    useEffect(() => {
+        if (!applicationId || Object.keys(answers).length === 0 || loading) return;
+        
+        const storageKey = `nubo_form_draft_${applicationId}`;
+        localStorage.setItem(storageKey, JSON.stringify(answers));
+    }, [answers, applicationId, loading]);
+
+    // Debounced Auto-save to DB
+    useEffect(() => {
+        if (Object.keys(answers).length === 0 || loading || submitting) return;
+
+        const timer = setTimeout(() => {
+            saveAnswersToDb();
+        }, 1500); // Reduced from 3s to 1.5s
+
+        return () => clearTimeout(timer);
+    }, [answers]);
+
+    // Immediate save on visibility change (tab switch)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden' && Object.keys(answers).length > 0) {
+                console.log("[PartnerForm] Tab hidden - triggering immediate save");
+                saveAnswersToDb();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [answers, application, submitting]);
+
+    // Handle beforeunload to warn user if saving is pending
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (saving) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [saving]);
+
     // Notify parent of form dirtiness
     useEffect(() => {
         if (onFormDirty) {
@@ -208,17 +283,79 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     }, [answers]);
 
     // ─── Derived Data ────────────────────────────────────────────────────────
+    
+    // Flattens answers for JSON Logic evaluation
+    const evaluationData = useMemo(() => {
+        const flat: Record<string, any> = {};
+        
+        // Add non-iterable answers
+        Object.keys(answers).forEach(key => {
+            if (!Array.isArray(answers[key])) {
+                flat[key] = answers[key];
+            }
+        });
 
-    const visibleSteps = useMemo(() => steps.filter(s => !s.secret_step), [steps]);
+        // For iterable steps, use first iteration as fallback for global visibility
+        // and current iteration for step-internal field visibility
+        steps.forEach(step => {
+            if (step.is_iterable && Array.isArray(answers[step.id])) {
+                const iterations = answers[step.id];
+                if (iterations.length > 0) {
+                    // Default to first iteration for cross-step dependencies
+                    Object.assign(flat, iterations[0]);
+                }
+            }
+        });
+
+        return flat;
+    }, [answers, steps]);
+
+    // Current iteration data (overrides global for field-level visibility)
+    const visibleSteps = useMemo(() => {
+        return steps.filter(s => {
+            if (s.secret_step) return false;
+            // Evaluates conditional visibility
+            if (s.conditional_rule) {
+                try {
+                    return evaluateJsonLogic(s.conditional_rule, evaluationData);
+                } catch (e) {
+                    console.error("Error evaluating step condition:", e);
+                    return true;
+                }
+            }
+            return true;
+        });
+    }, [steps, evaluationData]);
+
     const currentStep = visibleSteps[currentStepIndex] || null;
 
+    // Current iteration data (overrides global for field-level visibility)
+    const currentIterationData = useMemo(() => {
+        if (!currentStep?.is_iterable) return evaluationData;
+        const iterations = answers[currentStep.id] || [];
+        return { ...evaluationData, ...(iterations[currentIteration] || {}) };
+    }, [evaluationData, currentStep, currentIteration, answers]);
+
     const currentFields = useMemo(() => {
+        let baseFields = [];
         if (!currentStep) {
-            // If no visible steps, show all fields that are not in a step (orphans) or all if none
-            return fields.filter(f => !f.step_id || !steps.find(s => s.id === f.step_id));
+            baseFields = fields.filter(f => !f.step_id || !steps.find(s => s.id === f.step_id));
+        } else {
+            baseFields = fields.filter(f => f.step_id === currentStep.id);
         }
-        return fields.filter(f => f.step_id === currentStep.id);
-    }, [fields, currentStep, steps]);
+
+        return baseFields.filter(f => {
+            if (f.conditional_rule) {
+                try {
+                    return evaluateJsonLogic(f.conditional_rule, currentIterationData);
+                } catch (e) {
+                    console.error("Error evaluating field condition:", e);
+                    return true;
+                }
+            }
+            return true;
+        });
+    }, [fields, currentStep, steps, answers]);
 
     const isLastStep = currentStepIndex >= visibleSteps.length - 1;
 
@@ -228,20 +365,26 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         const errors = new Set<string>();
 
         for (const field of currentFields) {
-            const value = answers[field.field_name] || '';
+            let value = '';
+            if (currentStep?.is_iterable) {
+                const iterations = answers[currentStep.id] || [];
+                value = iterations[currentIteration]?.[field.field_name] || '';
+            } else {
+                value = answers[field.field_name] || '';
+            }
 
             // Required check
-            if (!field.optional && value.trim() === '') {
+            if (!field.optional && (value === undefined || value === null || String(value).trim() === '')) {
                 errors.add(field.field_name);
                 continue;
             }
 
             // Mask validation
-            if (field.maskking && value.trim() !== '') {
-                const { isValid, error: maskError } = validateMask(value, field.maskking);
+            const stringValue = String(value);
+            if (field.maskking && stringValue.trim() !== '') {
+                const { isValid, error: maskError } = validateMask(stringValue, field.maskking);
                 if (!isValid) {
                     errors.add(field.field_name);
-                    // Trigger chat message for specific validation error if it's the first one found
                     if (onTriggerChatMessage && errors.size === 1) {
                         onTriggerChatMessage(`O campo "${field.question_text}" está inválido: ${maskError}. Pode me ajudar a corrigir?`);
                     }
@@ -251,13 +394,34 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
         setValidationErrors(errors);
         return errors.size === 0;
-    }, [currentFields, answers]);
+    }, [currentFields, answers, currentIteration, currentStep]);
 
     // ─── Handlers ────────────────────────────────────────────────────────────
 
-    const handleAnswerChange = (fieldName: string, value: string, maskType?: string | null) => {
-        const maskedValue = maskType ? applyMask(value, maskType) : value;
-        setAnswers(prev => ({ ...prev, [fieldName]: maskedValue }));
+    const handleAnswerChange = useCallback((fieldName: string, value: any, maskType?: string | null) => {
+        // If it's a numeric mask type and not BRL (which handles commas/dots), strip all non-digits immediately
+        let processedValue = value;
+        const type = maskType?.toLowerCase();
+        
+        if (type && ['cpf', 'cnpj', 'phone', 'cep', 'date', 'number'].includes(type) && typeof value === 'string') {
+            processedValue = value.replace(/\D/g, '');
+        }
+
+        const maskedValue = maskType && typeof processedValue === 'string' ? applyMask(processedValue, maskType) : processedValue;
+
+        // Final safety: Enforce maxLength here too
+        const maxLength = getMaxLength(maskType || null);
+        const finalValue = (maxLength && typeof maskedValue === 'string') ? maskedValue.slice(0, maxLength) : maskedValue;
+
+        setAnswers(prev => {
+            if (currentStep?.is_iterable) {
+                const iterations = [...(prev[currentStep.id] || [])];
+                if (!iterations[currentIteration]) iterations[currentIteration] = {};
+                iterations[currentIteration] = { ...iterations[currentIteration], [fieldName]: finalValue };
+                return { ...prev, [currentStep.id]: iterations };
+            }
+            return { ...prev, [fieldName]: finalValue };
+        });
 
         // Clear validation error for this field
         setValidationErrors(prev => {
@@ -265,34 +429,39 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             next.delete(fieldName);
             return next;
         });
-    };
+    }, [currentStep, currentIteration]);
 
     const handleMultiSelectChange = (fieldName: string, option: string, checked: boolean) => {
-        setAnswers(prev => {
-            const current = prev[fieldName] ? prev[fieldName].split(',').map(s => s.trim()).filter(Boolean) : [];
-            let next: string[];
-            if (checked) {
-                next = [...current, option];
-            } else {
-                next = current.filter(v => v !== option);
+        const getCurrentVal = () => {
+            if (currentStep?.is_iterable) {
+                const iterations = answers[currentStep.id] || [];
+                return iterations[currentIteration]?.[fieldName] || '';
             }
-            return { ...prev, [fieldName]: next.join(', ') };
-        });
-        setValidationErrors(prev => {
-            const next = new Set(prev);
-            next.delete(fieldName);
-            return next;
-        });
+            return answers[fieldName] || '';
+        };
+
+        const currentVal = getCurrentVal();
+        const current = currentVal ? String(currentVal).split(',').map(s => s.trim()).filter(Boolean) : [];
+        let nextArray: string[];
+        if (checked) {
+            nextArray = [...current, option];
+        } else {
+            nextArray = current.filter(v => v !== option);
+        }
+        const finalValue = nextArray.join(', ');
+
+        handleAnswerChange(fieldName, finalValue);
     };
 
     const saveAnswersToDb = async () => {
-        if (!application) return;
+        if (!application || submitting) return;
         setSaving(true);
         try {
             await supabase
                 .from('student_applications')
                 .update({ answers, updated_at: new Date().toISOString() })
                 .eq('id', application.id);
+            setLastSaved(new Date());
         } catch (e) {
             console.error('[PartnerForm] Error saving answers:', e);
         } finally {
@@ -307,13 +476,25 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         await saveAnswersToDb();
 
         if (isLastStep) {
-            // Calculate eligibility and show review
             computeEligibility();
             setShowReview(true);
         } else {
             setCurrentStepIndex(prev => prev + 1);
+            setCurrentIteration(0);
             setValidationErrors(new Set());
         }
+    };
+
+    const handleAddIteration = async () => {
+        if (!validateCurrentStep()) return;
+        
+        // Save progress before adding iteration
+        await saveAnswersToDb();
+        
+        setCurrentIteration(prev => prev + 1);
+        setValidationErrors(new Set());
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePrev = () => {
@@ -321,8 +502,23 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             setShowReview(false);
             return;
         }
+
+        if (currentIteration > 0) {
+            setCurrentIteration(prev => prev - 1);
+            setValidationErrors(new Set());
+            return;
+        }
+
         if (currentStepIndex > 0) {
             setCurrentStepIndex(prev => prev - 1);
+            // If going back to a previous step, we go to its LAST iteration
+            const prevStep = visibleSteps[currentStepIndex - 1];
+            if (prevStep?.is_iterable) {
+                const iterations = answers[prevStep.id] || [];
+                setCurrentIteration(Math.max(0, iterations.length - 1));
+            } else {
+                setCurrentIteration(0);
+            }
             setValidationErrors(new Set());
         }
     };
@@ -385,7 +581,12 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 );
             }
 
-            // 4. Callback
+            // 4. Clear local storage
+            if (applicationId) {
+                localStorage.removeItem(`nubo_form_draft_${applicationId}`);
+            }
+
+            // 5. Callback
             if (onComplete) onComplete();
         } catch (e) {
             console.error('[PartnerForm] Error submitting:', e);
@@ -397,8 +598,18 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     // ─── Render Helpers ──────────────────────────────────────────────────────
 
     const renderField = (field: PartnerFormField) => {
-        const value = answers[field.field_name] || '';
+        let value = '';
+        if (currentStep?.is_iterable) {
+            const iterations = answers[currentStep.id] || [];
+            value = iterations[currentIteration]?.[field.field_name] || '';
+        } else {
+            value = answers[field.field_name] || '';
+        }
+        
+        const stringValue = value !== undefined && value !== null ? String(value) : '';
         const hasError = validationErrors.has(field.field_name);
+        const componentType = getComponentType(field.maskking, field.data_type);
+
         const baseInputClass = `w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white/80 backdrop-blur-sm text-[#3A424E] text-sm outline-none
             ${hasError ? 'border-red-400 ring-2 ring-red-100' : 'border-gray-200 focus:border-[#38B1E4] focus:ring-2 focus:ring-[#38B1E4]/20'}`;
 
@@ -415,45 +626,29 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     {!field.optional && <span className="text-red-400 ml-1">*</span>}
                 </label>
 
-                {field.data_type === 'text' && field.maskking !== 'textarea' && (
+                {componentType === 'date' ? (
                     <input
-                        type="text"
-                        value={value}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}
+                        type="date"
+                        value={stringValue}
+                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value)}
                         className={baseInputClass}
-                        placeholder="Digite sua resposta..."
                     />
-                )}
-
-                {field.data_type === 'number' && (
-                    <input
-                        type="text"
-                        inputMode="numeric"
-                        value={value}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}
-                        className={baseInputClass}
-                        placeholder="Digite um número..."
-                    />
-                )}
-
-                {field.maskking === 'textarea' && (
+                ) : componentType === 'textarea' ? (
                     <div className="relative">
                         <textarea
-                            value={value}
+                            value={stringValue}
                             onChange={(e) => handleAnswerChange(field.field_name, e.target.value.slice(0, 500), field.maskking)}
                             className={baseInputClass + ' min-h-[120px] resize-none'}
-                            placeholder="Digite sua resposta detalhada..."
+                            placeholder={getPlaceholder(field.maskking, field.data_type)}
                             maxLength={500}
                         />
-                        <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${value.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
-                            {value.length}/500
+                        <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${stringValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
+                            {stringValue.length}/500
                         </div>
                     </div>
-                )}
-
-                {field.data_type === 'select' && (
+                ) : componentType === 'select' ? (
                     <select
-                        value={value}
+                        value={stringValue}
                         onChange={(e) => handleAnswerChange(field.field_name, e.target.value)}
                         className={baseInputClass + ' appearance-none cursor-pointer'}
                     >
@@ -462,6 +657,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                             <option key={i} value={opt}>{opt}</option>
                         ))}
                     </select>
+                ) : (
+                    <input
+                        type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
+                        inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
+                        value={stringValue}
+                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}
+                        className={baseInputClass}
+                        placeholder={getPlaceholder(field.maskking, field.data_type)}
+                        maxLength={getMaxLength(field.maskking)}
+                    />
                 )}
 
                 {field.data_type === 'multiselect' && (
@@ -498,7 +703,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                                 type="button"
                                 onClick={() => handleAnswerChange(field.field_name, opt)}
                                 className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200
-                                    ${value === opt
+                                    ${stringValue === opt
                                         ? 'border-[#38B1E4] bg-[#38B1E4]/10 text-[#024F86]'
                                         : 'border-gray-200 bg-white/80 text-[#3A424E] hover:border-gray-300'
                                     }`}
@@ -658,6 +863,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                         {currentStep && (
                             <p className="text-xs text-[#3A424E]/60">
                                 Etapa {currentStepIndex + 1} de {totalSteps}: <span className="font-semibold">{currentStep.step_name}</span>
+                                {currentStep.is_iterable && (
+                                    <span className="ml-2 px-2 py-0.5 bg-[#024F86]/10 rounded-full text-[10px] font-bold">
+                                        Entrada #{currentIteration + 1}
+                                    </span>
+                                )}
                             </p>
                         )}
                     </div>
@@ -674,6 +884,35 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                         />
                     </div>
                 )}
+
+                {/* Auto-save status */}
+                <div className="flex items-center justify-end mt-2 h-4">
+                    <AnimatePresence mode="wait">
+                        {saving ? (
+                            <motion.div
+                                key="saving"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center gap-1.5 text-[10px] text-[#024F86]/40"
+                            >
+                                <Loader2 size={10} className="animate-spin" />
+                                Salvando alterações...
+                            </motion.div>
+                        ) : lastSaved ? (
+                            <motion.div
+                                key="saved"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center gap-1.5 text-[10px] text-green-500/60"
+                            >
+                                <CheckCircle2 size={10} />
+                                Tudo salvo no banco
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
+                </div>
             </div>
 
             {/* Fields */}
@@ -709,20 +948,33 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             </div>
 
             {/* Navigation */}
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-                {currentStepIndex > 0 && (
-                    <button
-                        onClick={handlePrev}
-                        className="flex items-center gap-2 px-5 py-3 rounded-full border-2 border-gray-200 text-[#3A424E] text-sm font-medium hover:bg-gray-50 transition-all"
-                    >
-                        <ChevronLeft size={16} />
-                        Voltar
-                    </button>
-                )}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+                <div className="flex gap-3 flex-1">
+                    {(currentStepIndex > 0 || currentIteration > 0) && (
+                        <button
+                            onClick={handlePrev}
+                            className="flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-gray-200 text-[#3A424E] text-sm font-medium hover:bg-gray-50 transition-all flex-1 sm:flex-none"
+                        >
+                            <ChevronLeft size={16} />
+                            Voltar
+                        </button>
+                    )}
+                    
+                    {currentStep?.is_iterable && (!currentStep.repeat_limit || currentIteration + 1 < currentStep.repeat_limit) && (
+                        <button
+                            onClick={handleAddIteration}
+                            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-[#38B1E4] text-[#024F86] text-sm font-bold hover:bg-[#38B1E4]/5 transition-all"
+                        >
+                            <Plus size={16} className="text-[#38B1E4]" />
+                            Responder mais 1 vez
+                        </button>
+                    )}
+                </div>
+
                 <button
                     onClick={handleNext}
                     disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-[#38B1E4] to-[#2a9ac9] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                    className="flex-1 sm:flex-[1.5] flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                 >
                     {saving ? (
                         <Loader2 className="animate-spin" size={18} />
@@ -733,7 +985,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                         </>
                     ) : (
                         <>
-                            Próximo
+                            {currentStep?.is_iterable ? 'Continuar para próxima etapa' : 'Próximo'}
                             <ChevronRight size={16} />
                         </>
                     )}
