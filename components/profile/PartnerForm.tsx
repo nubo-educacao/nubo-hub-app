@@ -8,6 +8,7 @@ import { Loader2, FileText, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Se
 import { motion, AnimatePresence } from 'framer-motion';
 import { evaluateJsonLogic } from '@/utils/jsonLogic';
 import { updateUserProfileService } from '@/services/supabase/profile';
+import { applyMask, validateMask } from '@/utils/maskUtils';
 
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
@@ -35,6 +36,7 @@ interface PartnerFormField {
     criterion_rule: Record<string, unknown> | null;
     sort_order: number;
     optional: boolean;
+    maskking: string | null;
 }
 
 interface StudentApplication {
@@ -226,10 +228,23 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         const errors = new Set<string>();
 
         for (const field of currentFields) {
-            if (!field.optional) {
-                const value = answers[field.field_name];
-                if (!value || value.trim() === '') {
+            const value = answers[field.field_name] || '';
+
+            // Required check
+            if (!field.optional && value.trim() === '') {
+                errors.add(field.field_name);
+                continue;
+            }
+
+            // Mask validation
+            if (field.maskking && value.trim() !== '') {
+                const { isValid, error: maskError } = validateMask(value, field.maskking);
+                if (!isValid) {
                     errors.add(field.field_name);
+                    // Trigger chat message for specific validation error if it's the first one found
+                    if (onTriggerChatMessage && errors.size === 1) {
+                        onTriggerChatMessage(`O campo "${field.question_text}" está inválido: ${maskError}. Pode me ajudar a corrigir?`);
+                    }
                 }
             }
         }
@@ -240,8 +255,10 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // ─── Handlers ────────────────────────────────────────────────────────────
 
-    const handleAnswerChange = (fieldName: string, value: string) => {
-        setAnswers(prev => ({ ...prev, [fieldName]: value }));
+    const handleAnswerChange = (fieldName: string, value: string, maskType?: string | null) => {
+        const maskedValue = maskType ? applyMask(value, maskType) : value;
+        setAnswers(prev => ({ ...prev, [fieldName]: maskedValue }));
+
         // Clear validation error for this field
         setValidationErrors(prev => {
             const next = new Set(prev);
@@ -398,11 +415,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     {!field.optional && <span className="text-red-400 ml-1">*</span>}
                 </label>
 
-                {field.data_type === 'text' && (
+                {field.data_type === 'text' && field.maskking !== 'textarea' && (
                     <input
                         type="text"
                         value={value}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value)}
+                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}
                         className={baseInputClass}
                         placeholder="Digite sua resposta..."
                     />
@@ -413,10 +430,25 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                         type="text"
                         inputMode="numeric"
                         value={value}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value)}
+                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}
                         className={baseInputClass}
                         placeholder="Digite um número..."
                     />
+                )}
+
+                {field.maskking === 'textarea' && (
+                    <div className="relative">
+                        <textarea
+                            value={value}
+                            onChange={(e) => handleAnswerChange(field.field_name, e.target.value.slice(0, 500), field.maskking)}
+                            className={baseInputClass + ' min-h-[120px] resize-none'}
+                            placeholder="Digite sua resposta detalhada..."
+                            maxLength={500}
+                        />
+                        <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${value.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
+                            {value.length}/500
+                        </div>
+                    </div>
                 )}
 
                 {field.data_type === 'select' && (
