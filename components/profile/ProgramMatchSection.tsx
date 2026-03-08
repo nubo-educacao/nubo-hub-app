@@ -54,7 +54,7 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
 
                 // 5. Tell the agent!
                 if (onTriggerChatMessage) {
-                    onTriggerChatMessage("A análise do meu perfil terminou. Por favor, leia meus dados com a sua tool, veja meus `eligibility_results` atualizados, faça um breve resumo de qual foi o meu melhor match e, em seguida, me pergunte qual programa eu escolho para iniciar a inscrição.");
+                    onTriggerChatMessage("Já completei as informações do meu perfil e a análise dos programas parceiros terminou. Pode me dar um resumo de quais são as melhores oportunidades para mim agora?");
                 }
             }
 
@@ -83,7 +83,7 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
 
         // Subscribe to changes on user_profiles for this user
         const subscription = supabase
-            .channel('public:user_profiles')
+            .channel(`public:user_profiles:${user.id}`)
             .on(
                 'postgres_changes',
                 {
@@ -94,11 +94,12 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
                 },
                 (payload) => {
                     const newEligibility = payload.new.eligibility_results as EligibilityResult[] | null;
-                    setResults(newEligibility);
-                    if (newEligibility && newEligibility.length > 0) {
-                        // We could fetch partners again here, but usually they are static
-                        // For simplicity, refetching everything to ensure data integrity
+                    
+                    // If eligibility was cleared (null) or is empty, we should recalculate
+                    if (newEligibility === null || (Array.isArray(newEligibility) && newEligibility.length === 0)) {
                         fetchResults();
+                    } else {
+                        setResults(newEligibility);
                     }
                 }
             )
