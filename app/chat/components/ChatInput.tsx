@@ -124,13 +124,13 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
       {passportPhase === 'ASK_DEPENDENT' && !isLoading && (
         <div className="w-full flex gap-4 justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
           <button
-            onClick={() => onSendMessage('self')}
+            onClick={() => onSendMessage('É para mim')}
             className="flex-1 py-4 px-6 bg-white hover:bg-sky-50 text-[#005F99] border-2 border-[#38B1E4] rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
             É para mim
           </button>
           <button
-            onClick={() => onSendMessage('dependent')}
+            onClick={() => onSendMessage('Para outra pessoa')}
             className="flex-1 py-4 px-6 bg-[#38B1E4] hover:bg-[#2a9acb] text-white rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
             Para outra pessoa
