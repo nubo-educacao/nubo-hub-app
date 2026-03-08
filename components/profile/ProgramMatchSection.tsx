@@ -42,76 +42,15 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
             let eligibility = parentProfile?.eligibility_results as EligibilityResult[] | null;
             const targetId = parentProfile?.active_application_target_id || user.id;
 
-            // If eligibility is null or empty, compute it locally and trigger the agent
+            // If eligibility is null or empty, compute it via RPC
             if (!eligibility || eligibility.length === 0) {
-                // 1. Fetch target profile data
-                const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', targetId)
-                    .single();
-
-                // 2. Fetch all partners & criterion forms
-                const { data: partners } = await supabase.from('partners').select('id, name');
-                const partnersMap: Record<string, string> = {};
-                partners?.forEach(p => partnersMap[p.id] = p.name);
-
-                const { data: criteriaForms } = await supabase
-                    .from('partner_forms')
-                    .select('partner_id, field_name, mapping_source, criterion_rule')
-                    .eq('is_criterion', true);
-
-                // 3. Import evaluator and calculate
-                const { evaluateJsonLogic } = await import('@/utils/jsonLogic');
-
-                const resultsMap: Record<string, EligibilityResult> = {};
-                partners?.forEach(p => {
-                    resultsMap[p.id] = {
-                        partner_id: p.id,
-                        partner_name: p.name,
-                        total_criteria: 0,
-                        met_criteria: 0,
-                        details: []
-                    };
-                });
-
-                criteriaForms?.forEach(crit => {
-                    const pId = crit.partner_id;
-                    if (!resultsMap[pId]) return; // Fallback if partner is not in partners table
-
-                    const mapping = crit.mapping_source;
-
-                    if (mapping && mapping.startsWith('user_profiles.')) {
-                        const field = mapping.split('.')[1];
-                        const userVal = profile?.[field];
-
-                        // ONLY count this criterion if we have a mapping AND the user provided a value
-                        if (userVal !== null && userVal !== undefined && userVal !== '') {
-                            resultsMap[pId].total_criteria += 1;
-                            let met = false; // Initialize met here for this specific criterion
-
-                            const rule = crit.criterion_rule;
-                            if (!rule) {
-                                // If there is no rule but a value exists, it's considered met for that criterion.
-                                met = true;
-                            } else {
-                                const varName = crit.field_name;
-                                met = Boolean(evaluateJsonLogic(rule, { [varName]: userVal }));
-                            }
-
-                            if (met) resultsMap[pId].met_criteria += 1;
-                            resultsMap[pId].details.push({ field: crit.field_name, met });
-                        }
-                    }
-                });
-
-                eligibility = Object.values(resultsMap);
-
-                // 4. Save to DB
-                await supabase
-                    .from('user_profiles')
-                    .update({ eligibility_results: eligibility })
-                    .eq('id', user.id);
+                const { data: rpcResults, error: rpcError } = await supabase.rpc('calculate_passport_eligibility', { p_user_id: user.id });
+                
+                if (rpcError) {
+                    console.error('Error calculating eligibility via RPC:', rpcError);
+                } else {
+                    eligibility = rpcResults as EligibilityResult[];
+                }
 
                 // 5. Tell the agent!
                 if (onTriggerChatMessage) {

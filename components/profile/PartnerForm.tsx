@@ -196,6 +196,15 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
                 setAnswers(existingAnswers);
                 
+                // 5.5 If already submitted, go to review screen
+                if (appData.status === 'SUBMITTED') {
+                    // We need to compute eligibility before showing review
+                    // But fields might not be in state yet, so we pass them directly if needed
+                    // For now, since useEffects will trigger, we can just set the flag 
+                    // and ensure computeEligibility uses the data we just fetched.
+                    setShowReview(true);
+                }
+
                 // 6. Hardened Re-hydration: Local storage takes precedence if it has more data
                 if (applicationId) {
                     const storageKey = `nubo_form_draft_${applicationId}`;
@@ -215,6 +224,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                             console.error("[PartnerForm] Failed to parse draft", e);
                         }
                     }
+                }
+
+                if (appData.status === 'SUBMITTED') {
+                    computeEligibility(existingAnswers, fieldsData || []);
+                    setShowReview(true);
                 }
 
                 setLoading(false);
@@ -307,6 +321,10 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             }
         });
 
+        // Add current global iteration context (default to 0)
+        flat['_iteration_index'] = 0;
+        flat['is_first_iteration'] = true;
+
         return flat;
     }, [answers, steps]);
 
@@ -333,7 +351,12 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     const currentIterationData = useMemo(() => {
         if (!currentStep?.is_iterable) return evaluationData;
         const iterations = answers[currentStep.id] || [];
-        return { ...evaluationData, ...(iterations[currentIteration] || {}) };
+        return { 
+            ...evaluationData, 
+            ...(iterations[currentIteration] || {}),
+            _iteration_index: currentIteration,
+            is_first_iteration: currentIteration === 0
+        };
     }, [evaluationData, currentStep, currentIteration, answers]);
 
     const currentFields = useMemo(() => {
@@ -525,10 +548,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // ─── Eligibility Computation ─────────────────────────────────────────────
 
-    const computeEligibility = () => {
-        const criterionFields = fields.filter(f => f.is_criterion);
+    const computeEligibility = (providedAnswers?: Record<string, any>, providedFields?: PartnerFormField[]) => {
+        const targetFields = providedFields || fields;
+        const targetAnswers = providedAnswers || answers;
+        
+        const criterionFields = targetFields.filter(f => f.is_criterion);
         const results: EligibilityCriterion[] = criterionFields.map(crit => {
-            const userVal = answers[crit.field_name];
+            const userVal = targetAnswers[crit.field_name];
             let met = false;
 
             if (userVal !== null && userVal !== undefined && userVal !== '') {
@@ -659,7 +685,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     </select>
                 ) : (
                     <input
-                        type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
+                        type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'link' ? 'url' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
                         inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
                         value={stringValue}
                         onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}

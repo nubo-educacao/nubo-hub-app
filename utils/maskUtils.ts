@@ -92,6 +92,10 @@ export const validateMask = (value: string, maskType: string | null): { isValid:
             if (clean.length !== 8) return { isValid: false, error: 'Data incompleta' };
             return { isValid: true };
 
+        case 'link':
+            const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+            return { isValid: urlRegex.test(value), error: 'Link inválido' };
+
         case 'textarea':
             if (value.length > 500) return { isValid: false, error: 'Máximo de 500 caracteres' };
             return { isValid: true };
@@ -168,6 +172,8 @@ export const getPlaceholder = (maskType: string | null, dataType: string): strin
             return 'R$ 0,00';
         case 'email':
             return 'exemplo@email.com';
+        case 'link':
+            return 'https://exemplo.com';
         default:
             if (dataType === 'number') return 'Digite um número...';
             return 'Digite sua resposta...';
@@ -194,6 +200,8 @@ export const getMaxLength = (maskType: string | null): number | undefined => {
             return 500;
         case 'email':
             return 255;
+        case 'link':
+            return 2048;
         default:
             return undefined;
     }
