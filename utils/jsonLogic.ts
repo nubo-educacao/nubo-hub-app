@@ -35,19 +35,20 @@ export function evaluateJsonLogic(rule: any, data: Record<string, any>): any {
         }
     };
 
+    const normalizeValue = (val: any) => {
+        if (val === true || (typeof val === 'string' && val.toLowerCase() === 'sim')) return 'sim';
+        if (val === false || (typeof val === 'string' && val.toLowerCase() === 'não') || (typeof val === 'string' && val.toLowerCase() === 'nao')) return 'não';
+        if (typeof val === 'string') return val.trim().toLowerCase();
+        return val;
+    };
+
     switch (op) {
         case '==':
         case '===':
-            if (typeof evalArgs[0] === 'string' && typeof evalArgs[1] === 'string') {
-                return evalArgs[0].trim().toLowerCase() === evalArgs[1].trim().toLowerCase();
-            }
-            return evalArgs[0] === evalArgs[1];
+            return normalizeValue(evalArgs[0]) === normalizeValue(evalArgs[1]);
         case '!=':
         case '!==':
-            if (typeof evalArgs[0] === 'string' && typeof evalArgs[1] === 'string') {
-                return evalArgs[0].trim().toLowerCase() !== evalArgs[1].trim().toLowerCase();
-            }
-            return evalArgs[0] !== evalArgs[1];
+            return normalizeValue(evalArgs[0]) !== normalizeValue(evalArgs[1]);
         case '>':
         case '>=':
         case '<':
