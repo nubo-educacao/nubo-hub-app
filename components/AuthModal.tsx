@@ -1,16 +1,43 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, Loader2 } from 'lucide-react';
+import { X, Check, Loader2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
+const COUNTRIES = [
+  { code: 'BR', name: 'Brasil', dialCode: '+55', mask: '(DD) 99999-9999', flag: '🇧🇷' },
+  { code: 'PT', name: 'Portugal', dialCode: '+351', mask: '123 456 789', flag: '🇵🇹' },
+  { code: 'US', name: 'Estados Unidos', dialCode: '+1', mask: '(DDD) 123-4567', flag: '🇺🇸' },
+  { code: 'ES', name: 'Espanha', dialCode: '+34', mask: '123 456 789', flag: '🇪🇸' },
+  { code: 'AR', name: 'Argentina', dialCode: '+54', mask: '11 1234-5678', flag: '🇦🇷' },
+  { code: 'CL', name: 'Chile', dialCode: '+56', mask: '9 1234 5678', flag: '🇨🇱' },
+  { code: 'CO', name: 'Colômbia', dialCode: '+57', mask: '312 345-6789', flag: '🇨🇴' },
+  { code: 'MX', name: 'México', dialCode: '+52', mask: '12 3456 7890', flag: '🇲🇽' },
+  { code: 'CA', name: 'Canadá', dialCode: '+1', mask: '(DDD) 123-4567', flag: '🇨🇦' },
+  { code: 'GB', name: 'Reino Unido', dialCode: '+44', mask: '1234 567890', flag: '🇬🇧' },
+  { code: 'DE', name: 'Alemanha', dialCode: '+49', mask: '123 456789', flag: '🇩🇪' },
+  { code: 'FR', name: 'França', dialCode: '+33', mask: '06 12 34 56 78', flag: '🇫🇷' },
+  { code: 'IT', name: 'Itália', dialCode: '+39', mask: '312 345 6789', flag: '🇮🇹' },
+  { code: 'CH', name: 'Suíça', dialCode: '+41', mask: '071 123 45 67', flag: '🇨🇭' },
+  { code: 'IE', name: 'Irlanda', dialCode: '+353', mask: '081 123 4567', flag: '🇮🇪' },
+  { code: 'AU', name: 'Austrália', dialCode: '+61', mask: '0412 345 678', flag: '🇦🇺' },
+  { code: 'NZ', name: 'Nova Zelândia', dialCode: '+64', mask: '021 123 4567', flag: '🇳🇿' },
+  { code: 'ZA', name: 'África do Sul', dialCode: '+27', mask: '081 123 4567', flag: '🇿🇦' },
+  { code: 'UY', name: 'Uruguai', dialCode: '+598', mask: '091 234 567', flag: '🇺🇾' },
+  { code: 'PY', name: 'Paraguai', dialCode: '+595', mask: '0912 345 678', flag: '🇵🇾' },
+  { code: 'PE', name: 'Peru', dialCode: '+51', mask: '912 345 678', flag: '🇵🇪' },
+  { code: 'JP', name: 'Japão', dialCode: '+81', mask: '090-1234-5678', flag: '🇯🇵' },
+];
+
 export default function AuthModal() {
   const router = useRouter();
   const { isAuthModalOpen, closeAuthModal, signInWithWhatsapp, signInWithDemo, verifyOtp, pendingAction, setPendingAction } = useAuth();
   const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +52,8 @@ export default function AuthModal() {
     if (isAuthModalOpen) {
       setStep('PHONE');
       setPhone('');
+      setSelectedCountry(COUNTRIES[0]);
+      setIsCountryDropdownOpen(false);
       setOtp('');
       setError(null);
       setAcceptedTerms(false);
@@ -33,21 +62,71 @@ export default function AuthModal() {
 
   if (!isAuthModalOpen) return null;
 
-  const formatPhone = (value: string) => {
+  const formatPhone = (value: string, countryCode: string) => {
     // Remove non-digits
     const numbers = value.replace(/\D/g, '');
 
-    // Limit to 11 digits (DDD + 9 digits)
-    const limited = numbers.slice(0, 11);
+    if (countryCode === 'BR') {
+      const limited = numbers.slice(0, 11);
+      if (limited.length <= 2) return limited;
+      if (limited.length <= 7) return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
+      return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+    }
+    
+    if (countryCode === 'US' || countryCode === 'CA') {
+      const limited = numbers.slice(0, 10);
+      if (limited.length <= 3) return limited;
+      if (limited.length <= 6) return `(${limited.slice(0, 3)}) ${limited.slice(3)}`;
+      return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`;
+    }
+    
+    if (countryCode === 'PT' || countryCode === 'ES') {
+      const limited = numbers.slice(0, 9);
+      if (limited.length <= 3) return limited;
+      if (limited.length <= 6) return `${limited.slice(0, 3)} ${limited.slice(3)}`;
+      return `${limited.slice(0, 3)} ${limited.slice(3, 6)} ${limited.slice(6)}`;
+    }
 
-    // Apply mask: (XX) XXXXX-XXXX
-    if (limited.length <= 2) return limited;
-    if (limited.length <= 7) return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
-    return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+    if (countryCode === 'GB') {
+      const limited = numbers.slice(0, 10);
+      if (limited.length <= 4) return limited;
+      return `${limited.slice(0, 4)} ${limited.slice(4)}`;
+    }
+
+    if (countryCode === 'AR') {
+      const limited = numbers.slice(0, 10);
+      if (limited.length <= 2) return limited;
+      if (limited.length <= 6) return `${limited.slice(0, 2)} ${limited.slice(2)}`;
+      return `${limited.slice(0, 2)} ${limited.slice(2, 6)}-${limited.slice(6)}`;
+    }
+    
+    if (countryCode === 'CL') {
+      const limited = numbers.slice(0, 9);
+      if (limited.length <= 1) return limited;
+      if (limited.length <= 5) return `${limited.slice(0, 1)} ${limited.slice(1)}`;
+      return `${limited.slice(0, 1)} ${limited.slice(1, 5)} ${limited.slice(5)}`;
+    }
+
+    if (countryCode === 'MX' || countryCode === 'CO') {
+      const limited = numbers.slice(0, 10);
+      if (limited.length <= 2) return limited;
+      if (limited.length <= 6) return `${limited.slice(0, 2)} ${limited.slice(2)}`;
+      return `${limited.slice(0, 2)} ${limited.slice(2, 6)} ${limited.slice(6)}`;
+    }
+
+    // Default mask
+    return numbers.slice(0, 15);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(formatPhone(e.target.value));
+    setPhone(formatPhone(e.target.value, selectedCountry.code));
+    setError(null);
+  };
+
+  const handleCountryChange = (countryCode: string) => {
+    const country = COUNTRIES.find(c => c.code === countryCode) || COUNTRIES[0];
+    setSelectedCountry(country);
+    setPhone('');
     setError(null);
   };
 
@@ -58,7 +137,16 @@ export default function AuthModal() {
     }
 
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+    
+    // Validate length based on country
+    const len = cleanPhone.length;
+    let isValid = false;
+    if (selectedCountry.code === 'BR') isValid = len >= 10 && len <= 11;
+    else if (['US', 'CA', 'GB', 'AR', 'MX', 'CO'].includes(selectedCountry.code)) isValid = len === 10;
+    else if (['PT', 'ES', 'CL'].includes(selectedCountry.code)) isValid = len === 9;
+    else isValid = len >= 8 && len <= 15;
+
+    if (!isValid) {
       setError('Por favor, insira um número de telefone válido.');
       return;
     }
@@ -66,8 +154,8 @@ export default function AuthModal() {
     setIsLoading(true);
     setError(null);
 
-    // Format to E.164: +55 + DDD + Number
-    const formattedPhone = `+55${cleanPhone}`;
+    // Format to E.164: +DialCode + Number
+    const formattedPhone = `${selectedCountry.dialCode}${cleanPhone}`;
 
     try {
       if (IS_DEMO_MODE) {
@@ -112,7 +200,7 @@ export default function AuthModal() {
     setError(null);
 
     const cleanPhone = phone.replace(/\D/g, '');
-    const formattedPhone = `+55${cleanPhone}`;
+    const formattedPhone = `${selectedCountry.dialCode}${cleanPhone}`;
 
     try {
       const { error } = await verifyOtp(formattedPhone, otp);
@@ -179,32 +267,82 @@ export default function AuthModal() {
                 */}
                 <div className="relative group">
                   <div className={`
-                    w-full bg-white border border-[#38B1E4] rounded-[8px] 
+                    relative w-full bg-white border border-[#38B1E4] rounded-[8px] 
                     px-3 py-2 flex items-center gap-2 h-[45px]
                     focus-within:ring-1 focus-within:ring-[#38B1E4]
                     transition-all
                   `}>
-                    {/* Brazil Flag and Prefix */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="relative w-6 h-6 overflow-hidden rounded-full border border-neutral-100">
-                        <Image
-                          src="/assets/brasil.png"
-                          alt="Brasil"
-                          fill
-                          className="object-cover"
+                    {/* Country Selector */}
+                    <div 
+                      className="relative flex items-center gap-1 shrink-0 cursor-pointer pl-1"
+                      onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                    >
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full border border-neutral-100 bg-neutral-50 shrink-0 overflow-hidden relative">
+                        <img 
+                          src={`https://flagcdn.com/w40/${selectedCountry.code.toLowerCase()}.png`}
+                          alt={selectedCountry.name}
+                          className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="font-montserrat font-medium text-[16px] text-[#3A424E]">+55</span>
+                      <span className="font-montserrat font-medium text-[16px] text-[#3A424E]">{selectedCountry.dialCode}</span>
+                      <ChevronDown size={14} className="text-[#AEAEB2]" />
+
+                      {/* Custom Dropdown */}
+                      {isCountryDropdownOpen && (
+                        <>
+                          {/* Invisible overlay to catch clicks outside */}
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCountryDropdownOpen(false);
+                            }}
+                          />
+                          <div className="absolute top-full left-[-12px] mt-3 w-[240px] bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-[240px] overflow-y-auto ring-1 ring-black ring-opacity-5">
+                            {COUNTRIES.map(c => (
+                              <button
+                                key={c.code}
+                                type="button"
+                                className={`w-full text-left px-4 py-[10px] hover:bg-neutral-50 flex items-center gap-3 transition-colors ${selectedCountry.code === c.code ? 'bg-[#38B1E4]/5' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCountryChange(c.code);
+                                  setIsCountryDropdownOpen(false);
+                                }}
+                              >
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full border border-neutral-100 bg-neutral-50 shrink-0 overflow-hidden relative">
+                                  <img 
+                                    src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`}
+                                    alt={c.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className={`font-montserrat font-medium text-[14px] leading-tight ${selectedCountry.code === c.code ? 'text-[#38B1E4]' : 'text-[#3A424E]'}`}>
+                                    {c.name}
+                                  </span>
+                                  <span className="font-montserrat text-[12px] text-[#AEAEB2] leading-tight mt-[2px]">
+                                    {c.dialCode}
+                                  </span>
+                                </div>
+                                {selectedCountry.code === c.code && (
+                                  <Check size={16} className="text-[#38B1E4] ml-auto shrink-0" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    <div className="h-4 w-[1px] bg-neutral-200 mx-1"></div>
+                    <div className="h-4 w-[1px] bg-neutral-200 mx-1 shrink-0"></div>
 
                     {/* Input Field */}
                     <input
                       type="tel"
                       value={phone}
                       onChange={handlePhoneChange}
-                      placeholder="(DD) 99999-9999"
+                      placeholder={selectedCountry.mask}
                       className="w-full bg-transparent border-none p-0 font-montserrat font-medium text-[16px] text-[#AEAEB2] placeholder-[#D1D1D6] focus:outline-none focus:ring-0 text-[#3A424E]"
                     />
                   </div>
