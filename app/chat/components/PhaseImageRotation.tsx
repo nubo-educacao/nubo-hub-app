@@ -28,7 +28,7 @@ export default function PhaseImageRotation({
     if (!images || images.length === 0) return null;
 
     return (
-        <div className="relative w-full aspect-square max-w-[400px] mx-auto mb-6">
+        <div className="relative w-full aspect-square max-w-[280px] md:max-w-[400px] sm:max-h-[40vh] mx-auto mb-2 md:mb-6">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={images[currentIndex]}
