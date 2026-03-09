@@ -50,18 +50,7 @@ export default function PhaseImageRotation({
                 </motion.div>
             </AnimatePresence>
             
-            {images.length > 1 && (
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-                    {images.map((_, idx) => (
-                        <div 
-                            key={idx}
-                            className={`h-1.5 rounded-full transition-all duration-300 ${
-                                idx === currentIndex ? 'w-6 bg-[#024F86]' : 'w-1.5 bg-[#024F86]/20'
-                            }`}
-                        />
-                    ))}
-                </div>
-            )}
+
         </div>
     );
 }

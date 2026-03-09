@@ -425,6 +425,17 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
+                    label="Nome Completo"
+                    name="full_name"
+                    value={formData.full_name || ''}
+                    onChange={handleChange}
+                    icon={User}
+                    placeholder="Nome completo do dependente"
+                    onFocus={() => setFocusedField('full_name')}
+                    onBlur={() => setFocusedField(null)}
+                    error={errors.full_name}
+                />
+                <InputField
                     label="Data de Nascimento"
                     name="birth_date"
                     value={formData.birth_date || ''}
@@ -560,7 +571,20 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                     <select
                         name="education"
                         value={formData.education || ''}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData(prev => ({
+                                ...prev,
+                                education: val,
+                                // Reset year if education doesn't require it
+                                education_year: (val === 'Ensino Fundamental' || val === 'Ensino Médio Incompleto')
+                                    ? prev.education_year
+                                    : ''
+                            }));
+                            if (errors.education) {
+                                setErrors(prev => ({ ...prev, education: false }));
+                            }
+                        }}
                         onFocus={() => setFocusedField('education')}
                         onBlur={() => setFocusedField(null)}
                         className={`bg-white/50 border rounded-lg px-3 py-2 text-[#3A424E] outline-none transition-all focus:border-[#38B1E4]
@@ -576,7 +600,7 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                     </select>
                 </div>
 
-                {['Ensino fundamental', 'Ensino médio incompleto'].includes(formData.education || '') && (
+                {['Ensino Fundamental', 'Ensino Médio Incompleto'].includes(formData.education || '') && (
                     <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
                         <label className={`text-sm font-semibold flex items-center gap-2 ${errors.education_year ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
                             <Calendar size={14} />
