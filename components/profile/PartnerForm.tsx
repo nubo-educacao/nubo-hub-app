@@ -236,6 +236,15 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 setLoading(true);
                 setError(null);
 
+                // 0. Get the target profile ID (user or dependent)
+                const { data: parentProfile } = await supabase
+                    .from('user_profiles')
+                    .select('active_application_target_id')
+                    .eq('id', user.id)
+                    .single();
+
+                const targetId = parentProfile?.active_application_target_id || user.id;
+
                 // 1. Get the student_application (specific or most recent)
                 let appData: any = null;
                 let appError: any = null;
@@ -252,7 +261,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     const result = await supabase
                         .from('student_applications')
                         .select('*')
-                        .eq('user_id', user.id)
+                        .eq('user_id', targetId)
                         .order('updated_at', { ascending: false })
                         .limit(1)
                         .single();
@@ -301,14 +310,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 const existingAnswers: Record<string, string> = { ...(appData.answers || {}) };
 
                 // Fetch user profile for mapping_source pre-fill
-                const { data: parentProfile } = await supabase
-                    .from('user_profiles')
-                    .select('active_application_target_id')
-                    .eq('id', user.id)
-                    .single();
-
-                const targetId = parentProfile?.active_application_target_id || user.id;
-
                 const { data: profileData } = await supabase
                     .from('user_profiles')
                     .select('*')

@@ -20,26 +20,27 @@ export default function SuccessTransitionView({
     images
 }: SuccessTransitionViewProps) {
     return (
-        <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-6 py-6 px-6">
-            {/* Visual Element */}
-            <div className="w-full flex justify-center">
-                {images && images.length > 0 ? (
-                    <PhaseImageRotation images={images} />
-                ) : (
-                    <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="w-20 h-20 rounded-full bg-[#024F86]/10 flex items-center justify-center shadow-inner"
-                    >
-                        <CheckCircle2 className="w-10 h-10 text-[#024F86]" />
-                    </motion.div>
-                )}
-            </div>
+        <div className="flex flex-col items-center min-h-full py-6 px-6">
+            <div className="w-full flex flex-col items-center my-auto">
+                {/* Visual Element */}
+                <div className="w-full flex justify-center mb-6">
+                    {images && images.length > 0 ? (
+                        <PhaseImageRotation images={images} />
+                    ) : (
+                        <motion.div
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            className="w-20 h-20 rounded-full bg-[#024F86]/10 flex items-center justify-center shadow-inner"
+                        >
+                            <CheckCircle2 className="w-10 h-10 text-[#024F86]" />
+                        </motion.div>
+                    )}
+                </div>
 
-            {/* Content Container (No Card anymore) */}
-            <div className="flex flex-col items-center text-center max-w-3xl w-full space-y-4">
-                <AnimatePresence mode="wait">
+                {/* Content Container (No Card anymore) */}
+                <div className="flex flex-col items-center text-center max-w-3xl w-full space-y-4">
+                    <AnimatePresence mode="wait">
                     <motion.div
                         key={title + subtitle}
                         initial={{ opacity: 0, y: 10 }}
@@ -93,6 +94,7 @@ export default function SuccessTransitionView({
                         )}
                     </motion.div>
                 </AnimatePresence>
+            </div>
             </div>
         </div>
     );
