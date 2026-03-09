@@ -215,28 +215,8 @@ function ChatPageContent() {
         }
     }, [profile?.passport_phase, selectedFunctionality]);
 
-    // Phase INTRO Auto-Transition
-    useEffect(() => {
-        if (profile?.passport_phase === 'INTRO' && user) {
-            console.log(`[ChatPage] INTRO phase detected for user ${user.id}. Starting 15s timer for auto-transition to ONBOARDING...`);
-            const timer = setTimeout(async () => {
-                console.log(`[ChatPage] 15s timer fired. Transitioning INTRO → ONBOARDING for user ${user.id}...`);
-                const { error, data } = await supabase
-                    .from('user_profiles')
-                    .update({ passport_phase: 'ONBOARDING' })
-                    .eq('id', user.id)
-                    .select();
-
-                if (!error) {
-                    console.log('[ChatPage] ✅ INTRO → ONBOARDING transition SUCCESS. DB response:', data);
-                    setProfile(prev => prev ? { ...prev, passport_phase: 'ONBOARDING' } : prev);
-                } else {
-                    console.error('[ChatPage] ❌ Failed to transition from INTRO to ONBOARDING:', error);
-                }
-            }, 8000);
-            return () => clearTimeout(timer);
-        }
-    }, [profile?.passport_phase, user]);
+    // Phase INTRO transition is handled by the agent after the first message
+    // or manually by the user clicking a button in the UI.
 
     // Auto-Trigger logic when Onboarding finishes (via Chat or UI)
     // SKIP during Passei Workflow — the agent handles the transition via passport_phase
@@ -496,13 +476,13 @@ function ChatPageContent() {
                                 {selectedFunctionality === 'ONBOARDING' && (
                                     <div className={`w-full h-full overflow-y-auto flex flex-col ${profile?.passport_phase === 'PROGRAM_MATCH' ? 'pt-4' : 'items-center md:justify-center p-0 md:p-4'}`}>
                                         <div className={`w-full h-full ${profile?.passport_phase === 'PROGRAM_MATCH' ? '' : 'max-w-3xl'}`}>
-                                            {!profile || !profile.passport_phase ? (
-                                                <div className="flex flex-col items-center justify-center p-8 bg-white/50 backdrop-blur-sm rounded-3xl border border-white">
-                                                    <div className="w-32 h-32 bg-[#024F86]/10 rounded-full flex flex-col items-center justify-center mb-4 text-[#024F86]/60 font-medium text-center p-2">
-                                                        [Imagem da Cloudinha]
-                                                    </div>
-                                                    <p className="text-sm text-[#024F86]/50">Carregando perfil...</p>
-                                                </div>
+                                            {!profile || !profile.passport_phase || isLoading || (!isAuthenticated && !isLoading) ? (
+                                                <SuccessTransitionView
+                                                    title="Preparando o seu Passaporte..."
+                                                    subtitle="A Cloudinha está separando as melhores perguntas"
+                                                    description="Estamos carregando seu perfil para configurar sua jornada personalizada."
+                                                    images={['/assets/cloudinha/Intro.png']}
+                                                />
                                             ) : profile.passport_phase === 'DEPENDENT_ONBOARDING' ? (
                                                 <DependentDataSection
                                                     key={`dependent-form-${profile.passport_phase}`}
@@ -545,19 +525,22 @@ function ChatPageContent() {
                                                     }}
                                                 />
                                             ) : profile.passport_phase === 'INTRO' ? (
-                                                <div className="flex flex-col items-center justify-center p-8 bg-white/50 backdrop-blur-sm rounded-3xl border border-white h-[60vh] md:h-full mt-8 md:mt-0">
-                                                    <Loader2 size={48} className="text-[#024F86] animate-spin mb-4" />
-                                                    <h3 className="text-xl font-bold text-[#024F86] mb-2 text-center">Preparando o seu Passaporte...</h3>
-                                                    <p className="text-sm text-[#024F86]/70 text-center max-w-sm">
-                                                        A Cloudinha está separando as melhores perguntas para encontrar as oportunidades ideais para você.
-                                                    </p>
-                                                </div>
+                                                <SuccessTransitionView
+                                                    title="Preparando o seu Passaporte..."
+                                                    subtitle="A Cloudinha está separando as melhores perguntas"
+                                                    description="Estamos configurando sua jornada personalizada para encontrar as melhores oportunidades para você. Só um momentinho!"
+                                                    images={['/assets/cloudinha/Intro.png']}
+                                                />
                                             ) : ['ASK_DEPENDENT', 'CONCLUDED'].includes(profile.passport_phase) ? (
                                                 <SuccessTransitionView
-                                                    title="Dados Confirmados!"
-                                                    subtitle="Seu perfil foi atualizado com sucesso"
-                                                    description="A Cloudinha liberou os próximos passos no Chat ao lado. Dê uma olhadinha lá para continuar!"
+                                                    title={profile.passport_phase === 'ASK_DEPENDENT' ? "Tudo Pronto?" : "Dados Confirmados!"}
+                                                    subtitle={profile.passport_phase === 'ASK_DEPENDENT' ? "Vamos começar a jornada" : "Seu perfil foi atualizado com sucesso"}
+                                                    description={profile.passport_phase === 'ASK_DEPENDENT' ? "A Cloudinha quer te conhecer melhor para encontrar as melhores vagas." : "A Cloudinha liberou os próximos passos no Chat ao lado. Dê uma olhadinha lá para continuar!"}
                                                     buttonText="Ir para o Chat"
+                                                    images={profile.passport_phase === 'ASK_DEPENDENT' 
+                                                        ? ['/assets/cloudinha/Ask 1.png', '/assets/cloudinha/Ask 2.png'] 
+                                                        : ['/assets/cloudinha/Sucesso 1.png', '/assets/cloudinha/Sucesso 2.png']
+                                                    }
                                                     onButtonClick={() => {
                                                         if (typeof window !== 'undefined' && window.innerWidth < 768) {
                                                             setActiveTab('CHAT');

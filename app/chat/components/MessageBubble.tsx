@@ -6,7 +6,8 @@ import { Message } from './ChatCloudinha';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface MessageBubbleProps {
   message: Message;
@@ -23,6 +24,20 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
     setFeedbackScore(score);
     if (onFeedback) {
       onFeedback(score, 'explicit_thumb');
+    }
+  };
+
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setIsCopied(true);
+      toast.success('Mensagem copiada!');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      toast.error('Erro ao copiar mensagem');
     }
   };
 
@@ -90,15 +105,34 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
                )
               )}
           </div>
-          <div className={`text-[10px] mt-1 opacity-60 ${isUser ? 'text-white/80 text-right' : 'text-[#636E7C] text-left'}`}>
-            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <div className={`text-[10px] mt-1 opacity-60 ${isUser ? 'text-white/80 text-right' : 'text-[#636E7C] text-left'} flex items-center justify-between gap-2`}>
+            <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {/* Mobile Copy Button (Always visible on mobile or small screens) */}
+            {message.text && (
+              <button 
+                onClick={handleCopy}
+                className={`md:hidden p-1 rounded-full transition-colors ${isUser ? 'hover:bg-white/10 text-white/90' : 'hover:bg-gray-100 text-[#636E7C]'}`}
+                title="Copiar mensagem"
+              >
+                {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Feedback Actions (Only for Agent) */}
-      {!isUser && message.text && (
-        <div className="flex items-center gap-2 mt-1 ml-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      {/* Action Buttons Container (Copier + Feedback) */}
+      <div className={`flex items-center gap-2 mt-1 ${isUser ? 'mr-0' : 'ml-10'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+        {/* Desktop Copy Button */}
+        {message.text && (
+          <button 
+            onClick={handleCopy}
+            className={`hidden md:flex p-1 rounded hover:bg-gray-50 transition-colors text-gray-400 hover:text-[#024F86]`}
+            title="Copiar mensagem"
+          >
+            {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          </button>
+        )}
            <button 
              onClick={() => handleFeedback(1.0)}
              className={`p-1 rounded hover:bg-green-50 transition-colors ${feedbackScore === 1.0 ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
@@ -113,8 +147,7 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
            >
              <ThumbsDown className="w-3 h-3" />
            </button>
-        </div>
-      )}
+      </div>
     </motion.div>
   );
 }

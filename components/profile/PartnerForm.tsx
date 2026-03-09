@@ -189,6 +189,14 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                                 if (val !== null && val !== undefined && val !== '') {
                                     existingAnswers[field.field_name] = String(val);
                                 }
+                            } else if (parts.length === 3 && parts[0] === 'auth' && parts[1] === 'users') {
+                                // Resolving from session user data
+                                const mappingField = parts[2];
+                                if (mappingField === 'phone' && user.phone) {
+                                    existingAnswers[field.field_name] = user.phone;
+                                } else if (mappingField === 'email' && user.email) {
+                                    existingAnswers[field.field_name] = user.email;
+                                }
                             }
                         }
                     }
