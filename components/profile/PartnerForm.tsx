@@ -649,10 +649,32 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         if (!application || submitting) return;
         setSaving(true);
         try {
+            // Reorder answers based on field sort_order and filter out mapping_source keys
+            const orderedAnswers: Record<string, any> = {};
+            const mappingSources = new Set(fields.map(f => f.mapping_source).filter(Boolean));
+            
+            // First, add answers corresponding to fields in the correct order
+            fields.forEach(field => {
+                if (answers[field.field_name] !== undefined) {
+                    orderedAnswers[field.field_name] = answers[field.field_name];
+                }
+            });
+
+            // Then, add any other keys that are not mapping sources
+            Object.keys(answers).forEach(key => {
+                if (!(key in orderedAnswers)) {
+                    if (!mappingSources.has(key)) {
+                        orderedAnswers[key] = answers[key];
+                    }
+                }
+            });
+
             await supabase
-                .from('student_applications')
-                .update({ answers, updated_at: new Date().toISOString() })
-                .eq('id', application.id);
+                .rpc('update_student_application_answers', {
+                    p_application_id: application.id,
+                    p_answers: orderedAnswers
+                });
+
             setLastSaved(new Date());
         } catch (e) {
             console.error('[PartnerForm] Error saving answers:', e);
@@ -761,11 +783,30 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         setSubmitting(true);
 
         try {
-            // 1. Save final answers and update status
+            // Reorder answers based on field sort_order and filter out mapping_source keys
+            const orderedAnswers: Record<string, any> = {};
+            const mappingSources = new Set(fields.map(f => f.mapping_source).filter(Boolean));
+            
+            fields.forEach(field => {
+                if (answers[field.field_name] !== undefined) {
+                    orderedAnswers[field.field_name] = answers[field.field_name];
+                }
+            });
+
+            Object.keys(answers).forEach(key => {
+                if (!(key in orderedAnswers)) {
+                    if (!mappingSources.has(key)) {
+                        orderedAnswers[key] = answers[key];
+                    }
+                }
+            });
+
+            // 1. Save final answers and update status via RPC to ensure merge
+            // We also update the status to SUBMITTED
             await supabase
                 .from('student_applications')
                 .update({
-                    answers,
+                    answers: orderedAnswers,
                     status: 'SUBMITTED',
                     updated_at: new Date().toISOString(),
                 })
