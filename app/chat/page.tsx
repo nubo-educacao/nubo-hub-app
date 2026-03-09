@@ -410,7 +410,7 @@ function ChatPageContent() {
                                     currentPhase={profile.passport_phase as any}
                                     furthestPhase={profile.furthest_passport_phase}
                                     onBack={handlePhaseBack}
-                                    showViewFormsButton={['PROGRAM_MATCH', 'EVALUATE'].includes(profile.passport_phase)}
+                                    showViewFormsButton={['PROGRAM_MATCH', 'EVALUATE', 'CONCLUDED'].includes(profile.passport_phase)}
                                     onViewForms={() => setShowApplicationsDrawer(true)}
                                     activeApplicationTargetId={profile.active_application_target_id}
                                     profileId={profile.id}

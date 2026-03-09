@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
 import { Montserrat } from 'next/font/google';
@@ -55,6 +55,7 @@ interface EligibilityCriterion {
     field_name: string;
     question_text: string;
     met: boolean;
+    user_answer: string;
 }
 
 interface PartnerFormProps {
@@ -63,6 +64,137 @@ interface PartnerFormProps {
     onComplete?: () => void;
     onTriggerChatMessage?: (message: string) => void;
 }
+
+// ─── Memoized Field Component ────────────────────────────────────────────────
+
+interface FormFieldProps {
+    field: PartnerFormField;
+    value: string;
+    hasError: boolean;
+    onAnswerChange: (fieldName: string, value: string, maskType?: string | null) => void;
+    onMultiSelectChange: (fieldName: string, option: string, checked: boolean) => void;
+}
+
+const FormField = React.memo(function FormField({ field, value, hasError, onAnswerChange, onMultiSelectChange }: FormFieldProps) {
+    const stringValue = value !== undefined && value !== null ? String(value) : '';
+    const componentType = getComponentType(field.maskking, field.data_type);
+
+    const baseInputClass = `w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white/80 backdrop-blur-sm text-[#3A424E] text-sm outline-none
+        ${hasError ? 'border-red-400 ring-2 ring-red-100' : 'border-gray-200 focus:border-[#38B1E4] focus:ring-2 focus:ring-[#38B1E4]/20'}`;
+
+    return (
+        <motion.div
+            key={field.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-2"
+        >
+            <label className="block text-sm font-semibold text-[#024F86]">
+                {field.question_text}
+                {!field.optional && <span className="text-red-400 ml-1">*</span>}
+            </label>
+
+            {field.data_type === 'boolean' || field.data_type === 'multiselect' ? null : componentType === 'date' ? (
+                <input
+                    type="date"
+                    value={stringValue}
+                    onChange={(e) => onAnswerChange(field.field_name, e.target.value)}
+                    className={baseInputClass}
+                />
+            ) : componentType === 'textarea' ? (
+                <div className="relative">
+                    <textarea
+                        value={stringValue}
+                        onChange={(e) => onAnswerChange(field.field_name, e.target.value.slice(0, 500), field.maskking)}
+                        className={baseInputClass + ' min-h-[120px] resize-none'}
+                        placeholder={getPlaceholder(field.maskking, field.data_type)}
+                        maxLength={500}
+                    />
+                    <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${stringValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
+                        {stringValue.length}/500
+                    </div>
+                </div>
+            ) : componentType === 'select' ? (
+                <select
+                    value={stringValue}
+                    onChange={(e) => onAnswerChange(field.field_name, e.target.value)}
+                    className={baseInputClass + ' appearance-none cursor-pointer'}
+                >
+                    <option value="">Selecione uma opção...</option>
+                    {(field.options || []).map((opt, i) => (
+                        <option key={i} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            ) : (
+                <input
+                    type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'link' ? 'url' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
+                    inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
+                    value={stringValue}
+                    onChange={(e) => onAnswerChange(field.field_name, e.target.value, field.maskking)}
+                    className={baseInputClass}
+                    placeholder={getPlaceholder(field.maskking, field.data_type)}
+                    maxLength={getMaxLength(field.maskking)}
+                />
+            )}
+
+            {field.data_type === 'multiselect' && (
+                <div className="space-y-2">
+                    {(field.options || []).map((opt, i) => {
+                        const currentArray = Array.isArray(value) 
+                            ? value 
+                            : (typeof value === 'string' ? value.split(',').map(s => s.trim()).filter(Boolean) : []);
+                        const selected = currentArray.includes(opt);
+                        return (
+                            <label
+                                key={i}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                    ${selected
+                                        ? 'border-[#38B1E4] bg-[#38B1E4]/5'
+                                        : 'border-gray-200 bg-white/80 hover:border-gray-300'
+                                    }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={(e) => onMultiSelectChange(field.field_name, opt, e.target.checked)}
+                                    className="w-4 h-4 text-[#38B1E4] rounded border-gray-300 focus:ring-[#38B1E4]"
+                                />
+                                <span className="text-sm text-[#3A424E]">{opt}</span>
+                            </label>
+                        );
+                    })}
+                </div>
+            )}
+
+            {field.data_type === 'boolean' && (
+                <div className="flex gap-3">
+                    {['Sim', 'Não'].map(opt => (
+                        <button
+                            key={opt}
+                            type="button"
+                            onClick={() => onAnswerChange(field.field_name, opt)}
+                            className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200
+                                ${stringValue === opt
+                                    ? 'border-[#38B1E4] bg-[#38B1E4]/10 text-[#024F86]'
+                                    : 'border-gray-200 bg-white/80 text-[#3A424E] hover:border-gray-300'
+                                }`}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {hasError && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle size={12} />
+                    Este campo é obrigatório
+                </p>
+            )}
+        </motion.div>
+    );
+});
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -89,6 +221,10 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     // Review state (after last step)
     const [showReview, setShowReview] = useState(false);
     const [eligibilityResults, setEligibilityResults] = useState<EligibilityCriterion[]>([]);
+
+    // Ref to avoid re-registering event listeners on every answers change
+    const answersRef = useRef(answers);
+    useEffect(() => { answersRef.current = answers; }, [answers]);
 
     // ─── Data Fetch ──────────────────────────────────────────────────────────
 
@@ -117,7 +253,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                         .from('student_applications')
                         .select('*')
                         .eq('user_id', user.id)
-                        .order('created_at', { ascending: false })
+                        .order('updated_at', { ascending: false })
                         .limit(1)
                         .single();
                     appData = result.data;
@@ -250,39 +386,42 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         fetchData();
     }, [user, applicationId]);
 
-    // ─── Local Storage Persistence ──────────────────────────────────────────
+    // ─── Persistence (debounced) ──────────────────────────────────────────
 
-    // Update localStorage whenever answers change
-    useEffect(() => {
-        if (!applicationId || Object.keys(answers).length === 0 || loading) return;
-        
-        const storageKey = `nubo_form_draft_${applicationId}`;
-        localStorage.setItem(storageKey, JSON.stringify(answers));
-    }, [answers, applicationId, loading]);
-
-    // Debounced Auto-save to DB
+    // Debounced persistence: localStorage + DB save in a single timer
     useEffect(() => {
         if (Object.keys(answers).length === 0 || loading || submitting) return;
 
         const timer = setTimeout(() => {
+            // Persist to localStorage
+            if (applicationId) {
+                const storageKey = `nubo_form_draft_${applicationId}`;
+                localStorage.setItem(storageKey, JSON.stringify(answers));
+            }
+            // Persist to DB
             saveAnswersToDb();
-        }, 1500); // Reduced from 3s to 1.5s
+        }, 1500);
 
         return () => clearTimeout(timer);
     }, [answers]);
 
-    // Immediate save on visibility change (tab switch)
+    // Immediate save on visibility change (tab switch) — uses ref to avoid re-registering
     useEffect(() => {
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden' && Object.keys(answers).length > 0) {
+            if (document.visibilityState === 'hidden' && Object.keys(answersRef.current).length > 0) {
                 console.log("[PartnerForm] Tab hidden - triggering immediate save");
+                // Also persist to localStorage immediately
+                if (applicationId) {
+                    const storageKey = `nubo_form_draft_${applicationId}`;
+                    localStorage.setItem(storageKey, JSON.stringify(answersRef.current));
+                }
                 saveAnswersToDb();
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [answers, application, submitting]);
+    }, [application, submitting]);
 
     // Handle beforeunload to warn user if saving is pending
     useEffect(() => {
@@ -297,12 +436,21 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [saving]);
 
-    // Notify parent of form dirtiness
+    // Notify parent of form dirtiness (debounced to avoid cascading re-renders)
     useEffect(() => {
-        if (onFormDirty) {
+        if (!onFormDirty) return;
+        const timer = setTimeout(() => {
             onFormDirty(Object.keys(answers).length > 0 ? answers : null);
-        }
+        }, 300);
+        return () => clearTimeout(timer);
     }, [answers]);
+
+    // Scroll to top on step transitions or iteration changes
+    useEffect(() => {
+        if (!loading) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [currentStepIndex, currentIteration, showReview, loading]);
 
     // ─── Derived Data ────────────────────────────────────────────────────────
     
@@ -386,7 +534,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             }
             return true;
         });
-    }, [fields, currentStep, steps, answers]);
+    }, [fields, currentStep, steps, currentIterationData]);
 
     const isLastStep = currentStepIndex >= visibleSteps.length - 1;
 
@@ -462,27 +610,39 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         });
     }, [currentStep, currentIteration]);
 
-    const handleMultiSelectChange = (fieldName: string, option: string, checked: boolean) => {
-        const getCurrentVal = () => {
+    const handleMultiSelectChange = useCallback((fieldName: string, option: string, checked: boolean) => {
+        setAnswers(prev => {
+            let currentVal = '';
             if (currentStep?.is_iterable) {
-                const iterations = answers[currentStep.id] || [];
-                return iterations[currentIteration]?.[fieldName] || '';
+                const iterations = prev[currentStep.id] || [];
+                currentVal = iterations[currentIteration]?.[fieldName] || '';
+            } else {
+                currentVal = prev[fieldName] || '';
             }
-            return answers[fieldName] || '';
-        };
 
-        const currentVal = getCurrentVal();
-        const current = currentVal ? String(currentVal).split(',').map(s => s.trim()).filter(Boolean) : [];
-        let nextArray: string[];
-        if (checked) {
-            nextArray = [...current, option];
-        } else {
-            nextArray = current.filter(v => v !== option);
-        }
-        const finalValue = nextArray.join(', ');
+            const current = Array.isArray(currentVal) 
+                ? currentVal 
+                : (currentVal ? String(currentVal).split(',').map(s => s.trim()).filter(Boolean) : []);
+            const nextArray = checked 
+                ? [...new Set([...current, option])] 
+                : current.filter(v => v !== option);
+            const finalValue = nextArray; // Store as actual array since column is JSONB
 
-        handleAnswerChange(fieldName, finalValue);
-    };
+            if (currentStep?.is_iterable) {
+                const iterations = [...(prev[currentStep.id] || [])];
+                if (!iterations[currentIteration]) iterations[currentIteration] = {};
+                iterations[currentIteration] = { ...iterations[currentIteration], [fieldName]: finalValue };
+                return { ...prev, [currentStep.id]: iterations };
+            }
+            return { ...prev, [fieldName]: finalValue };
+        });
+
+        setValidationErrors(prev => {
+            const next = new Set(prev);
+            next.delete(fieldName);
+            return next;
+        });
+    }, [currentStep, currentIteration]);
 
     const saveAnswersToDb = async () => {
         if (!application || submitting) return;
@@ -524,8 +684,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         
         setCurrentIteration(prev => prev + 1);
         setValidationErrors(new Set());
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePrev = () => {
@@ -562,15 +720,25 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         
         const criterionFields = targetFields.filter(f => f.is_criterion);
         const results: EligibilityCriterion[] = criterionFields.map(crit => {
-            const userVal = targetAnswers[crit.field_name];
+            // Try form answers from student_application.answers (which is targetAnswers)
+            // Priority 1: field_name slug (used by frontend form)
+            // Priority 2: mapping_source string (used by backend agent pre-fill)
+            let userVal = targetAnswers[crit.field_name];
+            if ((userVal === null || userVal === undefined || userVal === '') && crit.mapping_source) {
+                userVal = targetAnswers[crit.mapping_source];
+            }
+
             let met = false;
 
             if (userVal !== null && userVal !== undefined && userVal !== '') {
                 const rule = crit.criterion_rule;
                 if (!rule) {
+                    // Similar to the matching phase RPC: if value exists and no rule, consider met
                     met = true;
                 } else {
-                    met = Boolean(evaluateJsonLogic(rule, { [crit.field_name]: userVal }));
+                    // Evaluate rule against the value. 
+                    // Providing a context where 'var' can match either the field name or be inside the evaluationData
+                    met = Boolean(evaluateJsonLogic(rule, { ...evaluationData, [crit.field_name]: userVal }));
                 }
             }
 
@@ -578,6 +746,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 field_name: crit.field_name,
                 question_text: crit.question_text,
                 met,
+                user_answer: userVal !== null && userVal !== undefined ? String(userVal) : '',
             };
         });
 
@@ -629,134 +798,15 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         }
     };
 
-    // ─── Render Helpers ──────────────────────────────────────────────────────
+    // ─── Render Helper ───────────────────────────────────────────────────────
 
-    const renderField = (field: PartnerFormField) => {
-        let value = '';
+    const getFieldValue = useCallback((fieldName: string): string => {
         if (currentStep?.is_iterable) {
             const iterations = answers[currentStep.id] || [];
-            value = iterations[currentIteration]?.[field.field_name] || '';
-        } else {
-            value = answers[field.field_name] || '';
+            return iterations[currentIteration]?.[fieldName] || '';
         }
-        
-        const stringValue = value !== undefined && value !== null ? String(value) : '';
-        const hasError = validationErrors.has(field.field_name);
-        const componentType = getComponentType(field.maskking, field.data_type);
-
-        const baseInputClass = `w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white/80 backdrop-blur-sm text-[#3A424E] text-sm outline-none
-            ${hasError ? 'border-red-400 ring-2 ring-red-100' : 'border-gray-200 focus:border-[#38B1E4] focus:ring-2 focus:ring-[#38B1E4]/20'}`;
-
-        return (
-            <motion.div
-                key={field.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-2"
-            >
-                <label className="block text-sm font-semibold text-[#024F86]">
-                    {field.question_text}
-                    {!field.optional && <span className="text-red-400 ml-1">*</span>}
-                </label>
-
-                {componentType === 'date' ? (
-                    <input
-                        type="date"
-                        value={stringValue}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value)}
-                        className={baseInputClass}
-                    />
-                ) : componentType === 'textarea' ? (
-                    <div className="relative">
-                        <textarea
-                            value={stringValue}
-                            onChange={(e) => handleAnswerChange(field.field_name, e.target.value.slice(0, 500), field.maskking)}
-                            className={baseInputClass + ' min-h-[120px] resize-none'}
-                            placeholder={getPlaceholder(field.maskking, field.data_type)}
-                            maxLength={500}
-                        />
-                        <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${stringValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
-                            {stringValue.length}/500
-                        </div>
-                    </div>
-                ) : componentType === 'select' ? (
-                    <select
-                        value={stringValue}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value)}
-                        className={baseInputClass + ' appearance-none cursor-pointer'}
-                    >
-                        <option value="">Selecione uma opção...</option>
-                        {(field.options || []).map((opt, i) => (
-                            <option key={i} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                ) : (
-                    <input
-                        type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'link' ? 'url' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
-                        inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
-                        value={stringValue}
-                        onChange={(e) => handleAnswerChange(field.field_name, e.target.value, field.maskking)}
-                        className={baseInputClass}
-                        placeholder={getPlaceholder(field.maskking, field.data_type)}
-                        maxLength={getMaxLength(field.maskking)}
-                    />
-                )}
-
-                {field.data_type === 'multiselect' && (
-                    <div className="space-y-2">
-                        {(field.options || []).map((opt, i) => {
-                            const selected = value.split(',').map(s => s.trim()).includes(opt);
-                            return (
-                                <label
-                                    key={i}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200
-                                        ${selected
-                                            ? 'border-[#38B1E4] bg-[#38B1E4]/5'
-                                            : 'border-gray-200 bg-white/80 hover:border-gray-300'
-                                        }`}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selected}
-                                        onChange={(e) => handleMultiSelectChange(field.field_name, opt, e.target.checked)}
-                                        className="w-4 h-4 text-[#38B1E4] rounded border-gray-300 focus:ring-[#38B1E4]"
-                                    />
-                                    <span className="text-sm text-[#3A424E]">{opt}</span>
-                                </label>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {field.data_type === 'boolean' && (
-                    <div className="flex gap-3">
-                        {['Sim', 'Não'].map(opt => (
-                            <button
-                                key={opt}
-                                type="button"
-                                onClick={() => handleAnswerChange(field.field_name, opt)}
-                                className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200
-                                    ${stringValue === opt
-                                        ? 'border-[#38B1E4] bg-[#38B1E4]/10 text-[#024F86]'
-                                        : 'border-gray-200 bg-white/80 text-[#3A424E] hover:border-gray-300'
-                                    }`}
-                            >
-                                {opt}
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                {hasError && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle size={12} />
-                        Este campo é obrigatório
-                    </p>
-                )}
-            </motion.div>
-        );
-    };
+        return answers[fieldName] || '';
+    }, [answers, currentStep, currentIteration]);
 
     // ─── Loading / Error States ──────────────────────────────────────────────
 
@@ -838,8 +888,8 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                                 <XCircle className="text-red-400 shrink-0" size={20} />
                             )}
                             <div className="min-w-0">
-                                <p className="text-sm font-medium text-[#3A424E] truncate">{result.field_name}</p>
-                                <p className="text-xs text-[#3A424E]/60 truncate">{result.question_text}</p>
+                                <p className="text-sm font-medium text-[#3A424E] truncate">{result.question_text}</p>
+                                <p className="text-xs text-[#3A424E]/60 truncate">{result.user_answer || '—'}</p>
                             </div>
                         </motion.div>
                     ))}
@@ -975,7 +1025,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                                 Nenhum campo nesta etapa.
                             </div>
                         ) : (
-                            currentFields.map(field => renderField(field))
+                            currentFields.map(field => (
+                                <FormField
+                                    key={field.id}
+                                    field={field}
+                                    value={getFieldValue(field.field_name)}
+                                    hasError={validationErrors.has(field.field_name)}
+                                    onAnswerChange={handleAnswerChange}
+                                    onMultiSelectChange={handleMultiSelectChange}
+                                />
+                            ))
                         )}
                     </motion.div>
                 </AnimatePresence>
@@ -1025,6 +1084,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     )}
                 </button>
             </div>
-        </div >
+        </div>
     );
 }
