@@ -2,7 +2,7 @@
 
 import React, { useState, KeyboardEvent, useEffect, useRef, useTransition } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Send, Loader2, X, ArrowRight } from 'lucide-react';
+import { Send, Loader2, X, ArrowRight, Sparkles } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
@@ -61,21 +61,8 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
     }
   }, [isAuthenticated, pendingAction, onSendMessage, clearPendingAction]);
 
-  // Phase INTRO transition auto-trigger
-  useEffect(() => {
-    if (passportPhase === 'INTRO' && isAuthenticated) {
-      console.log('[ChatInput] INTRO phase detected. Starting 5s timer for auto-transition to ONBOARDING...');
-      const timer = setTimeout(async () => {
-        console.log('[ChatInput] 5s timer fired. Calling updateUserProfileService({ passport_phase: ONBOARDING })...');
-        const result = await updateUserProfileService({ passport_phase: 'ONBOARDING' });
-        console.log('[ChatInput] ✅ updateUserProfileService result:', result);
-        if (onProfileUpdated) {
-          onProfileUpdated();
-        }
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [passportPhase, isAuthenticated, onProfileUpdated]);
+  // Phase INTRO transition is now handled manually via the "Vamos começar!" button
+  // or automatically by the agent after the first message.
 
   const MAX_CHARS = 2000;
 
@@ -134,6 +121,27 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
             className="flex-1 py-4 px-6 bg-[#38B1E4] hover:bg-[#2a9acb] text-white rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
             Para outra pessoa
+          </button>
+        </div>
+      )}
+
+      {/* INTRO Start Button */}
+      {passportPhase === 'INTRO' && !isLoading && (
+        <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <button
+            onClick={async () => {
+              // 1. Transition phase in DB immediately
+              await updateUserProfileService({ passport_phase: 'ONBOARDING' });
+              // 2. Refresh parent profile state to hide this button and unblock input
+              if (onProfileUpdated) onProfileUpdated();
+              // 3. Send message to trigger the greeting
+              onSendMessage('Olá Cloudinha! Quero começar meu passaporte.');
+            }}
+            className="w-full py-4 px-6 bg-[#024F86] hover:bg-[#023F6B] text-white rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 group"
+          >
+            <Sparkles className="w-5 h-5 text-sky-300 group-hover:scale-110 transition-transform" />
+            <span>Vamos começar!</span>
+            <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       )}

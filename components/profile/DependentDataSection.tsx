@@ -108,6 +108,18 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, boolean>>({});
 
+    const calculateAge = (birthDate: string) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
     const toTitleCase = (str: string) => {
         return str
             .toLowerCase()
@@ -167,7 +179,8 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                             complement: dependentProfile.complement || '',
                             education: dependentProfile.education || '',
                             education_year: dependentProfile.education_year || '',
-                            relationship: dependentProfile.relationship || ''
+                            relationship: dependentProfile.relationship || '',
+                            birth_date: dependentProfile.birth_date || ''
                         };
                         setFormData(loadedData);
                         setOriginalData(loadedData);
@@ -241,7 +254,8 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
         (formData.complement || '') !== (originalData.complement || '') ||
         (formData.education || '') !== (originalData.education || '') ||
         (formData.education_year || '') !== (originalData.education_year || '') ||
-        (formData.relationship || '') !== (originalData.relationship || '')
+        (formData.relationship || '') !== (originalData.relationship || '') ||
+        (formData.birth_date || '') !== (originalData.birth_date || '')
     ) : Object.keys(formData).length > 0;
 
     const validateForm = (): { errors: Record<string, boolean>; descriptions: string[] } => {
@@ -255,14 +269,14 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
             descriptions.push('Nome incompleto (precisa ter nome e sobrenome)');
         }
 
-        // Age: 6 to 100
-        const age = Number(formData.age);
-        if (!formData.age || age < 6 || age > 100) {
-            newErrors.age = true;
-            if (!formData.age) {
-                descriptions.push('Idade não informada');
+        // Birth Date & Age
+        const age = calculateAge(formData.birth_date || '');
+        if (!formData.birth_date || !age || age < 6 || age > 100) {
+            newErrors.birth_date = true;
+            if (!formData.birth_date) {
+                descriptions.push('Data de nascimento não informada');
             } else {
-                descriptions.push(`Idade inválida (${formData.age}). Precisa ser entre 6 e 100 anos`);
+                descriptions.push(`Data de nascimento inválida. Idade calculada: ${age}. Precisa ser entre 6 e 100 anos`);
             }
         }
 
@@ -289,11 +303,7 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
             newErrors.education = true;
             descriptions.push('Escolaridade não selecionada');
         }
-        const requiresYear = formData.education === 'Ensino fundamental' || formData.education === 'Ensino médio incompleto';
-        if (requiresYear && !formData.education_year) {
-            newErrors.education_year = true;
-            descriptions.push('Ano escolar não selecionado');
-        }
+        // Salvamos education_year mesmo se não informado
 
         setErrors(newErrors);
         return { errors: newErrors, descriptions };
@@ -314,7 +324,10 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
         };
 
         if (!newErrors.full_name) updates.full_name = formattedName;
-        if (!newErrors.age) updates.age = formData.age ? Number(formData.age) : null;
+        if (!newErrors.birth_date) {
+            updates.birth_date = formData.birth_date;
+            updates.age = calculateAge(formData.birth_date || '');
+        }
         if (!newErrors.relationship) updates.relationship = formData.relationship;
         if (!newErrors.city) updates.city = formData.city;
         if (!newErrors.state) updates.state = formData.state;
@@ -326,7 +339,7 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
         updates.complement = formData.complement;
 
         if (!newErrors.education) updates.education = formData.education;
-        if (!newErrors.education_year) updates.education_year = formData.education_year;
+        updates.education_year = formData.education_year || 'N/A';
 
         const hasValidationErrors = Object.keys(newErrors).length > 0;
 
@@ -354,7 +367,8 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                 complement: data.complement || '',
                 education: data.education || '',
                 education_year: data.education_year || '',
-                relationship: data.relationship || ''
+                relationship: data.relationship || '',
+                birth_date: data.birth_date || ''
             };
             setOriginalData(savedData);
 
@@ -411,27 +425,16 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
-                    label="Nome Completo"
-                    name="full_name"
-                    value={formData.full_name || ''}
+                    label="Data de Nascimento"
+                    name="birth_date"
+                    value={formData.birth_date || ''}
                     onChange={handleChange}
-                    icon={User}
-                    placeholder="Nome do dependente"
-                    onFocus={() => setFocusedField('full_name')}
-                    onBlur={() => setFocusedField(null)}
-                    error={errors.full_name}
-                />
-                <InputField
-                    label="Idade"
-                    name="age"
-                    value={formData.age || ''}
-                    onChange={handleChange}
-                    type="number"
+                    type="date"
                     icon={Calendar}
-                    placeholder="Idade do dependente"
-                    onFocus={() => setFocusedField('age')}
+                    placeholder="Data de nascimento"
+                    onFocus={() => setFocusedField('birth_date')}
                     onBlur={() => setFocusedField(null)}
-                    error={errors.age}
+                    error={errors.birth_date}
                 />
             </div>
 
@@ -564,12 +567,12 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
               ${errors.education ? 'border-red-400 bg-red-50/10' : 'border-white/40'}`}
                     >
                         <option value="">Selecione...</option>
-                        <option value="Ensino fundamental">Ensino fundamental</option>
-                        <option value="Ensino médio incompleto">Ensino médio incompleto</option>
-                        <option value="Ensino médio completo">Ensino médio completo</option>
-                        <option value="Superior Incompleto">Superior Incompleto</option>
-                        <option value="Superior Completo">Superior Completo</option>
-                        <option value="Pós-graduação">Pós-graduação</option>
+                        <option value="Ensino Fundamental">Ensino Fundamental</option>
+                        <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
+                        <option value="Ensino Médio Completo">Ensino Médio Completo</option>
+                        <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
+                        <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+                        <option value="Pós-Gradução">Pós-Gradução</option>
                     </select>
                 </div>
 
@@ -590,14 +593,16 @@ export default function DependentDataSection({ onDependentOnboardingComplete, on
                 ${errors.education_year ? 'border-red-400 bg-red-50/10' : 'border-white/40'}`}
                         >
                             <option value="">Selecione...</option>
-                            {formData.education === 'Ensino fundamental' ? (
+                            {formData.education === 'Ensino Fundamental' ? (
                                 Array.from({ length: 9 }, (_, i) => (
                                     <option key={i + 1} value={`${i + 1}º ano`}>{i + 1}º ano</option>
                                 ))
                             ) : (
-                                Array.from({ length: 3 }, (_, i) => (
-                                    <option key={i + 1} value={`${i + 1}º ano`}>{i + 1}º ano</option>
-                                ))
+                                <>
+                                    <option value="1º ano EM">1º ano EM</option>
+                                    <option value="2º ano EM">2º ano EM</option>
+                                    <option value="3º ano EM">3º ano EM</option>
+                                </>
                             )}
                         </select>
                     </div>
