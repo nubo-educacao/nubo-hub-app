@@ -221,7 +221,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     // Review state (after last step)
     const [showReview, setShowReview] = useState(false);
     const [eligibilityResults, setEligibilityResults] = useState<EligibilityCriterion[]>([]);
-    const formTopRef = useRef<HTMLDivElement>(null);
 
     // Ref to avoid re-registering event listeners on every answers change
     const answersRef = useRef(answers);
@@ -449,8 +448,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // Scroll to top on step transitions or iteration changes
     useEffect(() => {
-        if (!loading && formTopRef.current) {
-            formTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!loading) {
+            const containers = ['chat-content-panel', 'onboarding-scroll-container'];
+            containers.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [currentStepIndex, currentIteration, showReview, loading]);
 
@@ -836,6 +840,9 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
             // 3. Trigger chat message
             if (onTriggerChatMessage) {
+                // Wait for phase update to propagate
+                await new Promise(r => setTimeout(r, 1500));
+                
                 const metCount = eligibilityResults.filter(r => r.met).length;
                 const totalCount = eligibilityResults.length;
                 onTriggerChatMessage(
@@ -901,7 +908,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         const totalCount = eligibilityResults.length;
 
         return (
-            <div ref={formTopRef} className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
+            <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
                 {/* Header */}
                 <div className="text-center mb-6">
                     <motion.div
@@ -996,7 +1003,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     const progress = totalSteps > 0 ? ((currentStepIndex + 1) / totalSteps) * 100 : 100;
 
     return (
-        <div ref={formTopRef} className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
+        <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-3 mb-3">
