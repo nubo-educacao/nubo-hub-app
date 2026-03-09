@@ -404,7 +404,7 @@ function ChatPageContent() {
                         </div>
 
                         {/* Content Box */}
-                        <div className="flex-1 bg-white/40 backdrop-blur-md md:rounded-[32px] md:border border-white/40 md:shadow-xl overflow-hidden flex flex-col relative">
+                        <div id="chat-content-panel" className="flex-1 bg-white/40 backdrop-blur-md md:rounded-[32px] md:border border-white/40 md:shadow-xl overflow-hidden flex flex-col relative">
                             {profile?.passport_phase && selectedFunctionality === 'ONBOARDING' && (
                                 <PassportWorkflowHeader
                                     currentPhase={profile.passport_phase as any}
@@ -474,7 +474,7 @@ function ChatPageContent() {
                                 )}
 
                                 {selectedFunctionality === 'ONBOARDING' && (
-                                    <div className={`w-full h-full overflow-y-auto flex flex-col ${profile?.passport_phase === 'PROGRAM_MATCH' ? 'pt-4' : 'items-center md:justify-center p-0 md:p-4'}`}>
+                                    <div id="onboarding-scroll-container" className={`w-full h-full overflow-y-auto flex flex-col ${profile?.passport_phase === 'PROGRAM_MATCH' ? 'pt-4' : 'items-center md:justify-center p-0 md:p-4'}`}>
                                         <div className={`w-full h-full ${profile?.passport_phase === 'PROGRAM_MATCH' ? '' : 'max-w-3xl'}`}>
                                             {!profile || !profile.passport_phase || isLoading || (!isAuthenticated && !isLoading) ? (
                                                 <SuccessTransitionView
