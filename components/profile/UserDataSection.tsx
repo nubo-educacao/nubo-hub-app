@@ -338,6 +338,18 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InputField
+          label="Nome Completo"
+          name="full_name"
+          value={formData.full_name || ''}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Seu nome completo"
+          onFocus={() => setFocusedField('full_name')}
+          onBlur={() => setFocusedField(null)}
+          error={errors.full_name}
+        />
+
+        <InputField
           label="Data de Nascimento"
           name="birth_date"
           value={formData.birth_date || ''}
