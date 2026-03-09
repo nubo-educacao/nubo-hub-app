@@ -13,6 +13,7 @@ export interface UserProfile {
   id: string;
   full_name: string | null;
   age: number | null;
+  birth_date: string | null;
   city: string | null;
   state: string | null;
   zip_code: string | null;

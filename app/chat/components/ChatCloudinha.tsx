@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -340,7 +340,8 @@ export default function ChatCloudinha({
 
             const payload = {
                 message: text,
-                ui_form_state: uiFormState
+                ui_form_state: uiFormState,
+                passport_phase: passportPhase
             };
 
             const response = await fetch('/api/chat', {
@@ -896,6 +897,8 @@ export default function ChatCloudinha({
         } finally {
             setIsTyping(false);
             setCurrentStreamId(null);
+            // Always refresh profile/sync state after a message turn finishes
+            if (onProfileUpdated) onProfileUpdated();
         }
     };
 
@@ -922,9 +925,6 @@ export default function ChatCloudinha({
                             <p className="text-[12px] md:text-[14px] text-[#636E7C] leading-tight md:leading-[20px]">
                                 Em desenvolvimento
                             </p>
-                            {passportPhase === 'INTRO' && (
-                                <Loader2 size={12} className="text-[#024F86] animate-spin" />
-                            )}
                         </div>
                     </div>
                 </div>

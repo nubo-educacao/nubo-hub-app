@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
   try {
-    const { message, ui_form_state } = await request.json();
+    const { message, ui_form_state, passport_phase } = await request.json();
     const authHeader = request.headers.get('Authorization');
 
     // We can still do lightweight auth checks here or getting User ID if needed for logging
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       chatInput: message,
       userId: user?.id || null,
       ui_form_state: ui_form_state || null,
+      passport_phase: passport_phase || null,
     };
 
     console.log(`[NextAPI] Attempting to fetch from: ${webhookUrl}`);

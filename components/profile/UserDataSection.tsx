@@ -92,6 +92,18 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
+  const calculateAge = (birthDate: string) => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const toTitleCase = (str: string) => {
     return str
       .toLowerCase()
@@ -130,6 +142,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
         complement: profile.complement || '',
         education: profile.education || '',
         education_year: profile.education_year || '',
+        birth_date: profile.birth_date || '',
       });
     }
   }, [profile]);
@@ -146,7 +159,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
     (formData.street_number || '') !== (profile.street_number || '') ||
     (formData.complement || '') !== (profile.complement || '') ||
     (formData.education || '') !== (profile.education || '') ||
-    (formData.education_year || '') !== (profile.education_year || '')
+    (formData.education_year || '') !== (profile.education_year || '') ||
+    (formData.birth_date || '') !== (profile.birth_date || '')
   ) : Object.keys(formData).length > 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -211,14 +225,14 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
       descriptions.push('Nome incompleto (precisa ter nome e sobrenome)');
     }
 
-    // Age: 6 to 100
-    const age = Number(formData.age);
-    if (!formData.age || age < 6 || age > 100) {
-      newErrors.age = true;
-      if (!formData.age) {
-        descriptions.push('Idade não informada');
+    // Birth Date & Age
+    const age = calculateAge(formData.birth_date || '');
+    if (!formData.birth_date || !age || age < 6 || age > 100) {
+      newErrors.birth_date = true;
+      if (!formData.birth_date) {
+        descriptions.push('Data de nascimento não informada');
       } else {
-        descriptions.push(`Idade inválida (${formData.age}). Precisa ser entre 6 e 100 anos`);
+        descriptions.push(`Data de nascimento inválida. Idade calculada: ${age}. Precisa ser entre 6 e 100 anos`);
       }
     }
 
@@ -239,11 +253,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
       newErrors.education = true;
       descriptions.push('Escolaridade não selecionada');
     }
-    const requiresYear = formData.education === 'Ensino fundamental' || formData.education === 'Ensino médio incompleto';
-    if (requiresYear && !formData.education_year) {
-      newErrors.education_year = true;
-      descriptions.push('Ano escolar não selecionado');
-    }
+    // Salvamos education_year mesmo se não informado (será N/A no backend ou aqui)
+    // Mas para validação de UI, podemos manter opcional ou garantir que ao menos o campo existe
 
     setErrors(newErrors);
     return { errors: newErrors, descriptions };
@@ -259,7 +270,10 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
     // Prepare updates object with only valid fields
     const updates: any = {};
     if (!newErrors.full_name) updates.full_name = formattedName;
-    if (!newErrors.age) updates.age = formData.age ? Number(formData.age) : null;
+    if (!newErrors.birth_date) {
+      updates.birth_date = formData.birth_date;
+      updates.age = calculateAge(formData.birth_date || '');
+    }
     if (!newErrors.city) updates.city = formData.city;
     if (!newErrors.state) updates.state = formData.state;
     if (!newErrors.zip_code) updates.zip_code = (formData.zip_code || '').replace(/\D/g, '') || null;
@@ -270,7 +284,8 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
     updates.complement = formData.complement;
 
     if (!newErrors.education) updates.education = formData.education;
-    if (!newErrors.education_year) updates.education_year = formData.education_year;
+    // Salva education_year sempre, se vazio vira N/A
+    updates.education_year = formData.education_year || 'N/A';
 
     const hasValidationErrors = Object.keys(newErrors).length > 0;
 
@@ -323,27 +338,16 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InputField
-          label="Nome Completo"
-          name="full_name"
-          value={formData.full_name || ''}
+          label="Data de Nascimento"
+          name="birth_date"
+          value={formData.birth_date || ''}
           onChange={handleChange}
-          icon={User}
-          placeholder="Seu nome completo"
-          onFocus={() => setFocusedField('full_name')}
-          onBlur={() => setFocusedField(null)}
-          error={errors.full_name}
-        />
-        <InputField
-          label="Idade"
-          name="age"
-          value={formData.age || ''}
-          onChange={handleChange}
-          type="number"
+          type="date"
           icon={Calendar}
-          placeholder="Sua idade"
-          onFocus={() => setFocusedField('age')}
+          placeholder="Sua data de nascimento"
+          onFocus={() => setFocusedField('birth_date')}
           onBlur={() => setFocusedField(null)}
-          error={errors.age}
+          error={errors.birth_date}
         />
       </div>
 
@@ -487,7 +491,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                   ...prev,
                   education: val,
                   // Reset year if education doesn't require it
-                  education_year: (val === 'Ensino fundamental' || val === 'Ensino médio incompleto')
+                  education_year: (val === 'Ensino Fundamental' || val === 'Ensino Médio Incompleto')
                     ? prev.education_year
                     : ''
                 }));
@@ -501,17 +505,17 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 }`}
             >
               <option value="">Selecione...</option>
-              <option value="Ensino fundamental">Ensino fundamental</option>
-              <option value="Ensino médio incompleto">Ensino médio incompleto</option>
-              <option value="Ensino médio completo">Ensino médio completo</option>
-              <option value="Superior Incompleto">Superior Incompleto</option>
-              <option value="Superior Completo">Superior Completo</option>
-              <option value="Pós-graduação">Pós-graduação</option>
+              <option value="Ensino Fundamental">Ensino Fundamental</option>
+              <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
+              <option value="Ensino Médio Completo">Ensino Médio Completo</option>
+              <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
+              <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+              <option value="Pós-Gradução">Pós-Gradução</option>
             </select>
           </div>
 
           {/* Conditional Year Field */}
-          {(formData.education === 'Ensino fundamental' || formData.education === 'Ensino médio incompleto') && (
+          {(formData.education === 'Ensino Fundamental' || formData.education === 'Ensino Médio Incompleto') && (
             <div className="flex flex-col gap-1.5">
               <label className={`text-sm font-semibold flex items-center gap-2 ${errors.education_year ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
                 <Calendar size={14} />
@@ -531,14 +535,16 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                   }`}
               >
                 <option value="">Selecione o ano...</option>
-                {formData.education === 'Ensino fundamental' ? (
+                {formData.education === 'Ensino Fundamental' ? (
                   Array.from({ length: 9 }, (_, i) => (
                     <option key={i + 1} value={`${i + 1}º ano`}>{i + 1}º ano</option>
                   ))
                 ) : (
-                  Array.from({ length: 3 }, (_, i) => (
-                    <option key={i + 1} value={`${i + 1}º ano`}>{i + 1}º ano</option>
-                  ))
+                  <>
+                    <option value="1º ano EM">1º ano EM</option>
+                    <option value="2º ano EM">2º ano EM</option>
+                    <option value="3º ano EM">3º ano EM</option>
+                  </>
                 )}
               </select>
             </div>
