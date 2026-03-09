@@ -221,6 +221,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     // Review state (after last step)
     const [showReview, setShowReview] = useState(false);
     const [eligibilityResults, setEligibilityResults] = useState<EligibilityCriterion[]>([]);
+    const formTopRef = useRef<HTMLDivElement>(null);
 
     // Ref to avoid re-registering event listeners on every answers change
     const answersRef = useRef(answers);
@@ -448,8 +449,8 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // Scroll to top on step transitions or iteration changes
     useEffect(() => {
-        if (!loading) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!loading && formTopRef.current) {
+            formTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, [currentStepIndex, currentIteration, showReview, loading]);
 
@@ -651,19 +652,28 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         try {
             // Reorder answers based on field sort_order and filter out mapping_source keys
             const orderedAnswers: Record<string, any> = {};
-            const mappingSources = new Set(fields.map(f => f.mapping_source).filter(Boolean));
+            // Get all possible mapping sources from all fields to avoid polluting answers
+            const mappingSources = new Set<string>();
+            const knownFieldNames = new Set<string>();
             
-            // First, add answers corresponding to fields in the correct order
+            fields.forEach(f => {
+                if (f.mapping_source) mappingSources.add(f.mapping_source);
+                knownFieldNames.add(f.field_name);
+            });
+            
+            // First, add answers corresponding to known fields in the correct order
             fields.forEach(field => {
                 if (answers[field.field_name] !== undefined) {
                     orderedAnswers[field.field_name] = answers[field.field_name];
                 }
             });
 
-            // Then, add any other keys that are not mapping sources
+            // Then, add any other keys that are NOT mapping sources AND are NOT known field names 
+            // (e.g. metadata or agent-internal keys we want to keep, if any)
             Object.keys(answers).forEach(key => {
-                if (!(key in orderedAnswers)) {
-                    if (!mappingSources.has(key)) {
+                if (!knownFieldNames.has(key) && !mappingSources.has(key)) {
+                    // Only keep keys that don't look like "user_profiles.xxx" or similar common mapping patterns
+                    if (!key.includes('.')) {
                         orderedAnswers[key] = answers[key];
                     }
                 }
@@ -785,7 +795,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         try {
             // Reorder answers based on field sort_order and filter out mapping_source keys
             const orderedAnswers: Record<string, any> = {};
-            const mappingSources = new Set(fields.map(f => f.mapping_source).filter(Boolean));
+            const mappingSources = new Set<string>();
+            const knownFieldNames = new Set<string>();
+            
+            fields.forEach(f => {
+                if (f.mapping_source) mappingSources.add(f.mapping_source);
+                knownFieldNames.add(f.field_name);
+            });
             
             fields.forEach(field => {
                 if (answers[field.field_name] !== undefined) {
@@ -794,15 +810,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             });
 
             Object.keys(answers).forEach(key => {
-                if (!(key in orderedAnswers)) {
-                    if (!mappingSources.has(key)) {
+                if (!knownFieldNames.has(key) && !mappingSources.has(key)) {
+                    if (!key.includes('.')) {
                         orderedAnswers[key] = answers[key];
                     }
                 }
             });
 
-            // 1. Save final answers and update status via RPC to ensure merge
-            // We also update the status to SUBMITTED
             await supabase
                 .from('student_applications')
                 .update({
@@ -811,6 +825,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     updated_at: new Date().toISOString(),
                 })
                 .eq('id', application.id);
+
+            // 1.5 Calculate final eligibility in backend
+            await supabase.rpc('calculate_application_eligibility', {
+                p_application_id: application.id
+            });
 
             // 2. Update passport_phase to CONCLUDED
             await updateUserProfileService({ passport_phase: 'CONCLUDED' });
@@ -882,7 +901,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         const totalCount = eligibilityResults.length;
 
         return (
-            <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
+            <div ref={formTopRef} className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
                 {/* Header */}
                 <div className="text-center mb-6">
                     <motion.div
@@ -977,7 +996,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     const progress = totalSteps > 0 ? ((currentStepIndex + 1) / totalSteps) * 100 : 100;
 
     return (
-        <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
+        <div ref={formTopRef} className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-3 mb-3">
