@@ -63,6 +63,11 @@ vi.mock('../../../lib/supabaseClient', () => ({
   supabase: {}
 }));
 
+// Mock external-redirect-clicks service
+vi.mock('../../../services/supabase/external-redirect-clicks', () => ({
+  registerExternalRedirectClick: vi.fn().mockResolvedValue({ error: null }),
+}));
+
 describe('PartnerCard', () => {
   const mockPartner: Partner = {
     id: '123',
