@@ -23,7 +23,7 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
   const [showStarters, setShowStarters] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
-  const processedRef = useRef(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const startersRef = useRef<HTMLDivElement>(null);
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -49,17 +49,6 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
     };
   }, [showStarters]);
 
-  useEffect(() => {
-    if (isAuthenticated && pendingAction?.type === 'chat' && !processedRef.current) {
-      processedRef.current = true;
-      const message = pendingAction.payload.message;
-      setInputValue(message);
-      // Optional: Auto-send
-      onSendMessage(message);
-      setInputValue('');
-      clearPendingAction();
-    }
-  }, [isAuthenticated, pendingAction, onSendMessage, clearPendingAction]);
 
   // Phase INTRO transition is now handled manually via the "Vamos começar!" button
   // or automatically by the agent after the first message.
@@ -129,19 +118,33 @@ export default function ChatInput({ onSendMessage, isLoading, disabled, passport
       {passportPhase === 'INTRO' && !isLoading && (
         <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
           <button
+            disabled={isTransitioning}
             onClick={async () => {
-              // 1. Transition phase in DB immediately
-              await updateUserProfileService({ passport_phase: 'ONBOARDING' });
-              // 2. Refresh parent profile state to hide this button and unblock input
-              if (onProfileUpdated) onProfileUpdated();
-              // 3. Send message to trigger the greeting
-              onSendMessage('Olá Cloudinha! Quero começar meu passaporte.');
+              if (isTransitioning) return;
+              setIsTransitioning(true);
+              try {
+                // 1. Transition phase in DB immediately
+                await updateUserProfileService({ passport_phase: 'ONBOARDING' });
+                // 2. Refresh parent profile state to hide this button and unblock input
+                if (onProfileUpdated) onProfileUpdated();
+                // 3. Send message to trigger the greeting
+                onSendMessage('Olá Cloudinha! Quero começar meu passaporte.');
+              } catch (error) {
+                console.error('Error starting passport:', error);
+                setIsTransitioning(false);
+              }
             }}
-            className="w-full py-4 px-6 bg-[#024F86] hover:bg-[#023F6B] text-white rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 group"
+            className="w-full py-4 px-6 bg-[#024F86] hover:bg-[#023F6B] disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 group"
           >
-            <Sparkles className="w-5 h-5 text-sky-300 group-hover:scale-110 transition-transform" />
-            <span>Vamos começar!</span>
-            <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
+            {isTransitioning ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 text-sky-300 group-hover:scale-110 transition-transform" />
+                <span>Vamos começar!</span>
+                <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </button>
         </div>
       )}
