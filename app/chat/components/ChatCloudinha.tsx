@@ -247,13 +247,17 @@ export default function ChatCloudinha({
                     }));
 
                     setMessages(prev => {
-                        // Merge: Keep local messages (temp IDs are usually timestamps, so numeric strings)
-                        // We assume server IDs are UUIDs.
+                        // 1. Get local/unsaved messages (IDs are numeric timestamps strings)
                         const localMessages = prev.filter(m => !isNaN(Number(m.id)));
 
-                        // De-duplicate if needed (though local vs server shouldn't collide on ID types)
-                        // Just append local messages to the end of history
-                        return [...history, ...localMessages];
+                        // 2. Filter out local messages that are already in the history (matching by text/sender)
+                        // This prevents duplication after the history refreshes.
+                        const unsavedLocals = localMessages.filter(local => 
+                            !history.some(h => h.text === local.text && h.sender === local.sender)
+                        );
+
+                        // 3. Merge: History always comes first (sorted by created_at)
+                        return [...history, ...unsavedLocals];
                     });
                 } else {
                     setMessages(prev => {

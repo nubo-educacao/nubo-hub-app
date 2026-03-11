@@ -76,7 +76,27 @@ interface FormFieldProps {
 }
 
 const FormField = React.memo(function FormField({ field, value, hasError, onAnswerChange, onMultiSelectChange }: FormFieldProps) {
-    const stringValue = value !== undefined && value !== null ? String(value) : '';
+    // Determine the string representation from parent state
+    const parentStringValue = value !== undefined && value !== null ? String(value) : '';
+    // Use local state to handle immediate typing and avoid cursor jumping
+    const [localValue, setLocalValue] = useState(parentStringValue);
+
+    // Sync from parent if it changes (e.g. from pre-fill or iteration change)
+    useEffect(() => {
+        setLocalValue(parentStringValue);
+    }, [parentStringValue]);
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const isTextArea = e.target.tagName.toLowerCase() === 'textarea';
+        const rawVal = e.target.value;
+        const newVal = isTextArea ? rawVal.slice(0, 500) : rawVal;
+        
+        // Update local UI immediately so cursor doesn't jump
+        setLocalValue(newVal);
+        // Dispatch to parent for data handling and masking
+        onAnswerChange(field.field_name, newVal, field.maskking);
+    };
+
     const componentType = getComponentType(field.maskking, field.data_type);
 
     const baseInputClass = `w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white/80 backdrop-blur-sm text-[#3A424E] text-sm outline-none
@@ -98,27 +118,27 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
             {field.data_type === 'boolean' || field.data_type === 'multiselect' ? null : componentType === 'date' ? (
                 <input
                     type="date"
-                    value={stringValue}
-                    onChange={(e) => onAnswerChange(field.field_name, e.target.value)}
+                    value={localValue}
+                    onChange={handleTextChange}
                     className={baseInputClass}
                 />
             ) : componentType === 'textarea' ? (
                 <div className="relative">
                     <textarea
-                        value={stringValue}
-                        onChange={(e) => onAnswerChange(field.field_name, e.target.value.slice(0, 500), field.maskking)}
+                        value={localValue}
+                        onChange={handleTextChange}
                         className={baseInputClass + ' min-h-[120px] resize-none'}
                         placeholder={getPlaceholder(field.maskking, field.data_type)}
                         maxLength={500}
                     />
-                    <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${stringValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
-                        {stringValue.length}/500
+                    <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${localValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
+                        {localValue.length}/500
                     </div>
                 </div>
             ) : componentType === 'select' ? (
                 <select
-                    value={stringValue}
-                    onChange={(e) => onAnswerChange(field.field_name, e.target.value)}
+                    value={localValue}
+                    onChange={handleTextChange}
                     className={baseInputClass + ' appearance-none cursor-pointer'}
                 >
                     <option value="">Selecione uma opção...</option>
@@ -130,8 +150,8 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                 <input
                     type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'link' ? 'url' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
                     inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
-                    value={stringValue}
-                    onChange={(e) => onAnswerChange(field.field_name, e.target.value, field.maskking)}
+                    value={localValue}
+                    onChange={handleTextChange}
                     className={baseInputClass}
                     placeholder={getPlaceholder(field.maskking, field.data_type)}
                     maxLength={getMaxLength(field.maskking)}
@@ -175,7 +195,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                             type="button"
                             onClick={() => onAnswerChange(field.field_name, opt)}
                             className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200
-                                ${stringValue === opt
+                                ${localValue === opt
                                     ? 'border-[#38B1E4] bg-[#38B1E4]/10 text-[#024F86]'
                                     : 'border-gray-200 bg-white/80 text-[#3A424E] hover:border-gray-300'
                                 }`}
@@ -654,39 +674,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         if (!application || submitting) return;
         setSaving(true);
         try {
-            // Reorder answers based on field sort_order and filter out mapping_source keys
-            const orderedAnswers: Record<string, any> = {};
-            // Get all possible mapping sources from all fields to avoid polluting answers
-            const mappingSources = new Set<string>();
-            const knownFieldNames = new Set<string>();
-            
-            fields.forEach(f => {
-                if (f.mapping_source) mappingSources.add(f.mapping_source);
-                knownFieldNames.add(f.field_name);
-            });
-            
-            // First, add answers corresponding to known fields in the correct order
-            fields.forEach(field => {
-                if (answers[field.field_name] !== undefined) {
-                    orderedAnswers[field.field_name] = answers[field.field_name];
-                }
-            });
-
-            // Then, add any other keys that are NOT mapping sources AND are NOT known field names 
-            // (e.g. metadata or agent-internal keys we want to keep, if any)
-            Object.keys(answers).forEach(key => {
-                if (!knownFieldNames.has(key) && !mappingSources.has(key)) {
-                    // Only keep keys that don't look like "user_profiles.xxx" or similar common mapping patterns
-                    if (!key.includes('.')) {
-                        orderedAnswers[key] = answers[key];
-                    }
-                }
-            });
-
+            // Simplified: The RPC already uses the '||' operator to merge answers.
+            // We just send the current answers state. No need to reorder keys 
+            // since PostgreSQL JSONB is inherently unordered.
             await supabase
                 .rpc('update_student_application_answers', {
                     p_application_id: application.id,
-                    p_answers: orderedAnswers
+                    p_answers: answers
                 });
 
             setLastSaved(new Date());
@@ -797,34 +791,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         setSubmitting(true);
 
         try {
-            // Reorder answers based on field sort_order and filter out mapping_source keys
-            const orderedAnswers: Record<string, any> = {};
-            const mappingSources = new Set<string>();
-            const knownFieldNames = new Set<string>();
-            
-            fields.forEach(f => {
-                if (f.mapping_source) mappingSources.add(f.mapping_source);
-                knownFieldNames.add(f.field_name);
-            });
-            
-            fields.forEach(field => {
-                if (answers[field.field_name] !== undefined) {
-                    orderedAnswers[field.field_name] = answers[field.field_name];
-                }
+            // 1. Save answers using the standard merge RPC to avoid overwriting background data
+            await supabase.rpc('update_student_application_answers', {
+                p_application_id: application.id,
+                p_answers: answers
             });
 
-            Object.keys(answers).forEach(key => {
-                if (!knownFieldNames.has(key) && !mappingSources.has(key)) {
-                    if (!key.includes('.')) {
-                        orderedAnswers[key] = answers[key];
-                    }
-                }
-            });
-
+            // 2. Update status and completion timestamp
             await supabase
                 .from('student_applications')
                 .update({
-                    answers: orderedAnswers,
                     status: 'SUBMITTED',
                     updated_at: new Date().toISOString(),
                 })
