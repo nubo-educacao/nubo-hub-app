@@ -80,11 +80,26 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
     const parentStringValue = value !== undefined && value !== null ? String(value) : '';
     // Use local state to handle immediate typing and avoid cursor jumping
     const [localValue, setLocalValue] = useState(parentStringValue);
+    
+    // Autocomplete state
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Sync from parent if it changes (e.g. from pre-fill or iteration change)
     useEffect(() => {
         setLocalValue(parentStringValue);
     }, [parentStringValue]);
+
+    // Handle clicks outside the dropdown
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const isTextArea = e.target.tagName.toLowerCase() === 'textarea';
@@ -98,68 +113,133 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
     };
 
     const componentType = getComponentType(field.maskking, field.data_type);
+    const isButtonField = field.data_type === 'boolean' || field.data_type === 'multiselect';
 
-    const baseInputClass = `w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white/80 backdrop-blur-sm text-[#3A424E] text-sm outline-none
-        ${hasError ? 'border-red-400 ring-2 ring-red-100' : 'border-gray-200 focus:border-[#38B1E4] focus:ring-2 focus:ring-[#38B1E4]/20'}`;
+    const innerInputClass = `w-full outline-none bg-transparent text-[#3A424E] text-sm md:text-base
+        py-1.5 md:py-4 px-1 md:px-4
+        md:rounded-xl md:border-2 md:bg-white/60 md:backdrop-blur-sm md:transition-all md:duration-200
+        ${hasError ? 'md:border-red-400 md:ring-2 md:ring-red-100' : 'md:border-gray-200 md:focus:border-[#38B1E4] md:focus:ring-2 md:focus:ring-[#38B1E4]/20'}`;
 
     return (
-        <motion.div
+        <motion.fieldset
             key={field.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className="space-y-2"
+            className={`relative min-w-0 transition-all duration-200 group
+                ${isButtonField ? 'border-0 p-0 mt-0' : 'border-2 rounded-xl px-3 pb-1 pt-0 mt-3 bg-white/60 backdrop-blur-sm'}
+                ${hasError ? (isButtonField ? '' : 'border-red-400 focus-within:ring-2 focus-within:ring-red-100') : (isButtonField ? '' : 'border-gray-200 focus-within:border-[#38B1E4] focus-within:ring-2 focus-within:ring-[#38B1E4]/20')}
+                md:border-0 md:p-0 md:mt-0 md:bg-transparent md:backdrop-blur-none
+                md:focus-within:ring-0 md:focus-within:border-transparent`}
         >
-            <label className="block text-sm font-semibold text-[#024F86]">
+            <legend className={`
+                px-1 text-[11px] md:text-sm font-bold transition-all duration-200
+                ${hasError ? 'text-red-500' : 'text-[#024F86] group-focus-within:text-[#38B1E4] md:group-focus-within:text-[#024F86]'}
+                ${isButtonField ? 'bg-transparent mb-1' : 'bg-[#fcfdfe]'} 
+                max-w-full whitespace-normal leading-tight rounded-sm
+                md:px-0 md:bg-transparent md:mb-2 md:block`}
+            >
                 {field.question_text}
-                {!field.optional && <span className="text-red-400 ml-1">*</span>}
-            </label>
+                {!field.optional && <span className="text-red-400 ml-0.5">*</span>}
+            </legend>
 
-            {field.data_type === 'boolean' || field.data_type === 'multiselect' ? null : componentType === 'date' ? (
-                <input
-                    type="date"
-                    value={localValue}
-                    onChange={handleTextChange}
-                    className={baseInputClass}
-                />
-            ) : componentType === 'textarea' ? (
-                <div className="relative">
-                    <textarea
+            <div className={isButtonField ? "pt-1" : "pt-1 md:pt-0"}>
+                {field.data_type === 'boolean' || field.data_type === 'multiselect' ? null : componentType === 'date' ? (
+                    <input
+                        type="date"
                         value={localValue}
                         onChange={handleTextChange}
-                        className={baseInputClass + ' min-h-[120px] resize-none'}
-                        placeholder={getPlaceholder(field.maskking, field.data_type)}
-                        maxLength={500}
+                        className={innerInputClass}
                     />
-                    <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${localValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
-                        {localValue.length}/500
+                ) : componentType === 'textarea' ? (
+                    <div className="relative">
+                        <textarea
+                            value={localValue}
+                            onChange={handleTextChange}
+                            className={innerInputClass + ' min-h-[120px] resize-none'}
+                            placeholder={getPlaceholder(field.maskking, field.data_type)}
+                            maxLength={500}
+                        />
+                        <div className={`absolute bottom-2 right-3 text-[10px] font-medium ${localValue.length >= 500 ? 'text-red-500' : 'text-[#3A424E]/40'}`}>
+                            {localValue.length}/500
+                        </div>
                     </div>
-                </div>
-            ) : componentType === 'select' ? (
-                <select
-                    value={localValue}
-                    onChange={handleTextChange}
-                    className={baseInputClass + ' appearance-none cursor-pointer'}
-                >
-                    <option value="">Selecione uma opção...</option>
-                    {(field.options || []).map((opt, i) => (
-                        <option key={i} value={opt}>{opt}</option>
-                    ))}
-                </select>
-            ) : (
-                <input
-                    type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'link' ? 'url' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
-                    inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
-                    value={localValue}
-                    onChange={handleTextChange}
-                    className={baseInputClass}
-                    placeholder={getPlaceholder(field.maskking, field.data_type)}
-                    maxLength={getMaxLength(field.maskking)}
-                />
-            )}
+                ) : componentType === 'select' ? (
+                    <select
+                        value={localValue}
+                        onChange={handleTextChange}
+                        className={innerInputClass + ' appearance-none cursor-pointer'}
+                    >
+                        <option value="">Selecione uma opção...</option>
+                        {(field.options || []).map((opt, i) => (
+                            <option key={i} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                ) : componentType === 'autocomplete' ? (
+                    <div className="relative" ref={dropdownRef}>
+                        <input
+                            type="text"
+                            value={localValue}
+                            onChange={(e) => {
+                                setLocalValue(e.target.value);
+                                setIsDropdownOpen(true);
+                                onAnswerChange(field.field_name, e.target.value, field.maskking);
+                            }}
+                            onClick={() => setIsDropdownOpen(true)}
+                            className={innerInputClass}
+                            placeholder={getPlaceholder(field.maskking, field.data_type)}
+                        />
+                        <AnimatePresence>
+                            {isDropdownOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, scaleY: 0.95 }}
+                                    animate={{ opacity: 1, scaleY: 1 }}
+                                    exit={{ opacity: 0, scaleY: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                                    style={{ transformOrigin: "top" }}
+                                >
+                                    {(() => {
+                                        const filteredOptions = (field.options || []).filter(opt => 
+                                            opt.toLowerCase().includes(localValue.toLowerCase())
+                                        );
+                                        
+                                        if (filteredOptions.length === 0) {
+                                            return <div className="p-4 text-sm text-gray-400 text-center">Nenhuma opção encontrada</div>;
+                                        }
+
+                                        return filteredOptions.map((opt, i) => (
+                                            <div
+                                                key={i}
+                                                onClick={() => {
+                                                    setLocalValue(opt);
+                                                    setIsDropdownOpen(false);
+                                                    onAnswerChange(field.field_name, opt, field.maskking);
+                                                }}
+                                                className="px-4 py-3 md:py-4 text-sm md:text-base text-[#3A424E] hover:bg-[#38B1E4]/5 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                                            >
+                                                {opt}
+                                            </div>
+                                        ));
+                                    })()}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                ) : (
+                    <input
+                        type={(field.maskking?.toLowerCase() || '') === 'email' ? 'email' : (field.maskking?.toLowerCase() || '') === 'link' ? 'url' : (field.maskking?.toLowerCase() || '') === 'phone' ? 'tel' : 'text'}
+                        inputMode={(field.maskking?.toLowerCase() || '') === 'phone' || (field.maskking?.toLowerCase() || '') === 'cpf' || (field.maskking?.toLowerCase() || '') === 'cnpj' || (field.maskking?.toLowerCase() || '') === 'cep' ? 'numeric' : undefined}
+                        value={localValue}
+                        onChange={handleTextChange}
+                        className={innerInputClass}
+                        placeholder={getPlaceholder(field.maskking, field.data_type)}
+                        maxLength={getMaxLength(field.maskking)}
+                    />
+                )}
 
             {field.data_type === 'multiselect' && (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-2 pt-2">
                     {(field.options || []).map((opt, i) => {
                         const currentArray = Array.isArray(value) 
                             ? value 
@@ -168,10 +248,10 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                         return (
                             <label
                                 key={i}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200
                                     ${selected
                                         ? 'border-[#38B1E4] bg-[#38B1E4]/5'
-                                        : 'border-gray-200 bg-white/80 hover:border-gray-300'
+                                        : 'border-gray-200 bg-white/60 hover:border-gray-300'
                                     }`}
                             >
                                 <input
@@ -180,7 +260,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                                     onChange={(e) => onMultiSelectChange(field.field_name, opt, e.target.checked)}
                                     className="w-4 h-4 text-[#38B1E4] rounded border-gray-300 focus:ring-[#38B1E4]"
                                 />
-                                <span className="text-sm text-[#3A424E]">{opt}</span>
+                                <span className="text-xs md:text-sm font-medium text-[#3A424E]">{opt}</span>
                             </label>
                         );
                     })}
@@ -188,16 +268,16 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
             )}
 
             {field.data_type === 'boolean' && (
-                <div className="flex gap-3">
+                <div className="flex gap-2 pt-2">
                     {['Sim', 'Não'].map(opt => (
                         <button
                             key={opt}
                             type="button"
                             onClick={() => onAnswerChange(field.field_name, opt)}
-                            className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200
+                            className={`flex-1 px-4 py-2.5 md:py-3.5 rounded-xl border-2 text-xs md:text-sm font-bold transition-all duration-200
                                 ${localValue === opt
                                     ? 'border-[#38B1E4] bg-[#38B1E4]/10 text-[#024F86]'
-                                    : 'border-gray-200 bg-white/80 text-[#3A424E] hover:border-gray-300'
+                                    : 'border-gray-200 bg-white/60 text-[#3A424E] hover:border-gray-300'
                                 }`}
                         >
                             {opt}
@@ -207,12 +287,13 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
             )}
 
             {hasError && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
                     <AlertCircle size={12} />
                     Este campo é obrigatório
                 </p>
             )}
-        </motion.div>
+            </div>
+        </motion.fieldset>
     );
 });
 
@@ -363,37 +444,25 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 
                 // 5.5 If already submitted, go to review screen
                 if (appData.status === 'SUBMITTED') {
-                    // We need to compute eligibility before showing review
-                    // But fields might not be in state yet, so we pass them directly if needed
-                    // For now, since useEffects will trigger, we can just set the flag 
-                    // and ensure computeEligibility uses the data we just fetched.
+                    computeEligibility(existingAnswers, fieldsData || []);
                     setShowReview(true);
                 }
 
-                // 6. Hardened Re-hydration: Local storage takes precedence if it has more data
-                if (applicationId) {
-                    const storageKey = `nubo_form_draft_${applicationId}`;
+                const targetAppId = applicationId || appData.id;
+                // 6. Re-hydration: localStorage always takes precedence for DRAFT applications
+                if (targetAppId && appData.status !== 'SUBMITTED') {
+                    const storageKey = `nubo_form_draft_${targetAppId}`;
                     const savedDraft = localStorage.getItem(storageKey);
                     if (savedDraft) {
                         try {
                             const parsed = JSON.parse(savedDraft);
-                            const draftCount = Object.keys(parsed).length;
-                            const dbCount = Object.keys(existingAnswers).length;
-                            
-                            // Only override if draft is potentially newer/more complete
-                            if (draftCount >= dbCount) {
-                                setAnswers(prev => ({ ...prev, ...parsed }));
-                                console.log(`[PartnerForm] Draft restored (Precedence) for ${applicationId}`);
-                            }
+                            // Merge: DB data as base, localStorage on top (most recent)
+                            setAnswers(prev => ({ ...prev, ...parsed }));
+                            console.log(`[PartnerForm] Draft restored from localStorage for ${targetAppId}`);
                         } catch (e) {
                             console.error("[PartnerForm] Failed to parse draft", e);
                         }
                     }
-                }
-
-                if (appData.status === 'SUBMITTED') {
-                    computeEligibility(existingAnswers, fieldsData || []);
-                    setShowReview(true);
                 }
 
                 setLoading(false);
@@ -405,44 +474,34 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         };
 
         fetchData();
-    }, [user, applicationId]);
+    }, [user?.id, applicationId]);
 
-    // ─── Persistence (debounced) ──────────────────────────────────────────
+    // ─── Persistence ──────────────────────────────────────────────────────
 
-    // Debounced persistence: localStorage + DB save in a single timer
+    // Helper: persist current answers to localStorage instantly
+    const persistToLocalStorage = useCallback((updatedAnswers: Record<string, any>) => {
+        const targetAppId = applicationId || application?.id;
+        if (targetAppId) {
+            const storageKey = `nubo_form_draft_${targetAppId}`;
+            localStorage.setItem(storageKey, JSON.stringify(updatedAnswers));
+        }
+    }, [applicationId, application?.id]);
+
+    // Safety-net: sync to DB every 60s if there are unsaved changes
+    const isDirtyRef = useRef(false);
     useEffect(() => {
-        if (Object.keys(answers).length === 0 || loading || submitting) return;
+        if (loading || submitting) return;
 
-        const timer = setTimeout(() => {
-            // Persist to localStorage
-            if (applicationId) {
-                const storageKey = `nubo_form_draft_${applicationId}`;
-                localStorage.setItem(storageKey, JSON.stringify(answers));
-            }
-            // Persist to DB
-            saveAnswersToDb();
-        }, 1500);
-
-        return () => clearTimeout(timer);
-    }, [answers]);
-
-    // Immediate save on visibility change (tab switch) — uses ref to avoid re-registering
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden' && Object.keys(answersRef.current).length > 0) {
-                console.log("[PartnerForm] Tab hidden - triggering immediate save");
-                // Also persist to localStorage immediately
-                if (applicationId) {
-                    const storageKey = `nubo_form_draft_${applicationId}`;
-                    localStorage.setItem(storageKey, JSON.stringify(answersRef.current));
-                }
+        const interval = setInterval(() => {
+            if (isDirtyRef.current && Object.keys(answersRef.current).length > 0) {
+                console.log('[PartnerForm] Safety-net: syncing to DB');
                 saveAnswersToDb();
+                isDirtyRef.current = false;
             }
-        };
+        }, 60000); // 60 seconds
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [application, submitting]);
+        return () => clearInterval(interval);
+    }, [loading, submitting, application]);
 
     // Handle beforeunload to warn user if saving is pending
     useEffect(() => {
@@ -492,29 +551,24 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         });
 
         // For iterable steps, use first iteration as fallback for global visibility
-        // and current iteration for step-internal field visibility
         steps.forEach(step => {
             if (step.is_iterable && Array.isArray(answers[step.id])) {
                 const iterations = answers[step.id];
                 if (iterations.length > 0) {
-                    // Default to first iteration for cross-step dependencies
                     Object.assign(flat, iterations[0]);
                 }
             }
         });
 
-        // Add current global iteration context (default to 0)
         flat['_iteration_index'] = 0;
         flat['is_first_iteration'] = true;
 
         return flat;
     }, [answers, steps]);
 
-    // Current iteration data (overrides global for field-level visibility)
     const visibleSteps = useMemo(() => {
         return steps.filter(s => {
             if (s.secret_step) return false;
-            // Evaluates conditional visibility
             if (s.conditional_rule) {
                 try {
                     return evaluateJsonLogic(s.conditional_rule, evaluationData);
@@ -529,7 +583,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     const currentStep = visibleSteps[currentStepIndex] || null;
 
-    // Current iteration data (overrides global for field-level visibility)
     const currentIterationData = useMemo(() => {
         if (!currentStep?.is_iterable) return evaluationData;
         const iterations = answers[currentStep.id] || [];
@@ -578,21 +631,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 value = answers[field.field_name] || '';
             }
 
-            // Required check
             if (!field.optional && (value === undefined || value === null || String(value).trim() === '')) {
                 errors.add(field.field_name);
                 continue;
             }
 
-            // Mask validation
             const stringValue = String(value);
             if (field.maskking && stringValue.trim() !== '') {
                 const { isValid, error: maskError } = validateMask(stringValue, field.maskking);
                 if (!isValid) {
                     errors.add(field.field_name);
-                    if (onTriggerChatMessage && errors.size === 1) {
-                        onTriggerChatMessage(`O campo "${field.question_text}" está inválido: ${maskError}. Pode me ajudar a corrigir?`);
-                    }
                 }
             }
         }
@@ -604,41 +652,42 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     // ─── Handlers ────────────────────────────────────────────────────────────
 
     const handleAnswerChange = useCallback((fieldName: string, value: any, maskType?: string | null) => {
-        // If it's a numeric mask type and not BRL (which handles commas/dots), strip all non-digits immediately
         let processedValue = value;
         const type = maskType?.toLowerCase();
         
-        if (type && ['cpf', 'cnpj', 'phone', 'cep', 'date', 'number'].includes(type) && typeof value === 'string') {
+        if (type && ['cpf', 'cnpj', 'phone', 'cep', 'number'].includes(type) && typeof value === 'string') {
             processedValue = value.replace(/\D/g, '');
         }
 
-        const maskedValue = maskType && typeof processedValue === 'string' ? applyMask(processedValue, maskType) : processedValue;
-
-        // Final safety: Enforce maxLength here too
+        const maskedValue = maskType && typeof processedValue === 'string' && type !== 'date' ? applyMask(processedValue, maskType) : processedValue;
         const maxLength = getMaxLength(maskType || null);
-        const finalValue = (maxLength && typeof maskedValue === 'string') ? maskedValue.slice(0, maxLength) : maskedValue;
+        const finalValue = (maxLength && typeof maskedValue === 'string' && type !== 'date') ? maskedValue.slice(0, maxLength) : maskedValue;
 
         setAnswers(prev => {
+            let next: Record<string, any>;
             if (currentStep?.is_iterable) {
                 const iterations = [...(prev[currentStep.id] || [])];
                 if (!iterations[currentIteration]) iterations[currentIteration] = {};
                 iterations[currentIteration] = { ...iterations[currentIteration], [fieldName]: finalValue };
-                return { ...prev, [currentStep.id]: iterations };
+                next = { ...prev, [currentStep.id]: iterations };
+            } else {
+                next = { ...prev, [fieldName]: finalValue };
             }
-            return { ...prev, [fieldName]: finalValue };
+            persistToLocalStorage(next);
+            isDirtyRef.current = true;
+            return next;
         });
 
-        // Clear validation error for this field
         setValidationErrors(prev => {
             const next = new Set(prev);
             next.delete(fieldName);
             return next;
         });
-    }, [currentStep, currentIteration]);
+    }, [currentStep, currentIteration, persistToLocalStorage]);
 
     const handleMultiSelectChange = useCallback((fieldName: string, option: string, checked: boolean) => {
         setAnswers(prev => {
-            let currentVal = '';
+            let currentVal: any = '';
             if (currentStep?.is_iterable) {
                 const iterations = prev[currentStep.id] || [];
                 currentVal = iterations[currentIteration]?.[fieldName] || '';
@@ -652,15 +701,19 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             const nextArray = checked 
                 ? [...new Set([...current, option])] 
                 : current.filter(v => v !== option);
-            const finalValue = nextArray; // Store as actual array since column is JSONB
 
+            let next: Record<string, any>;
             if (currentStep?.is_iterable) {
                 const iterations = [...(prev[currentStep.id] || [])];
                 if (!iterations[currentIteration]) iterations[currentIteration] = {};
-                iterations[currentIteration] = { ...iterations[currentIteration], [fieldName]: finalValue };
-                return { ...prev, [currentStep.id]: iterations };
+                iterations[currentIteration] = { ...iterations[currentIteration], [fieldName]: nextArray };
+                next = { ...prev, [currentStep.id]: iterations };
+            } else {
+                next = { ...prev, [fieldName]: nextArray };
             }
-            return { ...prev, [fieldName]: finalValue };
+            persistToLocalStorage(next);
+            isDirtyRef.current = true;
+            return next;
         });
 
         setValidationErrors(prev => {
@@ -668,21 +721,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             next.delete(fieldName);
             return next;
         });
-    }, [currentStep, currentIteration]);
+    }, [currentStep, currentIteration, persistToLocalStorage]);
 
     const saveAnswersToDb = async () => {
         if (!application || submitting) return;
         setSaving(true);
         try {
-            // Simplified: The RPC already uses the '||' operator to merge answers.
-            // We just send the current answers state. No need to reorder keys 
-            // since PostgreSQL JSONB is inherently unordered.
-            await supabase
-                .rpc('update_student_application_answers', {
-                    p_application_id: application.id,
-                    p_answers: answers
-                });
-
+            await supabase.rpc('update_student_application_answers', {
+                p_application_id: application.id,
+                p_answers: answers
+            });
             setLastSaved(new Date());
         } catch (e) {
             console.error('[PartnerForm] Error saving answers:', e);
@@ -693,8 +741,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     const handleNext = async () => {
         if (!validateCurrentStep()) return;
-
-        // Save progress
         await saveAnswersToDb();
 
         if (isLastStep) {
@@ -709,10 +755,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     const handleAddIteration = async () => {
         if (!validateCurrentStep()) return;
-        
-        // Save progress before adding iteration
         await saveAnswersToDb();
-        
         setCurrentIteration(prev => prev + 1);
         setValidationErrors(new Set());
     };
@@ -722,16 +765,13 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             setShowReview(false);
             return;
         }
-
         if (currentIteration > 0) {
             setCurrentIteration(prev => prev - 1);
             setValidationErrors(new Set());
             return;
         }
-
         if (currentStepIndex > 0) {
             setCurrentStepIndex(prev => prev - 1);
-            // If going back to a previous step, we go to its LAST iteration
             const prevStep = visibleSteps[currentStepIndex - 1];
             if (prevStep?.is_iterable) {
                 const iterations = answers[prevStep.id] || [];
@@ -743,32 +783,23 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         }
     };
 
-    // ─── Eligibility Computation ─────────────────────────────────────────────
-
     const computeEligibility = (providedAnswers?: Record<string, any>, providedFields?: PartnerFormField[]) => {
         const targetFields = providedFields || fields;
         const targetAnswers = providedAnswers || answers;
         
         const criterionFields = targetFields.filter(f => f.is_criterion);
         const results: EligibilityCriterion[] = criterionFields.map(crit => {
-            // Try form answers from student_application.answers (which is targetAnswers)
-            // Priority 1: field_name slug (used by frontend form)
-            // Priority 2: mapping_source string (used by backend agent pre-fill)
             let userVal = targetAnswers[crit.field_name];
             if ((userVal === null || userVal === undefined || userVal === '') && crit.mapping_source) {
                 userVal = targetAnswers[crit.mapping_source];
             }
 
             let met = false;
-
             if (userVal !== null && userVal !== undefined && userVal !== '') {
                 const rule = crit.criterion_rule;
                 if (!rule) {
-                    // Similar to the matching phase RPC: if value exists and no rule, consider met
                     met = true;
                 } else {
-                    // Evaluate rule against the value. 
-                    // Providing a context where 'var' can match either the field name or be inside the evaluationData
                     met = Boolean(evaluateJsonLogic(rule, { ...evaluationData, [crit.field_name]: userVal }));
                 }
             }
@@ -784,20 +815,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         setEligibilityResults(results);
     };
 
-    // ─── Submit ──────────────────────────────────────────────────────────────
-
     const handleSubmit = async () => {
         if (!application || !user) return;
         setSubmitting(true);
 
         try {
-            // 1. Save answers using the standard merge RPC to avoid overwriting background data
             await supabase.rpc('update_student_application_answers', {
                 p_application_id: application.id,
                 p_answers: answers
             });
 
-            // 2. Update status and completion timestamp
             await supabase
                 .from('student_applications')
                 .update({
@@ -806,19 +833,14 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 })
                 .eq('id', application.id);
 
-            // 1.5 Calculate final eligibility in backend
             await supabase.rpc('calculate_application_eligibility', {
                 p_application_id: application.id
             });
 
-            // 2. Update passport_phase to CONCLUDED
             await updateUserProfileService({ passport_phase: 'CONCLUDED' });
 
-            // 3. Trigger chat message
             if (onTriggerChatMessage) {
-                // Wait for phase update to propagate
                 await new Promise(r => setTimeout(r, 1500));
-                
                 const metCount = eligibilityResults.filter(r => r.met).length;
                 const totalCount = eligibilityResults.length;
                 onTriggerChatMessage(
@@ -828,12 +850,10 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 );
             }
 
-            // 4. Clear local storage
             if (applicationId) {
                 localStorage.removeItem(`nubo_form_draft_${applicationId}`);
             }
 
-            // 5. Callback
             if (onComplete) onComplete();
         } catch (e) {
             console.error('[PartnerForm] Error submitting:', e);
@@ -842,8 +862,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         }
     };
 
-    // ─── Render Helper ───────────────────────────────────────────────────────
-
     const getFieldValue = useCallback((fieldName: string): string => {
         if (currentStep?.is_iterable) {
             const iterations = answers[currentStep.id] || [];
@@ -851,8 +869,6 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         }
         return answers[fieldName] || '';
     }, [answers, currentStep, currentIteration]);
-
-    // ─── Loading / Error States ──────────────────────────────────────────────
 
     if (loading) {
         return (
@@ -877,40 +893,36 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         );
     }
 
-    // ─── Review Screen ───────────────────────────────────────────────────────
-
     if (showReview) {
         const metCount = eligibilityResults.filter(r => r.met).length;
         const totalCount = eligibilityResults.length;
 
         return (
-            <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
-                {/* Header */}
-                <div className="text-center mb-6">
+            <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-6 flex flex-col h-full ${montserrat.className}`}>
+                <div className="text-center mb-4">
                     <motion.div
                         initial={{ scale: 0.5, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="w-16 h-16 bg-[#024F86]/10 rounded-full flex items-center justify-center mx-auto mb-4"
+                        className="w-10 h-10 bg-[#024F86]/10 rounded-full flex items-center justify-center mx-auto mb-2"
                     >
-                        <CheckCircle2 className="text-[#024F86]" size={32} />
+                        <CheckCircle2 className="text-[#024F86]" size={20} />
                     </motion.div>
-                    <h2 className="text-xl font-bold text-[#024F86]">Revisão da Candidatura</h2>
-                    <p className="text-sm text-[#3A424E]/70 mt-1">
-                        Confira seus critérios de elegibilidade para <strong>{partnerName}</strong>
+                    <h2 className="text-base font-bold text-[#024F86]">Revisão</h2>
+                    <p className="text-[10px] text-[#3A424E]/70 mt-0.5">
+                        Confira seus critérios para <strong>{partnerName}</strong>
                     </p>
                 </div>
 
-                {/* Eligibility Summary */}
-                <div className="flex-1 overflow-y-auto space-y-3 mb-6">
+                <div className="flex-1 overflow-y-auto space-y-2 mb-4">
                     {totalCount > 0 && (
-                        <div className={`p-4 rounded-2xl border-2 text-center mb-4 ${metCount === totalCount
+                        <div className={`p-3 rounded-xl border-2 text-center mb-2 ${metCount === totalCount
                             ? 'border-green-300 bg-green-50'
                             : metCount > 0
                                 ? 'border-amber-300 bg-amber-50'
                                 : 'border-red-300 bg-red-50'
                             }`}>
-                            <p className="text-lg font-bold text-[#024F86]">
-                                {metCount}/{totalCount} critérios atendidos
+                            <p className="text-base font-bold text-[#024F86]">
+                                {metCount}/{totalCount} atendidos
                             </p>
                         </div>
                     )}
@@ -921,50 +933,43 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.05 }}
-                            className={`flex items-center gap-3 p-4 rounded-xl border-2 ${result.met
+                            className={`flex items-center gap-2 p-2 rounded-xl border-2 ${result.met
                                 ? 'border-green-200 bg-green-50/50'
                                 : 'border-red-200 bg-red-50/50'
                                 }`}
                         >
                             {result.met ? (
-                                <CheckCircle2 className="text-green-500 shrink-0" size={20} />
+                                <CheckCircle2 className="text-green-500 shrink-0" size={16} />
                             ) : (
-                                <XCircle className="text-red-400 shrink-0" size={20} />
+                                <XCircle className="text-red-400 shrink-0" size={16} />
                             )}
                             <div className="min-w-0">
-                                <p className="text-sm font-medium text-[#3A424E] truncate">{result.question_text}</p>
-                                <p className="text-xs text-[#3A424E]/60 truncate">{result.user_answer || '—'}</p>
+                                <p className="text-xs font-medium text-[#3A424E] truncate">{result.question_text}</p>
+                                <p className="text-[10px] text-[#3A424E]/60 truncate">{result.user_answer || '—'}</p>
                             </div>
                         </motion.div>
                     ))}
-
-                    {totalCount === 0 && (
-                        <div className="text-center py-8 text-[#3A424E]/60 text-sm">
-                            Este programa não possui critérios de elegibilidade configurados.
-                        </div>
-                    )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <div className="flex gap-2 pt-4 border-t border-gray-100">
                     <button
                         onClick={handlePrev}
-                        className="flex items-center gap-2 px-5 py-3 rounded-full border-2 border-gray-200 text-[#3A424E] text-sm font-medium hover:bg-gray-50 transition-all"
+                        className="flex items-center gap-1 px-4 py-2.5 rounded-full border-2 border-gray-200 text-[#3A424E] text-[11px] font-bold hover:bg-gray-50 transition-all"
                     >
-                        <ChevronLeft size={16} />
+                        <ChevronLeft size={14} />
                         Voltar
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] text-white text-sm font-bold shadow-lg shadow-[#024F86]/20 hover:shadow-xl transition-all disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-[#024F86]/20 hover:shadow-xl transition-all disabled:opacity-50"
                     >
                         {submitting ? (
-                            <Loader2 className="animate-spin" size={18} />
+                            <Loader2 className="animate-spin" size={14} />
                         ) : (
                             <>
-                                <Send size={16} />
-                                Enviar Candidatura
+                                <Send size={14} />
+                                Enviar
                             </>
                         )}
                     </button>
@@ -973,27 +978,25 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         );
     }
 
-    // ─── Form Screen ─────────────────────────────────────────────────────────
-
     const totalSteps = visibleSteps.length;
     const progress = totalSteps > 0 ? ((currentStepIndex + 1) / totalSteps) * 100 : 100;
 
     return (
-        <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-8 flex flex-col h-full ${montserrat.className}`}>
+        <div className={`bg-transparent md:bg-white/30 backdrop-blur-md md:border border-white/20 md:shadow-lg md:rounded-2xl p-4 md:p-6 lg:p-8 flex flex-col h-full ${montserrat.className}`}>
             {/* Header */}
-            <div className="mb-6">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-[#024F86]/10 rounded-full flex items-center justify-center shrink-0">
-                        <FileText className="text-[#024F86]" size={20} />
+            <div className="mb-4 md:mb-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 bg-[#024F86]/10 rounded-full flex items-center justify-center shrink-0">
+                        <FileText className="text-[#024F86]" size={16} />
                     </div>
                     <div className="min-w-0">
-                        <h2 className="text-lg font-bold text-[#024F86] truncate">{partnerName}</h2>
+                        <h2 className="text-sm md:text-base font-bold text-[#024F86] truncate leading-tight">{partnerName}</h2>
                         {currentStep && (
-                            <p className="text-xs text-[#3A424E]/60">
-                                Etapa {currentStepIndex + 1} de {totalSteps}: <span className="font-semibold">{currentStep.step_name}</span>
+                            <p className="text-[9px] md:text-xs text-[#3A424E]/60 flex items-center flex-wrap gap-x-2 md:gap-x-3 mt-0.5">
+                                <span>Etapa {currentStepIndex + 1}/{totalSteps}: <span className="font-semibold">{currentStep.step_name}</span></span>
                                 {currentStep.is_iterable && (
-                                    <span className="ml-2 px-2 py-0.5 bg-[#024F86]/10 rounded-full text-[10px] font-bold">
-                                        Entrada #{currentIteration + 1}
+                                    <span className="px-1.5 py-0.5 bg-[#024F86]/10 rounded-full text-[8px] md:text-[10px] font-bold text-[#024F86]">
+                                        #{currentIteration + 1}
                                     </span>
                                 )}
                             </p>
@@ -1001,71 +1004,43 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     </div>
                 </div>
 
-                {/* Progress bar */}
-                {totalSteps > 1 && (
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <motion.div
-                            className="h-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress}%` }}
-                            transition={{ duration: 0.3 }}
-                        />
-                    </div>
-                )}
-
-                {/* Auto-save status */}
-                <div className="flex items-center justify-end mt-2 h-4">
-                    <AnimatePresence mode="wait">
-                        {saving ? (
+                <div className="flex flex-col gap-1.5">
+                    {totalSteps > 1 && (
+                        <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden mb-2">
                             <motion.div
-                                key="saving"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="flex items-center gap-1.5 text-[10px] text-[#024F86]/40"
-                            >
-                                <Loader2 size={10} className="animate-spin" />
-                                Salvando alterações...
-                            </motion.div>
-                        ) : lastSaved ? (
-                            <motion.div
-                                key="saved"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="flex items-center gap-1.5 text-[10px] text-green-500/60"
-                            >
-                                <CheckCircle2 size={10} />
-                                Tudo salvo no banco
-                            </motion.div>
-                        ) : null}
-                    </AnimatePresence>
+                                className="h-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 0.3 }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Fields */}
-            <div className="flex-1 overflow-y-auto space-y-5 mb-6">
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={currentStep?.id || 'all'}
+                        key={currentStep?.id || (currentStepIndex + '-' + currentIteration)}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.2 }}
-                        className="space-y-5"
+                        className="space-y-4 md:space-y-6 pt-4 md:pt-6"
                     >
                         {currentStep?.introduction && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="p-4 rounded-xl bg-[#024F86]/5 border border-[#024F86]/10 text-sm text-[#024F86] mb-2"
+                                className="p-3 rounded-xl bg-[#024F86]/5 border border-[#024F86]/10 text-xs text-[#024F86] mb-1"
                             >
                                 {currentStep.introduction}
                             </motion.div>
                         )}
 
                         {currentFields.length === 0 ? (
-                            <div className="text-center py-8 text-[#3A424E]/60 text-sm">
+                            <div className="text-center py-6 text-[#3A424E]/60 text-xs">
                                 Nenhum campo nesta etapa.
                             </div>
                         ) : (
@@ -1085,14 +1060,14 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             </div>
 
             {/* Navigation */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
-                <div className="flex gap-3 flex-1">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-0 pt-4 md:pt-6 border-t border-gray-100">
+                <div className="flex gap-2 md:gap-3 flex-1 md:flex-initial">
                     {(currentStepIndex > 0 || currentIteration > 0) && (
                         <button
                             onClick={handlePrev}
-                            className="flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-gray-200 text-[#3A424E] text-sm font-medium hover:bg-gray-50 transition-all flex-1 sm:flex-none"
+                            className="flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-full border-2 border-gray-200 text-[#3A424E] text-[11px] md:text-sm font-bold hover:bg-gray-50 transition-all flex-1 md:flex-none"
                         >
-                            <ChevronLeft size={16} />
+                            <ChevronLeft size={16} className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             Voltar
                         </button>
                     )}
@@ -1100,33 +1075,37 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                     {currentStep?.is_iterable && (!currentStep.repeat_limit || currentIteration + 1 < currentStep.repeat_limit) && (
                         <button
                             onClick={handleAddIteration}
-                            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-[#38B1E4] text-[#024F86] text-sm font-bold hover:bg-[#38B1E4]/5 transition-all"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-full border-2 border-[#38B1E4] text-[#024F86] text-[11px] md:text-sm font-bold hover:bg-[#38B1E4]/5 transition-all"
                         >
-                            <Plus size={16} className="text-[#38B1E4]" />
-                            Responder mais 1 vez
+                            <Plus size={16} className="text-[#38B1E4] w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <span className="md:hidden">Outro</span>
+                            <span className="hidden md:inline">Responder mais 1 vez</span>
                         </button>
                     )}
                 </div>
-
-                <button
-                    onClick={handleNext}
-                    disabled={saving}
-                    className="flex-1 sm:flex-[1.5] flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-                >
-                    {saving ? (
-                        <Loader2 className="animate-spin" size={18} />
-                    ) : isLastStep ? (
-                        <>
-                            Revisar e Enviar
-                            <ChevronRight size={16} />
-                        </>
-                    ) : (
-                        <>
-                            {currentStep?.is_iterable ? 'Continuar para próxima etapa' : 'Próximo'}
-                            <ChevronRight size={16} />
-                        </>
-                    )}
-                </button>
+                
+                <div className="flex items-center gap-4 mt-2 md:mt-0">
+                    <button
+                        onClick={handleNext}
+                        disabled={saving}
+                        className="flex-[2] md:flex-none w-full md:w-auto flex items-center justify-center gap-1 md:gap-2 px-4 md:px-8 py-2.5 md:py-3.5 rounded-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] text-white text-[11px] md:text-sm font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                        {saving ? (
+                            <Loader2 className="animate-spin w-4 h-4 md:w-5 md:h-5" />
+                        ) : isLastStep ? (
+                            <>
+                                <span className="md:hidden">Revisar</span>
+                                <span className="hidden md:inline">Revisar e Enviar</span>
+                                <ChevronRight size={16} className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            </>
+                        ) : (
+                            <>
+                                Próximo
+                                <ChevronRight size={16} className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );
