@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -56,58 +56,87 @@ import { supabase } from '@/lib/supabaseClient';
 // --- MAPPING LOGIC ---
 const ITEM_LABEL_MAP: Record<string, string> = {
     'RouterAgent': 'Decidindo fluxo...',
-    'getStudentProfileTool': 'Lendo Perfil do Estudante',
-    'getStudentProfile': 'Lendo Perfil do Estudante',
-    'updateStudentProfileTool': 'Editando Perfil do Estudante',
-    'updateStudentProfile': 'Editando Perfil do Estudante',
-    'updateStudentPreferencesTool': 'Editando Preferências do Estudante',
-    'updateStudentPreferences': 'Editando Preferências do Estudante',
-    'searchOpportunitiesTool': 'Buscando Oportunidades',
-    'searchOpportunities': 'Buscando Oportunidades',
-    'search_opportunities': 'Buscando Oportunidades',
-    'getImportantDatesTool': 'Consultando Datas Importantes',
-    'getImportantDates': 'Consultando Datas Importantes',
-    'get_important_dates': 'Consultando Datas Importantes',
-    'knowledgeSearchTool': 'Buscando Conhecimento',
-    'knowledgeSearch': 'Buscando Conhecimento',
-    'search_knowledge': 'Buscando Conhecimento',
-    'searchKnowledgeTool': 'Buscando Conhecimento',
-    'rag_search': 'Consultando Base de Conhecimento',
-    'duckDuckGoSearchTool': 'Buscando na Net',
-    'duckDuckGoSearch': 'Buscando na Net',
-    'smartResearchTool': 'Buscando Conhecimento',
-    'smartResearch': 'Buscando Conhecimento',
-    'readRulesTool': 'Buscando Conhecimento',
-    'sisu_agent': 'Pensando',
-    'prouni_agent': 'Pensando',
-    'match_workflow': 'Pensando',
-    'match_agent': 'Pensando',
-    'match_iterative': 'Pensando',
-    'onboarding_workflow': 'Pensando',
-    'onboarding_agent': 'Pensando',
+    'getStudentProfileTool': 'Lendo seu Perfil',
+    'getStudentProfile': 'Lendo seu Perfil',
+    'updateStudentProfileTool': 'Atualizando seu Perfil',
+    'updateStudentProfile': 'Atualizando seu Perfil',
+    'updateStudentPreferencesTool': 'Salvando suas Preferências',
+    'updateStudentPreferences': 'Salvando suas Preferências',
+    'searchOpportunitiesTool': 'Procurando Oportunidades',
+    'searchOpportunities': 'Procurando Oportunidades',
+    'search_opportunities': 'Procurando Oportunidades',
+    'getImportantDatesTool': 'Verificando Prazos',
+    'getImportantDates': 'Verificando Prazos',
+    'get_important_dates': 'Verificando Prazos',
+    'knowledgeSearchTool': 'Consultando Base de Dados',
+    'knowledgeSearch': 'Consultando Base de Dados',
+    'search_knowledge': 'Consultando Base de Dados',
+    'searchKnowledgeTool': 'Consultando Base de Dados',
+    'rag_search': 'Consultando Base de Dados',
+    'duckDuckGoSearchTool': 'Pesquisando na Internet',
+    'duckDuckGoSearch': 'Pesquisando na Internet',
+    'smartResearchTool': 'Consultando Conhecimento',
+    'smartResearch': 'Consultando Conhecimento',
+    'readRulesTool': 'Lendo Regras',
+    // New Passport Workflow Tools
+    'processDependentChoiceTool': 'Registrando sua escolha',
+    'processDependentChoice': 'Registrando sua escolha',
+    'startStudentApplicationTool': 'Iniciando sua candidatura',
+    'startStudentApplication': 'Iniciando sua candidatura',
+    'getPartnerFormsTool': 'Analisando o edital',
+    'getPartnerForms': 'Analisando o edital',
+    'getStudentApplicationTool': 'Verificando sua inscrição',
+    'getStudentApplication': 'Verificando sua inscrição',
+    'getEligibilityResultsTool': 'Calculando seus matches',
+    'getEligibilityResults': 'Calculando seus matches',
+    'rewindWorkflowStatusTool': 'Voltando uma etapa',
+    // Backend Pipeline Internal Steps & Actions
+    'reasoning_agent': 'Processando contexto...',
+    'response_agent': 'Formulando Resposta',
+    'onboarding_reasoning_agent': 'Organizando seus dados',
+    'ask_dependent_reasoning_agent': 'Analisando o destinatário',
+    'dependent_onboarding_reasoning_agent': 'Organizando dados do dependente',
+    'program_match_reasoning_agent': 'Buscando melhores opções',
+    'evaluate_reasoning_agent': 'Analisando o edital',
+    'concluded_agent': 'Preparando próximos passos',
+    // Legacy mapping
+    'sisu_agent': 'Processando',
+    'prouni_agent': 'Processando',
+    'match_workflow': 'Processando',
+    'match_agent': 'Processando',
+    'match_iterative': 'Processando',
+    'onboarding_workflow': 'Processando',
+    'onboarding_agent': 'Processando',
     'onboarding_name': 'Passo 1 - Nome',
     'onboarding_age': 'Passo 2 - Idade',
     'onboarding_city': 'Passo 3 - Localização',
     'onboarding_education': 'Passo 4 - Escolaridade',
-    'logModerationTool': 'Registrando Log de Moderação',
+    'logModerationTool': 'Verificando Moderação',
     'logModeration': 'Registrando Log de Moderação',
-    'guardrails_check': 'Analisando mensagem',
+    'guardrails_check': 'Validando mensagem',
     'preload_student_profile': 'Buscando perfil',
     'suggestRefinementTool': 'Refinando sugestões'
 };
 
 const GROUP_LABEL_MAP: Record<string, string> = {
     'RouterAgent': 'Analisando Contexto',
-    'sisu_agent': 'Perguntando pro Especialista Sisu',
-    'prouni_agent': 'Perguntando pro Especialista Prouni',
-    'match_workflow': 'Consultando Agente de Match',
-    'match_agent': 'Consultando Agente de Match',
-    'match_iterative': 'Consultando Agente de Match',
-    'onboarding_workflow': 'Iniciando Onboarding',
+    'sisu_agent': 'Especialista Sisu',
+    'prouni_agent': 'Especialista Prouni',
+    'match_workflow': 'Agente de Match',
+    'match_agent': 'Agente de Match',
+    'match_iterative': 'Agente de Match',
+    'onboarding_workflow': 'Agente de Onboarding',
     'onboarding_agent': 'Agente de Onboarding',
-    'guardrails_check': 'Analisando Contexto',
-    'reasoning_agent': 'Analisando Intenção',
-    'response_agent': 'Formulando Resposta'
+    'guardrails_check': 'Segurança',
+    'reasoning_agent': 'Agente de Raciocínio',
+    'response_agent': 'Agente de Resposta',
+    // New Passport Workflow Agents
+    'onboarding_reasoning_agent': 'Agente de Onboarding',
+    'ask_dependent_reasoning_agent': 'Agente de Triagem',
+    'dependent_onboarding_reasoning_agent': 'Agente do Dependente',
+    'program_match_reasoning_agent': 'Agente de Match',
+    'evaluate_reasoning_agent': 'Agente de Avaliação',
+    'concluded_agent': 'Agente de Finalização',
 };
 
 const getRouterLabel = (args?: any, output?: string) => {
@@ -247,13 +276,17 @@ export default function ChatCloudinha({
                     }));
 
                     setMessages(prev => {
-                        // Merge: Keep local messages (temp IDs are usually timestamps, so numeric strings)
-                        // We assume server IDs are UUIDs.
+                        // 1. Get local/unsaved messages (IDs are numeric timestamps strings)
                         const localMessages = prev.filter(m => !isNaN(Number(m.id)));
 
-                        // De-duplicate if needed (though local vs server shouldn't collide on ID types)
-                        // Just append local messages to the end of history
-                        return [...history, ...localMessages];
+                        // 2. Filter out local messages that are already in the history (matching by text/sender)
+                        // This prevents duplication after the history refreshes.
+                        const unsavedLocals = localMessages.filter(local =>
+                            !history.some(h => h.text === local.text && h.sender === local.sender)
+                        );
+
+                        // 3. Merge: History always comes first (sorted by created_at)
+                        return [...history, ...unsavedLocals];
                     });
                 } else {
                     setMessages(prev => {
@@ -341,7 +374,7 @@ export default function ChatCloudinha({
             const payload = {
                 message: text,
                 ui_form_state: uiFormState,
-                passport_phase: passportPhase
+                // Removed passport_phase to prevent stale React state from overriding DB
             };
 
             const response = await fetch('/api/chat', {
@@ -1073,9 +1106,9 @@ export default function ChatCloudinha({
                             onTabSwitch?.('CONTENT');
                         }}
                         showViewPanel={
-                            activeTab === 'CHAT' && 
-                            selectedFunctionality === 'ONBOARDING' && 
-                            !!passportPhase && 
+                            activeTab === 'CHAT' &&
+                            selectedFunctionality === 'ONBOARDING' &&
+                            !!passportPhase &&
                             ['ONBOARDING', 'DEPENDENT_ONBOARDING', 'EVALUATE', 'PROGRAM_MATCH'].includes(passportPhase)
                         }
                     />

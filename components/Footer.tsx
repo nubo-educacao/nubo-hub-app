@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-[#024F86] text-white py-12 px-6 font-montserrat mt-auto z-20 relative">
       <div className="container mx-auto max-w-[1200px] flex flex-col gap-8">
-        
+
         {/* Top Section: Logo and Socials */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center">
@@ -16,33 +16,33 @@ export default function Footer() {
                 If the provided logo is dark-only, it might clash, but I'll use what was requested. 
                 Ideally, we'd use a white version if available. For now, using standard class to ensure visibility if transparent. */}
             <div className="relative h-10 w-40 md:h-12 md:w-48">
-               <Image 
-                 src="/assets/logo.png" 
-                 alt="Nubo Educação" 
-                 fill
-                 className="object-contain brightness-0 invert" // Initial attempt to make it white if it's black text, or just leave as is if it's colorful. 
-                 // Actually, usually 'logo.png' is the colored one. Nubo uses blue/dark blue. 
-                 // On #024F86 bg, blue logo might be hard to see. 
-                 // I will try 'brightness-0 invert' to force it white which is common for dark footers.
-                 // If the user wants the original colors, they can ask to revert.
-               />
+              <Image
+                src="/assets/logo.png"
+                alt="Nubo Educação"
+                fill
+                className="object-contain brightness-0 invert" // Initial attempt to make it white if it's black text, or just leave as is if it's colorful. 
+              // Actually, usually 'logo.png' is the colored one. Nubo uses blue/dark blue. 
+              // On #024F86 bg, blue logo might be hard to see. 
+              // I will try 'brightness-0 invert' to force it white which is common for dark footers.
+              // If the user wants the original colors, they can ask to revert.
+              />
             </div>
           </div>
-          
+
           {/* Social Icons */}
           <div className="flex items-center gap-4">
-            <a 
-              href="https://www.instagram.com/cursinhonubo/" 
-              target="_blank" 
+            <a
+              href="https://www.instagram.com/nuboeducacao"
+              target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
               aria-label="Instagram"
             >
               <Instagram size={24} color="white" strokeWidth={1.5} />
             </a>
-            <a 
-              href="https://www.linkedin.com/company/nuboeducacao" 
-              target="_blank" 
+            <a
+              href="https://www.linkedin.com/company/nuboeducacao"
+              target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
               aria-label="LinkedIn"
