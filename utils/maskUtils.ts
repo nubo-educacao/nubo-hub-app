@@ -207,8 +207,9 @@ export const getMaxLength = (maskType: string | null): number | undefined => {
     }
 };
 
-export const getComponentType = (maskType: string | null, dataType: string): 'input' | 'textarea' | 'date' | 'select' | 'checkbox' => {
+export const getComponentType = (maskType: string | null, dataType: string): 'input' | 'textarea' | 'date' | 'select' | 'checkbox' | 'autocomplete' => {
     if (dataType === 'select') return 'select';
+    if (dataType === 'searchable_select') return 'autocomplete';
     if (dataType === 'multiselect') return 'input'; // Don't trigger 'select' dropdown
     if (dataType === 'boolean') return 'checkbox';
     
