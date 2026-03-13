@@ -207,11 +207,12 @@ export const getMaxLength = (maskType: string | null): number | undefined => {
     }
 };
 
-export const getComponentType = (maskType: string | null, dataType: string): 'input' | 'textarea' | 'date' | 'select' | 'checkbox' | 'autocomplete' => {
+export const getComponentType = (maskType: string | null, dataType: string): 'input' | 'textarea' | 'date' | 'select' | 'checkbox' | 'autocomplete' | 'grid' => {
     if (dataType === 'select') return 'select';
     if (dataType === 'searchable_select') return 'autocomplete';
     if (dataType === 'multiselect') return 'input'; // Don't trigger 'select' dropdown
     if (dataType === 'boolean') return 'checkbox';
+    if (dataType === 'grid_select' || dataType === 'grid_multiselect') return 'grid';
     
     if (!maskType) return 'input';
     
