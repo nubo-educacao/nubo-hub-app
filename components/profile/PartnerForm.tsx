@@ -33,7 +33,7 @@ interface PartnerFormField {
     field_name: string;
     question_text: string;
     data_type: string;
-    options: string[] | null;
+    options: string[] | { rows: string[]; columns: string[] } | null;
     mapping_source: string | null;
     is_criterion: boolean;
     criterion_rule: Record<string, unknown> | null;
@@ -73,9 +73,10 @@ interface FormFieldProps {
     hasError: boolean;
     onAnswerChange: (fieldName: string, value: string, maskType?: string | null) => void;
     onMultiSelectChange: (fieldName: string, option: string, checked: boolean) => void;
+    onGridChange: (fieldName: string, rowIndex: number, columnValue: string, isMulti: boolean) => void;
 }
 
-const FormField = React.memo(function FormField({ field, value, hasError, onAnswerChange, onMultiSelectChange }: FormFieldProps) {
+const FormField = React.memo(function FormField({ field, value, hasError, onAnswerChange, onMultiSelectChange, onGridChange }: FormFieldProps) {
     // Determine the string representation from parent state
     const parentStringValue = value !== undefined && value !== null ? String(value) : '';
     // Use local state to handle immediate typing and avoid cursor jumping
@@ -113,7 +114,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
     };
 
     const componentType = getComponentType(field.maskking, field.data_type);
-    const isButtonField = field.data_type === 'boolean' || field.data_type === 'multiselect';
+    const isButtonField = field.data_type === 'boolean' || field.data_type === 'multiselect' || field.data_type === 'grid_select' || field.data_type === 'grid_multiselect';
 
     const innerInputClass = `w-full outline-none bg-transparent text-[#3A424E] text-sm md:text-base
         py-1.5 md:py-4 px-1 md:px-4
@@ -144,7 +145,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
             </legend>
 
             <div className={isButtonField ? "pt-1" : "pt-1 md:pt-0"}>
-                {field.data_type === 'boolean' || field.data_type === 'multiselect' ? null : componentType === 'date' ? (
+                {field.data_type === 'boolean' || field.data_type === 'multiselect' || componentType === 'grid' ? null : componentType === 'date' ? (
                     <input
                         type="date"
                         value={localValue}
@@ -171,7 +172,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                         className={innerInputClass + ' appearance-none cursor-pointer'}
                     >
                         <option value="">Selecione uma opção...</option>
-                        {(field.options || []).map((opt, i) => (
+                        {(Array.isArray(field.options) ? field.options : []).map((opt: string, i: number) => (
                             <option key={i} value={opt}>{opt}</option>
                         ))}
                     </select>
@@ -200,7 +201,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                                     style={{ transformOrigin: "top" }}
                                 >
                                     {(() => {
-                                        const filteredOptions = (field.options || []).filter(opt => 
+                                        const filteredOptions = (Array.isArray(field.options) ? field.options : []).filter((opt: string) => 
                                             opt.toLowerCase().includes(localValue.toLowerCase())
                                         );
                                         
@@ -208,7 +209,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                                             return <div className="p-4 text-sm text-gray-400 text-center">Nenhuma opção encontrada</div>;
                                         }
 
-                                        return filteredOptions.map((opt, i) => (
+                                        return filteredOptions.map((opt: string, i: number) => (
                                             <div
                                                 key={i}
                                                 onClick={() => {
@@ -240,7 +241,7 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
 
             {field.data_type === 'multiselect' && (
                 <div className="grid grid-cols-1 gap-2 pt-2">
-                    {(field.options || []).map((opt, i) => {
+                    {(Array.isArray(field.options) ? field.options : []).map((opt: string, i: number) => {
                         const currentArray = Array.isArray(value) 
                             ? value 
                             : (typeof value === 'string' ? value.split(',').map(s => s.trim()).filter(Boolean) : []);
@@ -285,6 +286,90 @@ const FormField = React.memo(function FormField({ field, value, hasError, onAnsw
                     ))}
                 </div>
             )}
+
+            {componentType === 'grid' && field.options && typeof field.options === 'object' && !Array.isArray(field.options) && (() => {
+                const gridOpts = field.options as { rows: string[]; columns: string[] };
+                const rows = gridOpts.rows || [];
+                const columns = gridOpts.columns || [];
+                const isMulti = field.data_type === 'grid_multiselect';
+
+                // Parse grid answers: { "0": "col_value" } for select, { "0": ["col1", "col2"] } for multiselect
+                let gridAnswers: Record<string, string | string[]> = {};
+                try {
+                    if (typeof value === 'string' && value.startsWith('{')) {
+                        gridAnswers = JSON.parse(value);
+                    } else if (typeof value === 'object' && value !== null) {
+                        gridAnswers = value as unknown as Record<string, string | string[]>;
+                    }
+                } catch { /* ignore parse errors */ }
+
+                return (
+                    <div className="pt-2 overflow-x-auto -mx-1">
+                        <table className="w-full border-collapse text-xs md:text-sm">
+                            <thead>
+                                <tr>
+                                    <th className="text-left p-2 md:p-3 min-w-[140px] md:min-w-[200px]"></th>
+                                    {columns.map((col, ci) => (
+                                        <th key={ci} className="p-1.5 md:p-2 text-center text-[10px] md:text-xs font-semibold text-[#024F86] min-w-[60px] md:min-w-[80px]">
+                                            {col}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row, ri) => {
+                                    const rowKey = String(ri);
+                                    const rowAnswer = gridAnswers[rowKey];
+                                    const selectedValues = isMulti
+                                        ? (Array.isArray(rowAnswer) ? rowAnswer : [])
+                                        : [];
+                                    const selectedSingle = !isMulti ? (typeof rowAnswer === 'string' ? rowAnswer : '') : '';
+
+                                    return (
+                                        <tr key={ri} className={`border-t border-gray-100 ${ri % 2 === 0 ? 'bg-white/40' : 'bg-gray-50/40'}`}>
+                                            <td className="p-2 md:p-3 text-[#3A424E] font-medium leading-tight">
+                                                {ri + 1}) {row}
+                                            </td>
+                                            {columns.map((col, ci) => {
+                                                if (isMulti) {
+                                                    const isChecked = selectedValues.includes(col);
+                                                    return (
+                                                        <td key={ci} className="p-1.5 md:p-2 text-center">
+                                                            <label className="flex items-center justify-center cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={() => onGridChange(field.field_name, ri, col, true)}
+                                                                    className="w-4 h-4 md:w-5 md:h-5 text-[#38B1E4] rounded border-gray-300 focus:ring-[#38B1E4] cursor-pointer"
+                                                                />
+                                                            </label>
+                                                        </td>
+                                                    );
+                                                } else {
+                                                    const isSelected = selectedSingle === col;
+                                                    return (
+                                                        <td key={ci} className="p-1.5 md:p-2 text-center">
+                                                            <label className="flex items-center justify-center cursor-pointer">
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`grid_${field.field_name}_row_${ri}`}
+                                                                    checked={isSelected}
+                                                                    onChange={() => onGridChange(field.field_name, ri, col, false)}
+                                                                    className="w-4 h-4 md:w-5 md:h-5 text-[#38B1E4] border-gray-300 focus:ring-[#38B1E4] cursor-pointer"
+                                                                />
+                                                            </label>
+                                                        </td>
+                                                    );
+                                                }
+                                            })}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            })()}
 
             {hasError && (
                 <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -631,9 +716,39 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 value = answers[field.field_name] || '';
             }
 
-            if (!field.optional && (value === undefined || value === null || String(value).trim() === '')) {
-                errors.add(field.field_name);
-                continue;
+            if (!field.optional) {
+                // Grid fields: check that all rows have answers
+                const isGrid = field.data_type === 'grid_select' || field.data_type === 'grid_multiselect';
+                if (isGrid) {
+                    const gridOpts = field.options && typeof field.options === 'object' && !Array.isArray(field.options)
+                        ? field.options as { rows?: string[] }
+                        : null;
+                    const rowCount = gridOpts?.rows?.length || 0;
+                    let gridAnswers: Record<string, unknown> = {};
+                    try {
+                        if (typeof value === 'object' && value !== null) {
+                            gridAnswers = value as Record<string, unknown>;
+                        } else if (typeof value === 'string' && value.startsWith('{')) {
+                            gridAnswers = JSON.parse(value);
+                        }
+                    } catch { /* ignore */ }
+
+                    const answeredRows = Object.keys(gridAnswers).filter(k => {
+                        const v = gridAnswers[k];
+                        if (Array.isArray(v)) return v.length > 0;
+                        return v !== undefined && v !== null && String(v).trim() !== '';
+                    }).length;
+
+                    if (answeredRows < rowCount) {
+                        errors.add(field.field_name);
+                    }
+                    continue;
+                }
+
+                if (value === undefined || value === null || String(value).trim() === '') {
+                    errors.add(field.field_name);
+                    continue;
+                }
             }
 
             const stringValue = String(value);
@@ -714,6 +829,59 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             persistToLocalStorage(next);
             isDirtyRef.current = true;
             return next;
+        });
+
+        setValidationErrors(prev => {
+            const next = new Set(prev);
+            next.delete(fieldName);
+            return next;
+        });
+    }, [currentStep, currentIteration, persistToLocalStorage]);
+
+    const handleGridChange = useCallback((fieldName: string, rowIndex: number, columnValue: string, isMulti: boolean) => {
+        setAnswers(prev => {
+            let currentVal: Record<string, string | string[]> = {};
+            if (currentStep?.is_iterable) {
+                const iterations = prev[currentStep.id] || [];
+                const raw = iterations[currentIteration]?.[fieldName];
+                if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+                    currentVal = raw as Record<string, string | string[]>;
+                } else if (typeof raw === 'string' && raw.startsWith('{')) {
+                    try { currentVal = JSON.parse(raw); } catch { /* ignore */ }
+                }
+            } else {
+                const raw = prev[fieldName];
+                if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+                    currentVal = raw as Record<string, string | string[]>;
+                } else if (typeof raw === 'string' && raw.startsWith('{')) {
+                    try { currentVal = JSON.parse(raw); } catch { /* ignore */ }
+                }
+            }
+
+            const rowKey = String(rowIndex);
+            if (isMulti) {
+                const currentArr = Array.isArray(currentVal[rowKey]) ? (currentVal[rowKey] as string[]) : [];
+                const has = currentArr.includes(columnValue);
+                currentVal = {
+                    ...currentVal,
+                    [rowKey]: has ? currentArr.filter(v => v !== columnValue) : [...currentArr, columnValue]
+                };
+            } else {
+                currentVal = { ...currentVal, [rowKey]: columnValue };
+            }
+
+            let next: Record<string, unknown>;
+            if (currentStep?.is_iterable) {
+                const iterations = [...(prev[currentStep.id] || [])];
+                if (!iterations[currentIteration]) iterations[currentIteration] = {};
+                iterations[currentIteration] = { ...iterations[currentIteration], [fieldName]: currentVal };
+                next = { ...prev, [currentStep.id]: iterations };
+            } else {
+                next = { ...prev, [fieldName]: currentVal };
+            }
+            persistToLocalStorage(next as Record<string, string>);
+            isDirtyRef.current = true;
+            return next as Record<string, string>;
         });
 
         setValidationErrors(prev => {
@@ -863,11 +1031,16 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     };
 
     const getFieldValue = useCallback((fieldName: string): string => {
+        let raw: unknown;
         if (currentStep?.is_iterable) {
             const iterations = answers[currentStep.id] || [];
-            return iterations[currentIteration]?.[fieldName] || '';
+            raw = iterations[currentIteration]?.[fieldName];
+        } else {
+            raw = answers[fieldName];
         }
-        return answers[fieldName] || '';
+        if (raw === undefined || raw === null) return '';
+        if (typeof raw === 'object') return JSON.stringify(raw);
+        return String(raw);
     }, [answers, currentStep, currentIteration]);
 
     if (loading) {
@@ -1052,6 +1225,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                                     hasError={validationErrors.has(field.field_name)}
                                     onAnswerChange={handleAnswerChange}
                                     onMultiSelectChange={handleMultiSelectChange}
+                                    onGridChange={handleGridChange}
                                 />
                             ))
                         )}
