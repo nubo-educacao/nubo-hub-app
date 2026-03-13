@@ -19,7 +19,7 @@ const lora = Lora({
 
 export const metadata: Metadata = {
   title: "Cloudinha | Sua guia para as melhores oportunidades educacionais - Nubo Educação",
-  description: "A Cloudinha te ajuda a transformar sua nota do ENEM em oportunidades reais. A IA do Nubo para te orientar no acesso ao ensino superior, começando pelo SISU.",
+  description: "A Cloudinha conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
   keywords: [
     // acesso ao ensino superior
     "ENEM",
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Cloudinha | Sua guia para as melhores oportunidades educacionais - Nubo Educação",
-    description: "A Cloudinha te ajuda a transformar sua nota do ENEM em oportunidades reais. A IA do Nubo para te orientar no acesso ao ensino superior, começando pelo SISU.",
+    description: "A Cloudinha conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
     type: "website",
     locale: "pt_BR",
     siteName: "Cloudinha - Nubo Educação",
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Cloudinha | Sua guia para as melhores oportunidades educacionais - Nubo Educação",
-    description: "A Cloudinha te ajuda a transformar sua nota do ENEM em oportunidades reais. A IA do Nubo para te orientar no acesso ao ensino superior, começando pelo SISU.",
+    description: "A Cloudinha conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
     images: ["/assets/cloudinha.png"],
   },
 };
