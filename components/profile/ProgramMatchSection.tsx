@@ -35,7 +35,7 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
             // Get parent profile to check target and existing results
             const { data: parentProfile } = await supabase
                 .from('user_profiles')
-                .select('active_application_target_id, eligibility_results')
+                .select('active_application_target_id, eligibility_results, current_dependent_id')
                 .eq('id', user.id)
                 .single();
 
@@ -50,11 +50,6 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
                     console.error('Error calculating eligibility via RPC:', rpcError);
                 } else {
                     eligibility = rpcResults as EligibilityResult[];
-                }
-
-                // 5. Tell the agent!
-                if (onTriggerChatMessage) {
-                    onTriggerChatMessage("Já completei as informações do meu perfil e a análise dos programas parceiros terminou. Pode me dar um resumo de quais são as melhores oportunidades para mim agora?");
                 }
             }
 
@@ -172,9 +167,38 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
                                 <PartnerCard
                                     partner={partner}
                                     matchScore={{ total: result.total_criteria, met: result.met_criteria }}
-                                    onApply={(partnerId, partnerName) => {
+                                    onApply={async (partnerId, partnerName) => {
                                         if (onTriggerChatMessage) {
-                                            onTriggerChatMessage(`Quero me aplicar no programa ${partnerName}`);
+                                            if (!user) return; // TS null guard check
+
+                                            // Get the latest target info to formulate the correct message
+                                            const { data: profile } = await supabase
+                                                .from('user_profiles')
+                                                .select('active_application_target_id, current_dependent_id')
+                                                .eq('id', user.id)
+                                                .single();
+                                            
+                                            const targetId = profile?.active_application_target_id || user.id;
+                                            const isDependent = targetId !== user.id && targetId === profile?.current_dependent_id;
+                                            
+                                            let message = `Quero me aplicar no programa ${partnerName}`;
+                                            
+                                            if (isDependent) {
+                                                // Fetch dependent name for a better message
+                                                const { data: dependent } = await supabase
+                                                    .from('user_profiles')
+                                                    .select('full_name')
+                                                    .eq('id', targetId)
+                                                    .single();
+                                                    
+                                                const depName = dependent?.full_name?.split(' ')[0] || 'meu dependente';
+                                                message = `Quero inscrever ${depName} no programa ${partnerName}`;
+                                            }
+                                            
+                                            // Append metadata so the agent can parse the exact ID
+                                            message += `\n[Metadata: target_user_id=${targetId}]`;
+                                            
+                                            onTriggerChatMessage(message);
                                         }
                                     }}
                                 />
