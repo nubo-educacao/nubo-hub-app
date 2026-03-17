@@ -496,10 +496,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 const existingAnswers: Record<string, string> = { ...(appData.answers || {}) };
 
                 // Fetch user profile for mapping_source pre-fill
+                const targetProfileId = appData.user_id;
                 const { data: profileData } = await supabase
                     .from('user_profiles')
                     .select('*')
-                    .eq('id', targetId)
+                    .eq('id', targetProfileId)
                     .single();
 
                 if (profileData && fieldsData) {

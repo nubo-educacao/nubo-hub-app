@@ -17,6 +17,7 @@ interface MessageBubbleProps {
 
 export default function MessageBubble({ message, userAvatar, onFeedback }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
+  const displayText = message.text ? message.text.replace(/\[Metadata:.*?\]/g, '').trim() : '';
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
 
   const handleFeedback = (score: number) => {
@@ -31,7 +32,7 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message.text);
+      await navigator.clipboard.writeText(displayText);
       setIsCopied(true);
       toast.success('Mensagem copiada!');
       setTimeout(() => setIsCopied(false), 2000);
@@ -93,7 +94,7 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
                     ),
                   }}
                 >
-                  {message.text}
+                  {displayText}
                 </ReactMarkdown>
               ) : (
                !isUser && (!message.course_ids || message.course_ids.length === 0) && (
@@ -108,7 +109,7 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
           <div className={`text-[10px] mt-1 opacity-60 ${isUser ? 'text-white/80 text-right' : 'text-[#636E7C] text-left'} flex items-center justify-between gap-2`}>
             <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             {/* Mobile Copy Button (Always visible on mobile or small screens) */}
-            {message.text && (
+            {displayText && (
               <button 
                 onClick={handleCopy}
                 className={`md:hidden p-1 rounded-full transition-colors ${isUser ? 'hover:bg-white/10 text-white/90' : 'hover:bg-gray-100 text-[#636E7C]'}`}
@@ -124,7 +125,7 @@ export default function MessageBubble({ message, userAvatar, onFeedback }: Messa
       {/* Action Buttons Container (Copier + Feedback) */}
       <div className={`flex items-center gap-2 mt-1 ${isUser ? 'mr-0' : 'ml-10'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
         {/* Desktop Copy Button */}
-        {message.text && (
+        {displayText && (
           <button 
             onClick={handleCopy}
             className={`hidden md:flex p-1 rounded hover:bg-gray-50 transition-colors text-gray-400 hover:text-[#024F86]`}

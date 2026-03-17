@@ -28,6 +28,9 @@ export interface UserProfile {
   relationship?: string | null;
   active_application_target_id?: string | null;
   current_dependent_id?: string | null;
+  neighborhood?: string | null;
+  country?: string | null;
+  outside_brazil?: boolean | null;
 }
 
 export interface UpdateProfileParams {
@@ -48,6 +51,9 @@ export interface UpdateProfileParams {
   current_dependent_id?: string | null;
   target_user_id?: string | null;
   birth_date?: string | null;
+  neighborhood?: string | null;
+  country?: string | null;
+  outside_brazil?: boolean | null;
 }
 
 export async function getUserProfileService(): Promise<{ data: UserProfile | null; error: any }> {
@@ -112,6 +118,9 @@ export async function updateUserProfileService(params: UpdateProfileParams): Pro
     p_target_user_id: params.target_user_id,
     p_education_year: params.education_year,
     p_birth_date: params.birth_date,
+    p_neighborhood: params.neighborhood,
+    p_country: params.country,
+    p_outside_brazil: params.outside_brazil,
   });
 
   if (error) {
