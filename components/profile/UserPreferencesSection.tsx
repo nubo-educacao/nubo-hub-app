@@ -282,7 +282,7 @@ export default function UserPreferencesSection({ preferences, onUpdate, onMatchF
                 } else {
                     // If not in chat page, redirect to chat with match trigger
                     console.log('onMatchFound not defined - redirecting to chat');
-                    router.push('/chat');
+                    router.push('/chat?message=' + encodeURIComponent('Acabei de gerar um match, pode me falar mais sobre as melhores oportunidades para mim?'));
                 }
             } else {
                 console.log('No IDs extracted from results');

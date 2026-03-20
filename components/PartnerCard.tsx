@@ -35,6 +35,7 @@ interface PartnerCardProps {
     met: number;
   };
   onApply?: (partnerId: string, partnerName: string) => void;
+  isCompact?: boolean;
 }
 
 export function PartnerCard({
@@ -50,7 +51,8 @@ export function PartnerCard({
   coverimage = partner?.coverimage || undefined,
   isFavorite: initialFavorite = false,
   matchScore,
-  onApply
+  onApply,
+  isCompact = false
 }: PartnerCardProps) {
   const { isAuthenticated, openAuthModal, pendingAction, setPendingAction, clearPendingAction } = useAuth();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
@@ -172,17 +174,7 @@ export function PartnerCard({
     }
   };
 
-  const handleCardClick = async () => {
-    // Instituto Sol exception: open WhatsApp modal instead of chat
-    if (isInstitutoSol) {
-      registerPartnerClick(id);
-      setShowWhatsAppModal(true);
-      return;
-    }
-
-    // Fire and forget click registration
-    registerPartnerClick(id);
-
+  const handleApplyWorkflow = async () => {
     // Set pending action for the chat page to consume
     setPendingAction({
       type: 'start_workflow',
@@ -201,6 +193,21 @@ export function PartnerCard({
     router.push('/chat');
   };
 
+  const handleCardClick = async () => {
+    // Instituto Sol exception: open WhatsApp modal instead of chat
+    if (isInstitutoSol) {
+      registerPartnerClick(id);
+      setShowWhatsAppModal(true);
+      return;
+    }
+
+    // Fire and forget click registration
+    registerPartnerClick(id);
+
+    // Go to partner details page
+    router.push(`/partners/${id}`);
+  };
+
   const handleWhatsAppClick = () => {
     registerExternalRedirectClick(id, INSTITUTO_SOL_WHATSAPP_URL, 'partner_card');
     window.open(INSTITUTO_SOL_WHATSAPP_URL, '_blank');
@@ -217,10 +224,10 @@ export function PartnerCard({
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative w-full h-auto min-h-[500px] rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-[#FF9900] flex flex-col cursor-pointer ${montserrat.className}`}
+      className={`group relative w-full h-auto ${isCompact ? 'min-h-[300px]' : 'min-h-[500px]'} rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-[#FF9900] flex flex-col cursor-pointer ${montserrat.className}`}
     >
       {/* Top Section with Background and Cover */}
-      <div className="relative h-[200px] w-full bg-gray-100">
+      <div className={`relative ${isCompact ? 'h-[140px]' : 'h-[200px]'} w-full bg-gray-100 shrink-0`}>
         {/* Cover Image Background Fallback */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#4FB7E8] to-[#2892C8]"></div>
 
@@ -278,13 +285,13 @@ export function PartnerCard({
       </div>
 
       {/* Content Section */}
-      <div className="relative z-10 px-4 pb-5 pt-0 flex flex-col flex-grow bg-white">
+      <div className={`relative z-10 px-4 flex flex-col flex-grow bg-white ${isCompact ? 'pb-3 pt-2' : 'pb-5 pt-0'}`}>
         {/* Partner Name and Site Link */}
-        <div className="flex flex-col items-center justify-center md:items-start md:justify-start min-h-[56px] mb-2 mt-2">
-          <h3 className="text-[16px] md:text-[18px] font-bold text-[#3A424E] text-center md:text-left line-clamp-2 leading-tight">
+        <div className={`flex flex-col items-center justify-center md:items-start md:justify-start ${isCompact ? 'min-h-[48px] mb-1' : 'min-h-[56px] mb-2 mt-2'}`}>
+          <h3 className={`font-bold text-[#3A424E] text-center md:text-left line-clamp-2 leading-tight ${isCompact ? 'text-[15px]' : 'text-[16px] md:text-[18px]'}`}>
             {name}
           </h3>
-          {link && (
+          {link && !isCompact && (
             <a
               href={link}
               target="_blank"
@@ -300,12 +307,13 @@ export function PartnerCard({
           )}
         </div>
 
-        <p className="text-[14px] text-[#636E7C] mb-4 text-center md:text-left leading-relaxed line-clamp-3">
+        <p className={`text-[#636E7C] leading-relaxed text-center md:text-left ${isCompact ? 'text-[12px] mb-2 line-clamp-2' : 'text-[14px] mb-4 line-clamp-3'}`}>
           {description}
         </p>
 
         {/* Info Icons / Metadata */}
-        <div className="space-y-2 mb-6">
+        {!isCompact && (
+          <div className="space-y-2 mb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#636E7C]">
             <MapPin size={16} className="text-[#38B1E4] flex-shrink-0" />
             <span className="truncate">{location}</span>
@@ -323,9 +331,17 @@ export function PartnerCard({
             <span className="truncate">{dateDisplay}</span>
           </div>
         </div>
+        )}
+
+        {isCompact && (
+          <div className="flex items-center gap-2 text-[12px] text-[#636E7C] mb-3 mt-auto">
+            <MapPin size={14} className="text-[#38B1E4] flex-shrink-0" />
+            <span className="truncate">{location}</span>
+          </div>
+        )}
 
         {/* Footer Link */}
-        <div className="mt-auto flex justify-end items-center pt-4 border-t border-gray-100/50">
+        <div className={`flex justify-end items-center border-t border-gray-100/50 ${isCompact ? 'mt-auto pt-3' : 'mt-auto pt-4'}`}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -336,7 +352,7 @@ export function PartnerCard({
               if (onApply) {
                 onApply(id, name);
               } else {
-                handleCardClick();
+                handleApplyWorkflow();
               }
             }}
             className="text-[14px] font-bold text-white bg-[#024F86] hover:bg-[#023F6B] px-4 py-2 rounded-full flex items-center gap-1 transition-colors shadow-sm"

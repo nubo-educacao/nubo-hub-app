@@ -29,13 +29,23 @@ export default function SisuProuniCard({ opportunity_type }: SisuProuniCardProps
         <h3 className="text-xl font-bold text-[#024F86] mb-3">{title}</h3>
         <p className="text-slate-600 mb-6 leading-relaxed">{description}</p>
       </div>
-      <button
-        onClick={handleLearnMore}
-        className="text-[#38B1E4] font-semibold flex items-center gap-2 hover:gap-3 transition-all group"
-      >
-        Saiba mais
-        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-      </button>
+      <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+        <button
+          onClick={handleLearnMore}
+          className="text-[#38B1E4] bg-[#38B1E4]/10 hover:bg-[#38B1E4]/20 px-6 py-2.5 rounded-full font-bold flex flex-1 sm:flex-none justify-center items-center gap-2 transition-all group"
+        >
+          Tirar dúvidas
+        </button>
+        <a 
+          href={opportunity_type.toLowerCase() === "prouni" ? "https://acessounico.mec.gov.br/prouni" : "https://acessounico.mec.gov.br/sisu"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[#38B1E4] hover:bg-[#024F86] text-white px-8 py-2.5 rounded-full font-bold shadow-md transition-colors flex flex-1 sm:flex-none justify-center items-center gap-2"
+        >
+          Candidatar-se
+          <ArrowRight className="w-4 h-4" />
+        </a>
+      </div>
     </div>
   );
 }

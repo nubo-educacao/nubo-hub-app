@@ -386,32 +386,31 @@ function OpportunityCatalogContent() {
   };
 
   return (
-    <section id="oportunidades" ref={catalogRef} className="relative pb-16 pt-8 scroll-mt-32">
-      {/* Floating Container */}
-      <div className="container mx-auto px-4">
-        <div className="bg-white/30 backdrop-blur-md border border-white/20 shadow-xl rounded-[24px] md:rounded-[40px] p-4 pt-12 md:p-8 md:pt-16 relative min-h-[600px] md:min-h-[800px]">
+    <section id="oportunidades" ref={catalogRef} className="relative pb-16 pt-2 scroll-mt-32">
+      <div className="container mx-auto px-1 md:px-4">
+        <div className="bg-white/60 backdrop-blur-md border border-white/50 shadow-sm rounded-[24px] md:rounded-[40px] p-4 md:p-8 relative min-h-[600px] md:min-h-[800px]">
           
-          {/* Title Pill */}
-          <div className="absolute -top-6 md:-top-8 left-1/2 -translate-x-1/2 bg-[#024F86] text-white px-8 md:px-12 py-3 md:py-4 rounded-xl shadow-lg z-10 w-[90%] md:w-auto text-center">
-            <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider text-center">
-              Explore oportunidades
+          {/* Title Box */}
+          <div className="bg-[#024F86] text-white px-6 py-5 rounded-[12px] shadow-sm mb-6 flex items-center justify-center">
+            <h2 className="text-[20px] md:text-[24px] font-black uppercase tracking-wider text-center leading-tight font-montserrat">
+              EXPLORE<br className="md:hidden" /> OPORTUNIDADES
             </h2>
           </div>
 
-          <div className="mb-8 mt-12">
-            <FilterPills selectedFilter={selectedFilter} onSelectFilter={handleSelectFilter}>
+          {/* Controls Row: Sort and Search */}
+          <div className="mb-6 flex flex-row items-center gap-3">
                {/* Sort Dropdown */}
-               <div className="relative z-50">
+               <div className="relative z-50 flex-1 h-[42px]">
                     <button 
                         onClick={() => setIsSortOpen(!isSortOpen)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border border-[#024F86] text-[#024F86] bg-white/10 hover:bg-[#024F86]/5 whitespace-nowrap"
+                        className="w-full h-full flex items-center justify-between px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border border-[#024F86] text-[#024F86] bg-white hover:bg-[#024F86]/5 overflow-hidden"
                     >
-                        {sortOptions.find(o => o.value === sortBy)?.label || 'Ordenar'}
-                        <ChevronDown size={14} />
+                        <span className="truncate">{sortOptions.find(o => o.value === sortBy)?.label || 'Ordenar'}</span>
+                        <ChevronDown size={14} className="flex-shrink-0 ml-2" />
                     </button>
                     
                     {isSortOpen && (
-                        <div className="absolute top-full mt-2 left-0 w-48 bg-white border border-gray-100 rounded-lg shadow-xl z-50 py-2">
+                        <div className="absolute top-full mt-2 left-0 w-full min-w-[200px] bg-white border border-gray-100 rounded-lg shadow-xl z-50 py-2">
                              {sortOptions.map(option => (
                                  <button
                                     key={option.value}
@@ -426,35 +425,30 @@ function OpportunityCatalogContent() {
                 </div>
 
                 {/* Search Input */}
-                <div className="relative group w-full md:w-64">
+                <div className="relative group flex-1 h-[42px]">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <Search size={14} className="text-[#024F86]" />
+                        <Search size={14} className="text-[#024F86]/60" />
                     </div>
                     <input 
                         type="text"
                         placeholder="Buscar curso..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-full text-sm border border-[#024F86] text-[#024F86] placeholder-[#024F86]/60 bg-white/10 focus:outline-none focus:ring-1 focus:ring-[#024F86]"
+                        className="w-full h-full pl-9 pr-4 py-2 rounded-full text-[13px] md:text-sm border border-[#024F86] text-[#024F86] placeholder-[#024F86]/60 bg-white focus:outline-none focus:ring-1 focus:ring-[#024F86]"
                     />
                 </div>
+          </div>
 
-                {/* Location Display if available */}
-                {userLocation && sortBy === 'proximas' && (
-                    <div className="hidden md:flex items-center gap-1 text-[#024F86] text-xs font-medium bg-[#024F86]/5 px-3 py-1 rounded-full whitespace-nowrap">
-                        <MapPin size={12} />
-                        {userLocation.city} - {userLocation.state}
-                    </div>
-                )}
-            </FilterPills>
+          {/* Location Display if available */}
+          {userLocation && sortBy === 'proximas' && (
+              <div className="flex items-center justify-center md:justify-start gap-1 text-[#024F86] text-xs font-medium bg-[#024F86]/5 px-3 py-1.5 rounded-full whitespace-nowrap w-fit mx-auto md:mx-0 mb-6 border border-[#024F86]/10">
+                  <MapPin size={12} />
+                  {userLocation.city} - {userLocation.state}
+              </div>
+          )}
 
-            {/* {selectedFilter === 'Seleção Nubo' && (
-               <div className="mt-6 text-center px-4">
-                 <p className="text-sm text-[#024F86] bg-[#024F86]/5 py-2 px-4 rounded-lg inline-block border border-[#024F86]/10">
-                   Curadoria do Nubo com base no SISU 2025, reunindo oportunidades cujo número de inscritos foi menor do que o  número de vagas
-                 </p>
-               </div>
-             )} */}
+          <div className="mb-6">
+            <FilterPills selectedFilter={selectedFilter} onSelectFilter={handleSelectFilter} />
           </div>
 
           {/* Calendar Accordion */}
