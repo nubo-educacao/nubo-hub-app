@@ -345,6 +345,9 @@ export function PartnerCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              // Registra o clique para aparecer no Funil do Partner Dashboard
+              registerPartnerClick(id);
+              
               if (isInstitutoSol) {
                 setShowWhatsAppModal(true);
                 return;
