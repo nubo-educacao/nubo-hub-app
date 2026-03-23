@@ -30,6 +30,7 @@ interface PartnerCardProps {
   link?: string;
   coverimage?: string;
   isFavorite?: boolean;
+  applications_open?: boolean;
   matchScore?: {
     total: number;
     met: number;
@@ -48,6 +49,7 @@ export function PartnerCard({
   dates = partner?.dates,
   link = partner?.link || undefined,
   coverimage = partner?.coverimage || undefined,
+  applications_open = partner?.applications_open ?? true,
   isFavorite: initialFavorite = false,
   matchScore,
   onApply
@@ -173,6 +175,8 @@ export function PartnerCard({
   };
 
   const handleCardClick = async () => {
+    if (!applications_open) return;
+    
     // Instituto Sol exception: open WhatsApp modal instead of chat
     if (isInstitutoSol) {
       registerPartnerClick(id);
@@ -327,8 +331,10 @@ export function PartnerCard({
         {/* Footer Link */}
         <div className="mt-auto flex justify-end items-center pt-4 border-t border-gray-100/50">
           <button
+            disabled={!applications_open}
             onClick={(e) => {
               e.stopPropagation();
+              if (!applications_open) return;
               if (isInstitutoSol) {
                 setShowWhatsAppModal(true);
                 return;
@@ -339,9 +345,11 @@ export function PartnerCard({
                 handleCardClick();
               }
             }}
-            className="text-[14px] font-bold text-white bg-[#024F86] hover:bg-[#023F6B] px-4 py-2 rounded-full flex items-center gap-1 transition-colors shadow-sm"
+            className={`text-[14px] font-bold text-white px-4 py-2 rounded-full flex items-center gap-1 transition-colors shadow-sm ${
+              applications_open ? 'bg-[#024F86] hover:bg-[#023F6B]' : 'bg-gray-400 cursor-not-allowed'
+            }`}
           >
-            Inscreva-se
+            {applications_open ? 'Inscreva-se' : 'Inscrições Encerradas'}
           </button>
         </div>
       </div>

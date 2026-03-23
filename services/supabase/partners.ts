@@ -10,6 +10,7 @@ export interface Partner {
   dates: Record<string, any> | null;
   link: string | null;
   coverimage: string | null;
+  applications_open?: boolean;
 }
 
 export async function getPartners() {
