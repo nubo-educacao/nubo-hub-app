@@ -16,6 +16,7 @@ interface ApplicationItem {
     status: string;
     created_at: string;
     updated_at: string;
+    applications_open: boolean;
 }
 
 interface ApplicationsDrawerProps {
@@ -57,20 +58,24 @@ export default function ApplicationsDrawer({ isOpen, onClose, onSelectApplicatio
             const partnerIds = [...new Set(data.map(a => a.partner_id))];
             const { data: partners } = await supabase
                 .from('partners')
-                .select('id, name')
+                .select('id, name, applications_open')
                 .in('id', partnerIds);
 
-            const partnerMap: Record<string, string> = {};
-            partners?.forEach(p => { partnerMap[p.id] = p.name; });
+            const partnerMap: Record<string, { name: string, open: boolean }> = {};
+            partners?.forEach(p => { partnerMap[p.id] = { name: p.name, open: p.applications_open ?? true }; });
 
-            const items: ApplicationItem[] = data.map(app => ({
-                id: app.id,
-                partner_id: app.partner_id,
-                partner_name: partnerMap[app.partner_id] || 'Parceiro desconhecido',
-                status: app.status,
-                created_at: app.created_at,
-                updated_at: app.updated_at,
-            }));
+            const items: ApplicationItem[] = data.map(app => {
+                const partnerInfo = partnerMap[app.partner_id] || { name: 'Parceiro desconhecido', open: true };
+                return {
+                    id: app.id,
+                    partner_id: app.partner_id,
+                    partner_name: partnerInfo.name,
+                    status: app.status,
+                    created_at: app.created_at,
+                    updated_at: app.updated_at,
+                    applications_open: partnerInfo.open,
+                };
+            });
 
             setApplications(items);
             setLoading(false);
@@ -143,31 +148,41 @@ export default function ApplicationsDrawer({ isOpen, onClose, onSelectApplicatio
                             ) : (
                                 applications.map((app, idx) => {
                                     const statusConfig = STATUS_CONFIG[app.status] || { label: app.status, bg: 'bg-gray-100', text: 'text-gray-600' };
+                                    const isDisabled = !app.applications_open && app.status === 'DRAFT';
 
                                     return (
                                         <motion.button
                                             key={app.id}
+                                            disabled={isDisabled}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            onClick={() => onSelectApplication(app.id)}
-                                            className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-gray-100 hover:border-[#38B1E4]/40 hover:bg-[#38B1E4]/5 transition-all duration-200 text-left group"
+                                            onClick={() => {
+                                                if (!isDisabled) onSelectApplication(app.id);
+                                            }}
+                                            className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left group ${
+                                                isDisabled 
+                                                    ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed' 
+                                                    : 'border-gray-100 hover:border-[#38B1E4]/40 hover:bg-[#38B1E4]/5'
+                                            }`}
                                         >
-                                            <div className="w-10 h-10 bg-[#024F86]/5 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-[#024F86]/10 transition-colors">
-                                                <FileText className="text-[#024F86]" size={18} />
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isDisabled ? 'bg-gray-200' : 'bg-[#024F86]/5 group-hover:bg-[#024F86]/10'}`}>
+                                                <FileText className={isDisabled ? 'text-gray-400' : 'text-[#024F86]'} size={18} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold text-[#024F86] truncate">{app.partner_name}</p>
+                                                <p className={`text-sm font-semibold truncate ${isDisabled ? 'text-gray-500' : 'text-[#024F86]'}`}>
+                                                    {app.partner_name}
+                                                </p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusConfig.bg} ${statusConfig.text}`}>
-                                                        {statusConfig.label}
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDisabled ? 'bg-gray-200 text-gray-500' : `${statusConfig.bg} ${statusConfig.text}`}`}>
+                                                        {isDisabled ? 'Inscrições Encerradas' : statusConfig.label}
                                                     </span>
                                                     <span className="text-[10px] text-[#3A424E]/40">
                                                         {formatDate(app.updated_at)}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <ChevronRight size={16} className="text-[#3A424E]/30 group-hover:text-[#38B1E4] transition-colors shrink-0" />
+                                            <ChevronRight size={16} className={`shrink-0 transition-colors ${isDisabled ? 'text-gray-300' : 'text-[#3A424E]/30 group-hover:text-[#38B1E4]'}`} />
                                         </motion.button>
                                     );
                                 })
