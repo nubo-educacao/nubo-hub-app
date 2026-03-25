@@ -38,7 +38,7 @@ export default function HeroCloudinha() {
             className="text-xl md:text-2xl text-sky-700 font-medium font-lora"
             variants={item}
           >
-            A Cloudinha conecta estudantes a bolsas e programas de apoio educacional
+            O Nubo Conecta estudantes a bolsas e programas de apoio educacional
           </motion.p>
         </div>
       </motion.div>
