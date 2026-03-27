@@ -17,7 +17,7 @@ interface MessageBubbleProps {
 
 export default function MessageBubble({ message, userAvatar, onFeedback }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
-  const displayText = message.text ? message.text.replace(/\[Metadata:.*?\]/g, '').trim() : '';
+  const displayText = message.text ? message.text.replace(/\[Metadata:[\s\S]*?\](?!\s*\])/g, '').replace(/\[Metadata:[\s\S]*?\]/g, '').trim() : '';
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
 
   const handleFeedback = (score: number) => {
