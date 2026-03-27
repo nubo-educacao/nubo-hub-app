@@ -57,7 +57,7 @@ export default function Footer() {
         {/* Middle Section: Disclaimer */}
         <div className="text-[10px] md:text-xs font-light opacity-90 leading-relaxed text-center md:text-left">
           <p>
-            A Cloudinha é uma ferramenta de orientação. Não é um cursinho, não promete aprovação, não faz inscrições no lugar do estudante e não decide por ele. Ela apoia decisões, não substitui escolhas.
+            O Nubo Conecta é uma ferramenta de orientação. Não é um cursinho, não promete aprovação, não faz inscrições no lugar do estudante e não decide por ele. Ela apoia decisões, não substitui escolhas.
           </p>
         </div>
 

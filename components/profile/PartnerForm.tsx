@@ -705,7 +705,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
 
     // ─── Validation ──────────────────────────────────────────────────────────
 
-    const validateCurrentStep = useCallback((): boolean => {
+    const validateCurrentStep = useCallback((): { isValid: boolean, errors: Set<string> } => {
         const errors = new Set<string>();
 
         for (const field of currentFields) {
@@ -762,10 +762,22 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
         }
 
         setValidationErrors(errors);
-        return errors.size === 0;
+        return { isValid: errors.size === 0, errors };
     }, [currentFields, answers, currentIteration, currentStep]);
 
     // ─── Handlers ────────────────────────────────────────────────────────────
+
+    const triggerValidationErrorMessage = (errors: Set<string>) => {
+        if (errors.size === 0 || !onTriggerChatMessage) return;
+        
+        const errorFields = currentFields.filter(f => errors.has(f.field_name));
+        const fieldQuestions = errorFields.map(f => `"${f.question_text}"`).join(", ");
+        
+        const userMessage = "Ops, tentei avançar mas alguns campos precisam de atenção. Você pode me ajudar a corrigir?";
+        const metadata = `[Metadata: O usuário tentou avançar mas os seguintes campos falharam: ${fieldQuestions}. Avalie data_type e maskking via getPartnerFormsTool para orientar o formato correto.]`;
+        
+        onTriggerChatMessage(`${userMessage} ${metadata}`);
+    };
 
     const handleAnswerChange = useCallback((fieldName: string, value: any, maskType?: string | null) => {
         let processedValue = value;
@@ -909,7 +921,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     };
 
     const handleNext = async () => {
-        if (!validateCurrentStep()) return;
+        const { isValid, errors } = validateCurrentStep();
+        if (!isValid) {
+            triggerValidationErrorMessage(errors);
+            return;
+        }
         await saveAnswersToDb();
 
         if (isLastStep) {
@@ -923,7 +939,11 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
     };
 
     const handleAddIteration = async () => {
-        if (!validateCurrentStep()) return;
+        const { isValid, errors } = validateCurrentStep();
+        if (!isValid) {
+            triggerValidationErrorMessage(errors);
+            return;
+        }
         await saveAnswersToDb();
         setCurrentIteration(prev => prev + 1);
         setValidationErrors(new Set());

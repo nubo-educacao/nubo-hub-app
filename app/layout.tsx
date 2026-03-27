@@ -18,8 +18,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Cloudinha | Sua guia para as melhores oportunidades educacionais - Nubo Educação",
-  description: "A Cloudinha conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
+  title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais - Nubo Educação",
+  description: "O Nubo Conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
   keywords: [
     // acesso ao ensino superior
     "ENEM",
@@ -68,6 +68,7 @@ export const metadata: Metadata = {
     "escolher faculdade",
 
     // marca
+    "Nubo Conecta",
     "Cloudinha",
     "Nubo Educação",
     "plataforma gratuita para estudantes"
@@ -78,11 +79,11 @@ export const metadata: Metadata = {
     apple: "/assets/cloudinha.png",
   },
   openGraph: {
-    title: "Cloudinha | Sua guia para as melhores oportunidades educacionais - Nubo Educação",
-    description: "A Cloudinha conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
+    title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais - Nubo Educação",
+    description: "O Nubo Conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
     type: "website",
     locale: "pt_BR",
-    siteName: "Cloudinha - Nubo Educação",
+    siteName: "Nubo Conecta - Nubo Educação",
     images: [
       {
         url: "/assets/cloudinha.png",
@@ -94,8 +95,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Cloudinha | Sua guia para as melhores oportunidades educacionais - Nubo Educação",
-    description: "A Cloudinha conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
+    title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais - Nubo Educação",
+    description: "O Nubo Conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
     images: ["/assets/cloudinha.png"],
   },
 };
