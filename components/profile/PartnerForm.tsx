@@ -298,8 +298,8 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
                 })
                 .eq('id', application.id);
 
-            await supabase.rpc('calculate_application_eligibility', {
-                p_application_id: application.id
+            await supabase.rpc('calculate_passport_eligibility', {
+                p_user_id: user.id
             });
 
             await updateUserProfileService({ passport_phase: 'CONCLUDED' });
@@ -361,6 +361,7 @@ export default function PartnerForm({ applicationId, onFormDirty, onComplete, on
             defaultValues={initialAnswers}
             onSubmitForm={handleSubmitForm}
             onSaveDraft={handleSaveDraft}
+            onComputeEligibility={computeEligibilityScore}
             onStepChange={(stepName) => {
                 if (onTriggerChatMessage) {
                     onTriggerChatMessage(`Acabei de avançar para a etapa: ${stepName}. Pode me explicar o que é esperado aqui ou me ajudar se eu tiver dúvidas?`);

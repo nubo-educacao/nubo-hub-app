@@ -49,11 +49,12 @@ interface FormEngineProps {
     defaultValues: Record<string, any>;
     onSubmitForm: (data: Record<string, any>) => Promise<{ success: boolean; eligibilityResults?: any[] }>;
     onSaveDraft: (data: Record<string, any>) => void;
+    onComputeEligibility?: (data: Record<string, any>) => any[];
     onStepChange?: (stepName: string) => void;
     onValidationError?: (errors: { question: string, error: string }[]) => void;
 }
 
-export default function PartnerFormEngine({ partnerName, steps, fields, defaultValues, onSubmitForm, onSaveDraft, onStepChange, onValidationError }: FormEngineProps) {
+export default function PartnerFormEngine({ partnerName, steps, fields, defaultValues, onSubmitForm, onSaveDraft, onComputeEligibility,  onStepChange, onValidationError }: FormEngineProps) {
     const methods = useForm({
         defaultValues,
         mode: 'onSubmit'
@@ -70,6 +71,7 @@ export default function PartnerFormEngine({ partnerName, steps, fields, defaultV
     const [showReview, setShowReview] = useState(false);
     const [eligibilityResults, setEligibilityResults] = useState<any[]>([]);
     const [submitting, setSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
     
     const [savingDraft, setSavingDraft] = useState(false);
     const draftTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -202,6 +204,10 @@ export default function PartnerFormEngine({ partnerName, steps, fields, defaultV
 
         if (isLastStep) {
             // compute eligibility server-side or parent-side, proceed to review
+            if (onComputeEligibility) {
+                const results = onComputeEligibility(getValues());
+                setEligibilityResults(results);
+            }
             setShowReview(true);
         } else {
             const nextIndex = currentStepIndex + 1;
@@ -249,8 +255,11 @@ export default function PartnerFormEngine({ partnerName, steps, fields, defaultV
         setSubmitting(true);
         try {
             const result = await onSubmitForm(data);
-            if (result.success && result.eligibilityResults) {
-                setEligibilityResults(result.eligibilityResults);
+            if (result.success) {
+                if (result.eligibilityResults) {
+                    setEligibilityResults(result.eligibilityResults);
+                }
+                setIsSubmitted(true);
             }
         } finally {
             setSubmitting(false);
@@ -304,17 +313,17 @@ export default function PartnerFormEngine({ partnerName, steps, fields, defaultV
                 )}
 
                 <div className="flex gap-2 pt-4 border-t border-gray-100 mt-auto">
-                    {!eligibilityResults.length && (
+                    {!isSubmitted && (
                         <button onClick={handlePrev} className="flex items-center gap-1 px-4 py-2.5 rounded-full border-2 border-gray-200 text-[#3A424E] text-[11px] font-bold hover:bg-gray-50 transition-all">
                             <ChevronLeft size={14} /> Voltar
                         </button>
                     )}
                     <button
                         onClick={handleSubmit(submitFinalForm)}
-                        disabled={submitting || eligibilityResults.length > 0}
+                        disabled={submitting || isSubmitted}
                         className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#024F86] to-[#38B1E4] text-white text-[11px] font-black uppercase tracking-wider shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                     >
-                        {submitting ? <Loader2 className="animate-spin" size={14} /> : eligibilityResults.length > 0 ? "Formulário Concluído" :  <><Send size={14} /> Enviar Candidatura</>}
+                        {submitting ? <Loader2 className="animate-spin" size={14} /> : isSubmitted ? "Formulário Concluído" :  <><Send size={14} /> Enviar Candidatura</>}
                     </button>
                 </div>
             </div>
