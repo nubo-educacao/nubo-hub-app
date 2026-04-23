@@ -1,0 +1,27 @@
+# Historical leaks in .env.local (January to March 2026)
+76ee199b2c60f2b1f9cb51344515592925f3d383:.env.local:jwt:6
+76ee199b2c60f2b1f9cb51344515592925f3d383:.env.local:jwt:13
+464af1792161663c769897fee27d6fcb8fc96b5a:.env.local:jwt:6
+464af1792161663c769897fee27d6fcb8fc96b5a:.env.local:jwt:13
+132eeb9639722a4a921eeb642e5f4f8413ee0729:.env.local:jwt:6
+132eeb9639722a4a921eeb642e5f4f8413ee0729:.env.local:jwt:13
+faf95c9dac958fd84fa52d66e30811ccca151ce2:.env.local:generic-api-key:1
+faf95c9dac958fd84fa52d66e30811ccca151ce2:.env.local:jwt:6
+faf95c9dac958fd84fa52d66e30811ccca151ce2:.env.local:jwt:13
+81f6b89c27433f36ea6846a30d3141627c6ccc8d:.env.local:jwt:6
+81f6b89c27433f36ea6846a30d3141627c6ccc8d:.env.local:jwt:13
+ba4e1d3de13beb8df34b4f9956c927b74096553d:.env.local:generic-api-key:4
+03a643e783f96a1464f5dca18090fdd899d09a46:.env.local:jwt:2
+
+# Figma tokens in scripts and configs (December 2025)
+47acb5395c22ed86f2ebb7e48dcb0f5274e62528:.cursor/mcp.json:generic-api-key:8
+47acb5395c22ed86f2ebb7e48dcb0f5274e62528:scripts/debug_figma_file.js:generic-api-key:3
+47acb5395c22ed86f2ebb7e48dcb0f5274e62528:scripts/debug_figma_token.js:generic-api-key:3
+47acb5395c22ed86f2ebb7e48dcb0f5274e62528:temp_mcp_config_final.json:generic-api-key:8
+ba4e1d3de13beb8df34b4f9956c927b74096553d:scripts/debug_figma_connection.js:generic-api-key:25
+b6affeb71fd19cc69420d5394b72682ea92b2883:.env.figma:generic-api-key:1
+
+# Build artifacts in .next directory (November 2025)
+03a643e783f96a1464f5dca18090fdd899d09a46:.next/server/server-reference-manifest.json:generic-api-key:4
+03a643e783f96a1464f5dca18090fdd899d09a46:.next/server/app/page.js:jwt:228
+03a643e783f96a1464f5dca18090fdd899d09a46:.next/static/chunks/app/page.js:jwt:873

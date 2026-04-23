@@ -18,7 +18,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais - Nubo Educação",
+  title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais",
   description: "O Nubo Conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
   keywords: [
     // acesso ao ensino superior
@@ -79,11 +79,11 @@ export const metadata: Metadata = {
     apple: "/assets/cloudinha.png",
   },
   openGraph: {
-    title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais - Nubo Educação",
+    title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais",
     description: "O Nubo Conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
     type: "website",
     locale: "pt_BR",
-    siteName: "Nubo Conecta - Nubo Educação",
+    siteName: "Nubo Conecta",
     images: [
       {
         url: "/assets/cloudinha.png",
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais - Nubo Educação",
+    title: "Nubo Conecta | Seu guia para as melhores oportunidades educacionais",
     description: "O Nubo Conecta estudantes a oportunidades reais de educação. Encontre bolsas de estudo, programas educacionais e caminhos para ingressar na universidade.",
     images: ["/assets/cloudinha.png"],
   },
