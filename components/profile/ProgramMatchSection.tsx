@@ -150,9 +150,11 @@ export default function ProgramMatchSection({ onTriggerChatMessage }: ProgramMat
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-6">
-                {sortedResults.map((result, index) => {
-                    const partner = partnerDetails[result.partner_id];
-                    if (!partner) return null; // Wait for partner detail loading
+                {sortedResults
+                    .filter(result => partnerDetails[result.partner_id]?.applications_open === true)
+                    .map((result, index) => {
+                        const partner = partnerDetails[result.partner_id];
+                        if (!partner) return null; // Wait for partner detail loading
 
                     const isBestMatch = index === 0 && result.met_criteria > 0;
 
