@@ -30,13 +30,15 @@ interface InputFieldProps {
   onFocus?: () => void;
   onBlur?: () => void;
   error?: boolean;
+  required?: boolean;
 }
 
-const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, maxLength, className, suffix, onFocus, onBlur, error }: InputFieldProps) => (
+const InputField = ({ label, name, value, onChange, type = 'text', icon: Icon, placeholder, maxLength, className, suffix, onFocus, onBlur, error, required }: InputFieldProps) => (
   <div className={`flex flex-col gap-1.5 ${className || ''}`}>
     <label className={`text-sm font-semibold flex items-center gap-2 ${error ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
       <Icon size={14} />
       {label}
+      {required && <span className="text-[#38B1E4]">*</span>}
       {error && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
     </label>
     <div className="relative flex items-center group">
@@ -373,6 +375,13 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
       descriptions.push(`Endereço incompleto (faltando: ${missingAddress.join(', ')})`);
     }
 
+    // Income
+    const perCapita = incomeData.per_capita_income;
+    if (perCapita === null || perCapita === undefined) {
+      newErrors.per_capita_income = true;
+      descriptions.push('Renda per capita não informada');
+    }
+
     setErrors(newErrors);
     return { errors: newErrors, descriptions };
   };
@@ -485,6 +494,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           onFocus={() => setFocusedField('full_name')}
           onBlur={() => setFocusedField(null)}
           error={errors.full_name}
+          required
         />
 
         <InputField
@@ -498,6 +508,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
           onFocus={() => setFocusedField('birth_date')}
           onBlur={() => setFocusedField(null)}
           error={errors.birth_date}
+          required
         />
       </div>
 
@@ -508,6 +519,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             <label className={`text-sm font-semibold flex items-center gap-2 ${errors.education ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
               <GraduationCap size={14} />
               Escolaridade
+              <span className="text-[#38B1E4]">*</span>
               {errors.education && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
             </label>
             <select
@@ -678,13 +690,19 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
             {!useCalculator && (
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <InputField
-                  label="Editar Valor Permanentemente (Manual)"
+                  label="Renda Per Capita (Manual)"
                   name="per_capita_income"
                   value={incomeData.per_capita_income || ''}
-                  onChange={(e) => setIncomeData(prev => ({ ...prev, per_capita_income: parseFloat(e.target.value) || null }))}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setIncomeData(prev => ({ ...prev, per_capita_income: isNaN(val) ? null : val }));
+                    if (errors.per_capita_income) setErrors(prev => ({ ...prev, per_capita_income: false }));
+                  }}
                   type="number"
                   icon={DollarSign}
                   placeholder="R$ 0,00"
+                  error={errors.per_capita_income}
+                  required
                 />
               </div>
             )}
@@ -727,6 +745,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
               onFocus={() => setFocusedField('country')}
               onBlur={() => setFocusedField(null)}
               error={errors.country}
+              required
             />
             <InputField
               label="Cidade"
@@ -738,6 +757,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
               onFocus={() => setFocusedField('city')}
               onBlur={() => setFocusedField(null)}
               error={errors.city}
+              required
             />
             <InputField
               label="Endereço Completo"
@@ -750,6 +770,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
               onFocus={() => setFocusedField('street')}
               onBlur={() => setFocusedField(null)}
               error={errors.street}
+              required
             />
           </div>
         ) : (
@@ -760,6 +781,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 <label className={`text-sm font-semibold flex items-center gap-2 ${errors.zip_code ? 'text-red-500' : 'text-[#1BBBCD]'}`}>
                   <MapPin size={14} />
                   CEP
+                  <span className="text-[#38B1E4]">*</span>
                   {errors.zip_code && <AlertCircle size={12} className="text-red-500 animate-pulse" />}
                 </label>
                 <div className="relative group">
@@ -811,6 +833,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 onFocus={() => setFocusedField('state')}
                 onBlur={() => setFocusedField(null)}
                 error={errors.state}
+                required
               />
 
               {/* City */}
@@ -825,6 +848,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 onFocus={() => setFocusedField('city')}
                 onBlur={() => setFocusedField(null)}
                 error={errors.city}
+                required
               />
             </div>
 
@@ -841,6 +865,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 onFocus={() => setFocusedField('neighborhood')}
                 onBlur={() => setFocusedField(null)}
                 error={errors.neighborhood}
+                required
               />
 
               {/* Street */}
@@ -855,6 +880,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 onFocus={() => setFocusedField('street')}
                 onBlur={() => setFocusedField(null)}
                 error={errors.street}
+                required
               />
 
               {/* Number */}
@@ -868,6 +894,7 @@ export default function UserDataSection({ profile, onProfileUpdate, onOnboarding
                 onFocus={() => setFocusedField('street_number')}
                 onBlur={() => setFocusedField(null)}
                 error={errors.street_number}
+                required
               />
 
               {/* Complement */}
